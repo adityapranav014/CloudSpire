@@ -1,0 +1,140 @@
+import { useState } from 'react'
+import {
+  ResponsiveContainer, ComposedChart, Area, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend
+} from 'recharts'
+import { dailySpend, monthlySpend } from '../../data/mockUnified'
+import { BrandLogo, getBrandAsset } from '../../constants/brandAssets'
+
+const fmt = (v) => `$${(v / 1000).toFixed(1)}k`
+const fmtDate = (str) => {
+  const d = new Date(str + 'T00:00:00')
+  return `${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()}`
+}
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const total = payload.reduce((s, p) => s + (p.value || 0), 0)
+  return (
+    <div className="rounded-xl border p-3 text-sm shadow-2xl min-w-[160px]"
+      style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
+      <p className="text-xs mb-2 font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      {payload.map(p => (
+        <div key={p.dataKey} className="flex items-center justify-between gap-4 mb-0.5">
+          <div className="flex items-center gap-1.5">
+            <BrandLogo brandKey={p.dataKey} size={13} />
+            <span style={{ color: 'var(--text-secondary)' }}>{getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}</span>
+          </div>
+          <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+            ${p.value?.toLocaleString()}
+          </span>
+        </div>
+      ))}
+      <div className="border-t mt-2 pt-2 flex justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
+        <span style={{ color: 'var(--text-muted)' }}>Total</span>
+        <span className="font-semibold font-mono" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+          ${total.toLocaleString()}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+const RANGES = [
+  { label: '7d', days: 7 },
+  { label: '30d', days: 30 },
+  { label: '90d', days: 90 },
+]
+
+/** Stacked area chart of cloud spend over time */
+export default function AreaSpendChart() {
+  const [range, setRange] = useState('30d')
+  const days = RANGES.find(r => r.label === range)?.days || 30
+  const data = dailySpend.slice(-days).map(d => ({
+    ...d,
+    date: fmtDate(d.date),
+  }))
+
+  return (
+    <div className="rounded-xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Spend Over Time</h3>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Daily spend by cloud provider</p>
+        </div>
+        <div className="flex gap-1">
+          {RANGES.map(r => (
+            <button
+              key={r.label}
+              onClick={() => setRange(r.label)}
+              className="px-3 py-1 text-xs font-medium rounded-lg transition-all"
+              style={{
+                background: range === r.label ? 'var(--accent-blue)' : 'var(--bg-elevated)',
+                color: range === r.label ? '#fff' : 'var(--text-secondary)',
+                border: `1px solid ${range === r.label ? 'var(--accent-blue)' : 'var(--border-default)'}`,
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={280}>
+        <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+          <defs>
+            <linearGradient id="awsGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#FF9900" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="#FF9900" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="gcpGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4285F4" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="#4285F4" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="azureGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#0078D4" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="#0078D4" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: '#4A5568', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            interval={Math.floor(days / 7)}
+          />
+          <YAxis
+            tickFormatter={fmt}
+            tick={{ fill: '#4A5568', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            wrapperStyle={{ paddingTop: 12 }}
+            content={({ payload }) => (
+              <div className="flex items-center justify-center gap-6 pt-3">
+                {payload.map(p => (
+                  <div key={p.dataKey} className="flex items-center gap-2">
+                    <svg width="22" height="12" className="shrink-0" aria-hidden="true">
+                      <line x1="1" y1="6" x2="21" y2="6" stroke={p.color} strokeWidth="2.5" strokeLinecap="round" />
+                      <circle cx="11" cy="6" r="2.5" fill={p.color} />
+                    </svg>
+                    <BrandLogo brandKey={p.dataKey} size={14} />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+                      {getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          />
+          <Area type="monotone" dataKey="aws" stroke="#FF9900" strokeWidth={2} fill="url(#awsGrad)" dot={false} />
+          <Area type="monotone" dataKey="gcp" stroke="#4285F4" strokeWidth={2} fill="url(#gcpGrad)" dot={false} />
+          <Area type="monotone" dataKey="azure" stroke="#0078D4" strokeWidth={2} fill="url(#azureGrad)" dot={false} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}

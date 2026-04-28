@@ -61,7 +61,7 @@ function TeamDetailModal({ team, onClose }) {
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Lead: {team.lead}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }}>
             <X size={16} />
           </button>
         </div>
@@ -187,7 +187,7 @@ export default function Teams() {
           { label: 'Total Monthly Spend', value: fmt.format(totalSpend), color: 'var(--accent-blue)' },
           { label: 'Total Budget', value: fmt.format(totalBudget), color: 'var(--text-secondary)' },
           { label: 'Budget Utilization', value: `${Math.round(totalSpend / totalBudget * 100)}%`, color: 'var(--accent-amber)' },
-          { label: 'Over-Budget Teams', value: overBudgetTeams.length, color: '#F43F5E' },
+          { label: 'Over-Budget Teams', value: overBudgetTeams.length, color: 'var(--accent-rose)' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border p-4"
             style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
@@ -201,7 +201,7 @@ export default function Teams() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {teams.map((team, i) => {
           const pct = team.budgetPercent
-          const barColor = team.overBudget ? '#F43F5E' : pct > 85 ? '#F59E0B' : '#10B981'
+          const barColor = team.overBudget ? 'var(--accent-rose)' : pct > 85 ? 'var(--accent-amber)' : 'var(--accent-emerald)'
           const trendPct = +((team.spend30d - team.spend60d) / team.spend60d * 100).toFixed(1)
 
           return (
@@ -213,7 +213,7 @@ export default function Teams() {
               className="rounded-xl border p-5"
               style={{
                 background: 'var(--bg-card)',
-                borderColor: team.overBudget ? 'rgba(244,63,94,0.4)' : 'var(--border-default)',
+                borderColor: team.overBudget ? 'color-mix(in srgb, var(--accent-rose) 40%, transparent)' : 'var(--border-default)',
               }}
             >
               {/* Header */}
@@ -226,7 +226,7 @@ export default function Teams() {
                       <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{team.name}</p>
                       {team.overBudget && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                          style={{ background: 'rgba(244,63,94,0.12)', color: '#F43F5E' }}>
+                          style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)' }}>
                           OVER BUDGET
                         </span>
                       )}
@@ -284,13 +284,13 @@ export default function Teams() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedTeam(team)}
-                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-white/10"
+                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-[--bg-hover]"
                   style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                   <BarChart2 size={12} /> View Details
                 </button>
                 <button
                   onClick={() => addToast(`Budget updated for ${team.name}`, 'success')}
-                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-white/10"
+                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-[--bg-hover]"
                   style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
                   <Edit3 size={12} /> Edit Budget
                 </button>
@@ -312,7 +312,7 @@ export default function Teams() {
             >
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Add Team</h3>
-                <button onClick={() => setAddModalOpen(false)} className="p-2 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                <button onClick={() => setAddModalOpen(false)} className="p-2 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }}>
                   <X size={16} />
                 </button>
               </div>
@@ -336,7 +336,7 @@ export default function Teams() {
                         borderColor: 'var(--border-default)',
                         color: 'var(--text-primary)',
                       }}
-                      onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
+                      onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
                       onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }}
                     />
                   </div>
@@ -344,7 +344,7 @@ export default function Teams() {
               </div>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setAddModalOpen(false)}
-                  className="flex-1 py-2.5 text-sm rounded-xl border transition-colors hover:bg-white/10"
+                  className="flex-1 py-2.5 text-sm rounded-xl border transition-colors hover:bg-[--bg-hover]"
                   style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                   Cancel
                 </button>

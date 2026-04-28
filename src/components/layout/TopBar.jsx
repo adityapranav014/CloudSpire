@@ -60,7 +60,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
       {/* Search */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <button
-          className="lg:hidden p-2 rounded-lg transition-colors hover:bg-white/10"
+          className="lg:hidden p-2 rounded-lg transition-colors hover:bg-[--bg-hover]"
           onClick={onOpenMenu}
           title="Open navigation"
         >
@@ -88,7 +88,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Settings */}
         <button
-          className="hidden sm:flex items-center justify-center p-2 rounded-lg transition-colors hover:bg-white/10"
+          className="hidden sm:flex items-center justify-center p-2 rounded-lg transition-colors hover:bg-[--bg-hover]"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           title="Toggle theme"
         >
@@ -97,7 +97,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
 
         {/* Notification bell */}
         <button
-          className="relative p-2 rounded-lg transition-colors hover:bg-white/10"
+          className="relative p-2 rounded-lg transition-colors hover:bg-[--bg-hover]"
           onClick={() => navigate('/anomalies')}
           title="View anomalies"
         >
@@ -112,7 +112,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
         {/* User avatar dropdown */}
         <div className="relative">
           <button
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-[--bg-hover]"
             onClick={() => setUserMenuOpen(v => !v)}
           >
             <UserAvatar user={CURRENT_USER} size="sm" />
@@ -136,7 +136,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
               ].map(({ icon: Icon, label, action }) => (
                 <button
                   key={label}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-white/5"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
                   style={{ color: 'var(--text-secondary)' }}
                   onClick={() => { action?.(); setUserMenuOpen(false) }}
                 >
@@ -146,7 +146,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
               ))}
               <div className="border-t mt-1 pt-1" style={{ borderColor: 'var(--border-subtle)' }}>
                 <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-white/10"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
                   style={{ color: 'var(--accent-rose)' }}
                   onClick={() => setUserMenuOpen(false)}
                 >

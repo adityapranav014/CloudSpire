@@ -266,7 +266,7 @@ export default function Dashboard() {
             <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Budget Health</h3>
             <div className="space-y-4">
             {budgetAlerts.slice(0, 3).map(b => {
-              const color = b.status === 'critical' ? '#F43F5E' : b.status === 'warning' ? '#F59E0B' : '#10B981'
+              const color = b.status === 'critical' ? 'var(--accent-rose)' : b.status === 'warning' ? 'var(--accent-amber)' : 'var(--accent-emerald)'
               return (
                 <div key={b.id}>
                   <div className="flex items-center justify-between mb-1.5">

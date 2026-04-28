@@ -27,9 +27,9 @@ const resourceTypeIcon = (type) => {
 }
 
 const confidenceStyle = {
-  high: { bg: 'rgba(16,185,129,0.12)', color: '#10B981' },
-  medium: { bg: 'rgba(245,158,11,0.12)', color: '#F59E0B' },
-  low: { bg: 'rgba(138,155,184,0.1)', color: '#8A9BB8' },
+  high: { bg: 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)', color: 'var(--accent-emerald)' },
+  medium: { bg: 'color-mix(in srgb, var(--accent-amber) 12%, transparent)', color: 'var(--accent-amber)' },
+  low: { bg: 'color-mix(in srgb, var(--text-secondary) 10%, transparent)', color: 'var(--text-secondary)' },
 }
 
 /** ConfirmModal — generic action confirmation */
@@ -43,24 +43,24 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action }) 
         style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(244,63,94,0.12)' }}>
-            <AlertCircle size={20} style={{ color: '#F43F5E' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)' }}>
+            <AlertCircle size={20} style={{ color: 'var(--accent-rose)' }} />
           </div>
           <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{title}</h3>
         </div>
         <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{description}</p>
-        <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'rgba(244,63,94,0.08)', color: '#F43F5E' }}>
+        <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'color-mix(in srgb, var(--accent-rose) 8%, transparent)', color: 'var(--accent-rose)' }}>
           ⚠ This action cannot be undone
         </p>
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors hover:bg-white/10"
+            className="flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
             style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
             Cancel
           </button>
           <button onClick={onConfirm}
             className="flex-1 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: '#F43F5E', color: '#fff' }}>
+            style={{ background: 'var(--accent-rose)', color: '#fff' }}>
             {action}
           </button>
         </div>
@@ -162,7 +162,7 @@ export default function Optimizer() {
       <PageHeader title="Cost Optimizer" subtitle="Identified savings opportunities across all cloud providers">
         <button
           onClick={() => addToast('Review scheduled with FinOps team', 'success')}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-white/10"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
           style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
         >
           Schedule Review
@@ -175,7 +175,7 @@ export default function Optimizer() {
             savingsMsg: `${fmt.format(optimizationSummary.totalPotentialSavings)}/month saved`,
           })}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #10B981 0%, #06B6D4 100%)', color: '#fff' }}
+          style={{ background: 'var(--accent-emerald)', color: '#fff' }}
         >
           <Zap size={14} /> Implement All ({fmt.format(optimizationSummary.totalPotentialSavings)}/mo)
         </button>
@@ -184,11 +184,11 @@ export default function Optimizer() {
       {/* Summary bar */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         {[
-          { label: 'Idle Instances', amount: optimizationSummary.savingsBreakdown.idleInstances, color: '#F43F5E' },
-          { label: 'Orphaned Storage', amount: optimizationSummary.savingsBreakdown.orphanedStorage, color: '#F59E0B' },
-          { label: 'Right-Sizing', amount: optimizationSummary.savingsBreakdown.rightSizing, color: '#8B5CF6' },
-          { label: 'Reserved Instances', amount: optimizationSummary.savingsBreakdown.reservedInstances, color: '#3B82F6' },
-          { label: 'Scheduled Shutdowns', amount: optimizationSummary.savingsBreakdown.scheduledShutdowns, color: '#10B981' },
+          { label: 'Idle Instances', amount: optimizationSummary.savingsBreakdown.idleInstances, color: 'var(--accent-rose)' },
+          { label: 'Orphaned Storage', amount: optimizationSummary.savingsBreakdown.orphanedStorage, color: 'var(--accent-amber)' },
+          { label: 'Right-Sizing', amount: optimizationSummary.savingsBreakdown.rightSizing, color: 'var(--accent-violet)' },
+          { label: 'Reserved Instances', amount: optimizationSummary.savingsBreakdown.reservedInstances, color: 'var(--accent-primary)' },
+          { label: 'Scheduled Shutdowns', amount: optimizationSummary.savingsBreakdown.scheduledShutdowns, color: 'var(--accent-emerald)' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border p-3 text-center"
             style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
@@ -223,8 +223,8 @@ export default function Optimizer() {
             <button key={tab} onClick={() => setActiveTab(tab)}
               className="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px shrink-0 whitespace-nowrap"
               style={{
-                borderBottomColor: activeTab === tab ? 'var(--accent-cyan)' : 'transparent',
-                color: activeTab === tab ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                borderBottomColor: activeTab === tab ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
               }}>
               {tab}
             </button>
@@ -237,8 +237,8 @@ export default function Optimizer() {
         <div>
           {selectedRows.length > 0 && (
             <div className="flex items-center gap-3 mb-3 p-3 rounded-xl border"
-              style={{ background: 'rgba(244,63,94,0.08)', borderColor: '#F43F5E' }}>
-              <span className="text-sm font-medium" style={{ color: '#F43F5E' }}>
+              style={{ background: 'color-mix(in srgb, var(--accent-rose) 8%, transparent)', borderColor: 'var(--accent-rose)' }}>
+              <span className="text-sm font-medium" style={{ color: 'var(--accent-rose)' }}>
                 {selectedRows.length} selected — {fmt.format(idleInstances.filter(i => selectedRows.includes(i.id)).reduce((s, i) => s + i.savings, 0))} savings
               </span>
               <button
@@ -249,7 +249,7 @@ export default function Optimizer() {
                   savingsMsg: `${fmt.format(idleInstances.filter(i => selectedRows.includes(i.id)).reduce((s, i) => s + i.savings, 0))}/month saved`,
                 })}
                 className="px-3 py-1.5 text-xs font-semibold rounded-lg"
-                style={{ background: '#F43F5E', color: '#fff' }}>
+                style={{ background: 'var(--accent-rose)', color: '#fff' }}>
                 <Trash2 size={12} className="inline mr-1" /> Terminate Selected
               </button>
             </div>
@@ -270,8 +270,10 @@ export default function Optimizer() {
               </thead>
               <tbody>
                 {idleInstances.map(inst => (
-                  <tr key={inst.id} className="border-b cursor-pointer hover:bg-white/[0.03] transition-colors"
-                    style={{ borderColor: 'var(--border-subtle)', background: selectedRows.includes(inst.id) ? 'rgba(59,130,246,0.05)' : undefined }}>
+                  <tr key={inst.id} className="border-b cursor-pointer transition-colors"
+                    style={{ borderColor: 'var(--border-subtle)', background: selectedRows.includes(inst.id) ? 'var(--accent-primary-subtle)' : undefined }}
+                    onMouseEnter={e => e.currentTarget.style.background = selectedRows.includes(inst.id) ? 'var(--accent-primary-subtle)' : 'var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = selectedRows.includes(inst.id) ? 'var(--accent-primary-subtle)' : ''}>
                     <td className="px-4 py-3">
                       <input type="checkbox" checked={selectedRows.includes(inst.id)}
                         onChange={() => toggleRow(inst.id)} className="accent-blue-500" />
@@ -281,7 +283,7 @@ export default function Optimizer() {
                     <td className="px-3 py-3 font-mono" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>{inst.region}</td>
                     <td className="px-3 py-3 font-mono" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>{inst.type}</td>
                     <td className="px-3 py-3">
-                      <span className="font-mono" style={{ color: inst.cpu < 5 ? '#F43F5E' : 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span className="font-mono" style={{ color: inst.cpu < 5 ? 'var(--accent-rose)' : 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
                         {inst.cpu}%
                       </span>
                     </td>
@@ -297,13 +299,13 @@ export default function Optimizer() {
                         <button
                           onClick={() => setModal({ title: 'Terminate Instance', description: `Terminate "${inst.name}" (${inst.type})?`, action: 'Terminate', savingsMsg: `${fmtDec.format(inst.savings)}/month saved` })}
                           className="px-2 py-1 text-[10px] font-semibold rounded-lg flex items-center gap-1"
-                          style={{ background: 'rgba(244,63,94,0.12)', color: '#F43F5E' }}>
+                          style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)' }}>
                           <Trash2 size={10} /> Terminate
                         </button>
                         <button
                           onClick={() => setModal({ title: 'Stop Instance', description: `Stop "${inst.name}" to save on compute costs?`, action: 'Stop', savingsMsg: 'Compute charges paused' })}
                           className="px-2 py-1 text-[10px] font-semibold rounded-lg flex items-center gap-1"
-                          style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>
+                          style={{ background: 'color-mix(in srgb, var(--accent-amber) 12%, transparent)', color: 'var(--accent-amber)' }}>
                           <StopCircle size={10} /> Stop
                         </button>
                       </div>
@@ -327,7 +329,7 @@ export default function Optimizer() {
                   style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(244,63,94,0.1)' }}>
-                      <Icon size={16} style={{ color: '#F43F5E' }} />
+                      <Icon size={16} style={{ color: 'var(--accent-rose)' }} />
                     </div>
                     <ProviderBadge provider={r.provider} size="sm" />
                   </div>
@@ -337,7 +339,7 @@ export default function Optimizer() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Monthly Cost</p>
-                      <p className="text-base font-bold font-mono" style={{ color: '#F43F5E', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <p className="text-base font-bold font-mono" style={{ color: 'var(--accent-rose)', fontFamily: "'JetBrains Mono', monospace" }}>
                         {fmtDec.format(r.monthlyCost)}
                       </p>
                     </div>
@@ -354,7 +356,7 @@ export default function Optimizer() {
                       savingsMsg: `${fmtDec.format(r.savingsIfDeleted)}/month saved`,
                     })}
                     className="w-full py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
-                    style={{ background: 'rgba(244,63,94,0.12)', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.2)' }}>
+                    style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)', border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)' }}>
                     <Trash2 size={12} /> Delete Resource
                   </button>
                 </div>
@@ -363,7 +365,7 @@ export default function Optimizer() {
           </div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Total: {orphaned.length} orphaned resources costing{' '}
-            <span className="font-semibold font-mono" style={{ color: '#F43F5E', fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="font-semibold font-mono" style={{ color: 'var(--accent-rose)', fontFamily: "'JetBrains Mono', monospace" }}>
               {fmtDec.format(orphaned.reduce((s, r) => s + r.monthlyCost, 0))}/month
             </span>
           </p>
@@ -383,8 +385,10 @@ export default function Optimizer() {
             </thead>
             <tbody>
               {rightsizingRecommendations.map(r => (
-                <tr key={r.id} className="border-b hover:bg-white/[0.03] transition-colors cursor-pointer"
-                  style={{ borderColor: 'var(--border-subtle)' }}>
+                <tr key={r.id} className="border-b transition-colors cursor-pointer"
+                  style={{ borderColor: 'var(--border-subtle)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}>
                   <td className="px-4 py-3">
                     <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{r.resourceName}</p>
                     <p style={{ color: 'var(--text-muted)' }}>{r.resourceType}</p>
@@ -395,7 +399,7 @@ export default function Optimizer() {
                     <span style={{ color: 'var(--text-muted)' }}> → </span>
                     <span style={{ color: 'var(--accent-emerald)' }}>{r.recommendedType}</span>
                   </td>
-                  <td className="px-4 py-3 font-mono" style={{ color: r.cpuUtilization < 15 ? '#F43F5E' : 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+                  <td className="px-4 py-3 font-mono" style={{ color: r.cpuUtilization < 15 ? 'var(--accent-rose)' : 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
                     {r.cpuUtilization}%
                   </td>
                   <td className="px-4 py-3 font-mono" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>{r.memoryUtilization}%</td>
@@ -440,7 +444,7 @@ export default function Optimizer() {
               <div className="flex items-center justify-between mb-3">
                 <ProviderBadge provider={ri.provider} />
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>
+                  style={{ background: 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)', color: 'var(--accent-emerald)' }}>
                   {ri.term}
                 </span>
               </div>

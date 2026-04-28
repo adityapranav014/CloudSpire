@@ -21,25 +21,25 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action, da
       >
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: danger ? 'rgba(244,63,94,0.12)' : 'rgba(245,158,11,0.12)' }}>
-            <AlertCircle size={20} style={{ color: danger ? '#F43F5E' : '#F59E0B' }} />
+            style={{ background: danger ? 'color-mix(in srgb, var(--accent-rose) 12%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 12%, transparent)' }}>
+            <AlertCircle size={20} style={{ color: danger ? 'var(--accent-rose)' : 'var(--accent-amber)' }} />
           </div>
           <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{title}</h3>
         </div>
         <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{description}</p>
         <p className="text-xs mb-5 px-3 py-2 rounded-lg"
-          style={{ background: danger ? 'rgba(244,63,94,0.08)' : 'rgba(245,158,11,0.08)', color: danger ? '#F43F5E' : '#F59E0B' }}>
+          style={{ background: danger ? 'color-mix(in srgb, var(--accent-rose) 8%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 8%, transparent)', color: danger ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>
           ⚠ This action cannot be undone
         </p>
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors hover:bg-white/10"
+            className="flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
             style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
             Cancel
           </button>
           <button onClick={onConfirm}
             className="flex-1 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: danger ? '#F43F5E' : '#F59E0B', color: '#fff' }}>
+            style={{ background: danger ? 'var(--accent-rose)' : 'var(--accent-amber)', color: '#fff' }}>
             {action}
           </button>
         </div>
@@ -79,16 +79,16 @@ export default function Settings() {
   const Toggle = ({ name }) => (
     <button onClick={() => toggleNotif(name)}
       className="w-11 h-6 rounded-full relative overflow-hidden transition-colors"
-      style={{ background: notifSettings[name] ? 'var(--accent-cyan)' : 'var(--border-default)' }}>
+      style={{ background: notifSettings[name] ? 'var(--accent-primary)' : 'var(--border-default)' }}>
       <span className="absolute left-0.5 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform"
         style={{ transform: notifSettings[name] ? 'translateX(20px)' : 'translateX(0px)' }} />
     </button>
   )
 
   const roleColors = {
-    Admin: { bg: 'rgba(244,63,94,0.12)', color: '#F43F5E' },
-    FinOps: { bg: 'rgba(59,130,246,0.12)', color: '#3B82F6' },
-    Viewer: { bg: 'rgba(138,155,184,0.1)', color: '#8A9BB8' },
+    Admin: { bg: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)' },
+    FinOps: { bg: 'color-mix(in srgb, var(--accent-primary) 12%, transparent)', color: 'var(--accent-primary)' },
+    Viewer: { bg: 'color-mix(in srgb, var(--text-secondary) 10%, transparent)', color: 'var(--text-secondary)' },
   }
 
   return (
@@ -114,8 +114,8 @@ export default function Settings() {
             <button key={tab} onClick={() => setActiveTab(tab)}
               className="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 shrink-0 whitespace-nowrap"
               style={{
-                borderBottomColor: activeTab === tab ? 'var(--accent-cyan)' : 'transparent',
-                color: activeTab === tab ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                borderBottomColor: activeTab === tab ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
               }}>
               <Icon size={13} /> {tab}
             </button>
@@ -152,7 +152,7 @@ export default function Settings() {
                 defaultValue={f.value}
                 className="w-full px-3 py-2.5 text-sm rounded-xl border outline-none"
                 style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
-                onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }}
               />
             </div>
@@ -226,8 +226,8 @@ export default function Settings() {
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold`}
                   style={ig.connected
-                    ? { background: 'rgba(16,185,129,0.12)', color: '#10B981' }
-                    : { background: 'rgba(74,85,104,0.2)', color: 'var(--text-muted)' }}>
+                    ? { background: 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)', color: 'var(--accent-emerald)' }
+                    : { background: 'color-mix(in srgb, var(--text-muted) 20%, transparent)', color: 'var(--text-muted)' }}>
                   {ig.connected ? '✓ Connected' : 'Not connected'}
                 </span>
               </div>
@@ -243,10 +243,10 @@ export default function Settings() {
                   })
                   : addToast(`Connecting to ${ig.name}...`, 'success')
                 }
-                className="w-full py-2 text-xs font-semibold rounded-xl border transition-colors hover:bg-white/10"
+                className="w-full py-2 text-xs font-semibold rounded-xl border transition-colors hover:bg-[--bg-hover]"
                 style={{
-                  borderColor: ig.connected ? '#F43F5E' : 'var(--accent-blue)',
-                  color: ig.connected ? '#F43F5E' : 'var(--accent-blue)',
+                  borderColor: ig.connected ? 'var(--accent-rose)' : 'var(--accent-primary)',
+                  color: ig.connected ? 'var(--accent-rose)' : 'var(--accent-primary)',
                 }}>
                 {ig.connected ? 'Disconnect' : 'Connect'}
               </button>
@@ -270,13 +270,13 @@ export default function Settings() {
                 Active
               </div>
             </div>
-            <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#F59E0B' }}>Usage Limit Warning</p>
+            <div className="p-3 rounded-xl mb-4" style={{ background: 'color-mix(in srgb, var(--accent-amber) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-amber) 20%, transparent)' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--accent-amber)' }}>Usage Limit Warning</p>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>You're tracking $149,400 of cloud spend. Your Growth plan limit is $50,000/month.</p>
             </div>
             <button onClick={() => addToast('Redirecting to upgrade page...', 'info')}
               className="w-full py-3 font-semibold text-sm rounded-xl transition-opacity hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)', color: '#fff' }}>
+              style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}>
               Upgrade to Enterprise
             </button>
           </div>
@@ -328,7 +328,7 @@ export default function Settings() {
                             action: 'Remove',
                             onConfirm: () => addToast(`${m.name} removed`, 'info'),
                           })}
-                          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" style={{ color: '#F43F5E' }}>
+                          className="p-1.5 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--accent-rose)' }}>
                           <Trash2 size={12} />
                         </button>
                       )}
@@ -345,7 +345,7 @@ export default function Settings() {
               <input type="email" placeholder="colleague@company.com"
                 className="flex-1 px-3 py-2 text-sm rounded-xl border outline-none"
                 style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
-                onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
               <select className="px-3 py-2 text-sm rounded-xl border outline-none"
                 style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
@@ -385,7 +385,7 @@ export default function Settings() {
                           {showKey[k.name] ? k.key : k.key.slice(0, 12) + '•'.repeat(16)}
                         </span>
                         <button onClick={() => setShowKey(prev => ({ ...prev, [k.name]: !prev[k.name] }))}
-                          className="p-1 rounded hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                          className="p-1 rounded hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }}>
                           {showKey[k.name] ? <EyeOff size={11} /> : <Eye size={11} />}
                         </button>
                         <button onClick={() => addToast('Key copied to clipboard', 'success')}
@@ -404,8 +404,8 @@ export default function Settings() {
                           action: 'Revoke',
                           onConfirm: () => addToast(`API key "${k.name}" revoked`, 'info'),
                         })}
-                        className="px-2 py-1 text-[10px] font-semibold rounded-lg transition-colors hover:bg-white/10"
-                        style={{ color: '#F43F5E' }}>
+                        className="px-2 py-1 text-[10px] font-semibold rounded-lg transition-colors hover:bg-[--bg-hover]"
+                        style={{ color: 'var(--accent-rose)' }}>
                         Revoke
                       </button>
                     </td>

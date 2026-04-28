@@ -45,12 +45,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        'bg-base': '#080B14',
-        'bg-surface': '#0D1117',
-        'bg-elevated': '#161B27',
-        'bg-card': '#1A2035',
-        'border-subtle': '#1E2D40',
-        'border-default': '#243352',
+        /* ── Semantic surface tokens ── */
+        'bg-base': 'var(--bg-base)',
+        'bg-surface': 'var(--bg-surface)',
+        'bg-elevated': 'var(--bg-elevated)',
+        'bg-card': 'var(--bg-card)',
+        'bg-hover': 'var(--bg-hover)',
+        'border-subtle': 'var(--border-subtle)',
+        'border-default': 'var(--border-default)',
+        'border-strong': 'var(--border-strong)',
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],
@@ -70,4 +73,3 @@ export default {
   },
   plugins: [],
 }
-

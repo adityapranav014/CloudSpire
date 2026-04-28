@@ -69,12 +69,14 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
                     <NavLink
                       to={item.to}
                       onClick={() => onMobileOpenChange(false)}
-                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 relative group hover:bg-white/[0.05]"
+                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 relative group"
                       style={({ isActive }) => ({
-                        background: isActive ? 'rgba(59,130,246,0.12)' : undefined,
-                        color: isActive ? 'var(--accent-blue)' : 'var(--text-secondary)',
-                        borderLeft: isActive ? '2px solid var(--accent-blue)' : '2px solid transparent',
+                        background: isActive ? 'var(--accent-primary-subtle)' : undefined,
+                        color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                        borderLeft: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
                       })}
+                      onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) e.currentTarget.style.background = 'var(--bg-hover)' }}
+                      onMouseLeave={e => { const active = location.pathname === item.to; if (!active) e.currentTarget.style.background = '' }}
                     >
                       <Icon size={15} />
                       <span className="flex-1 font-medium">{item.label}</span>
@@ -103,8 +105,8 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
         </div>
         <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>$149/month</p>
         <button
-          className="w-full text-[11px] font-semibold py-1.5 rounded-lg flex items-center justify-center gap-1 transition-opacity hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)', color: 'white' }}
+          className="w-full text-[11px] font-semibold py-1.5 rounded-lg flex items-center justify-center gap-1 transition-colors hover:opacity-90"
+          style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}
         >
           Upgrade <ChevronRight size={11} />
         </button>

@@ -4,7 +4,7 @@ import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = '#3B82F6', sparklineData = [], sparklineKey = 'total', isCurrency = false }) {
+export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', isCurrency = false }) {
   const displayValue = isCurrency && typeof value === 'number' ? fmt.format(value) : value
   const isSavings = title.toLowerCase().includes('savings')
   const trendUp   = trend === 'up'
@@ -21,21 +21,14 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
       transition={{ duration: 0.35 }}
       className="relative rounded-2xl overflow-hidden flex flex-col group"
       style={{
-        background: 'linear-gradient(160deg, var(--bg-elevated) 0%, var(--bg-card) 100%)',
-        border: `1px solid var(--border-subtle)`,
-        boxShadow: `0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px ${accentColor}18`,
+        background: 'var(--bg-elevated)',
+        border: `1px solid var(--border-default)`,
       }}
     >
-      {/* Top accent glow bar */}
+      {/* Top accent bar — solid 2px line, no glow */}
       <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent 0%, ${accentColor}cc 40%, ${accentColor}cc 60%, transparent 100%)` }}
-      />
-
-      {/* Subtle radial glow in top-right */}
-      <div
-        className="absolute -top-8 -right-8 w-32 h-32 rounded-full pointer-events-none"
-        style={{ background: `radial-gradient(circle, ${accentColor}16 0%, transparent 70%)` }}
+        className="absolute top-0 left-0 right-0 h-0.5"
+        style={{ background: accentColor }}
       />
 
       {/* Card body */}
@@ -49,9 +42,8 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
             <div
               className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
               style={{
-                background: `${accentColor}18`,
-                border: `1px solid ${accentColor}35`,
-                boxShadow: `0 0 12px ${accentColor}22`,
+                background: `color-mix(in srgb, ${accentColor} 12%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${accentColor} 20%, transparent)`,
               }}
             >
               <Icon size={16} style={{ color: accentColor }} />
@@ -73,8 +65,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
             className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
             style={{
               color: trendColor,
-              background: `${trendColor}18`,
-              border: `1px solid ${trendColor}30`,
+              background: `color-mix(in srgb, ${trendColor} 12%, transparent)`,
             }}
           >
             {trend === 'up'      && <TrendingUp  size={11} />}
@@ -95,7 +86,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id={`sg-${sparklineKey}-${title.replace(/\s/g,'')}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={accentColor} stopOpacity={0.35} />
+                  <stop offset="0%"   stopColor={accentColor} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={accentColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -103,7 +94,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
                 type="monotone"
                 dataKey={sparklineKey}
                 stroke={accentColor}
-                strokeWidth={2}
+                strokeWidth={1.5}
                 fill={`url(#sg-${sparklineKey}-${title.replace(/\s/g,'')})`}
                 dot={false}
                 isAnimationActive={false}

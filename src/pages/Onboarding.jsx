@@ -58,7 +58,7 @@ export default function Onboarding() {
       <input type={type} placeholder={placeholder}
         className="w-full px-3 py-2.5 text-sm rounded-xl border outline-none transition-colors"
         style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
-        onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
+        onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
         onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
     </div>
   )
@@ -67,11 +67,11 @@ export default function Onboarding() {
     <motion.div
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-3 p-4 rounded-xl border mt-4"
-      style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.3)' }}
+      style={{ background: 'color-mix(in srgb, var(--accent-emerald) 8%, transparent)', borderColor: 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)' }}
     >
-      <CheckCircle size={20} style={{ color: '#10B981' }} />
+      <CheckCircle size={20} style={{ color: 'var(--accent-emerald)' }} />
       <div>
-        <p className="text-sm font-semibold" style={{ color: '#10B981' }}>
+        <p className="text-sm font-semibold" style={{ color: 'var(--accent-emerald)' }}>
           ✓ Connected — {accounts}
         </p>
         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{spend} spend detected</p>
@@ -94,11 +94,11 @@ export default function Onboarding() {
 
       <div className="w-full max-w-5xl px-4 z-10 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
         {/* Logo */}
-        <div className="hidden lg:block rounded-2xl border p-5" style={{ background: 'rgba(13,17,23,0.88)', borderColor: 'var(--border-default)' }}>
+        <div className="hidden lg:block rounded-2xl border p-5" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
           <div className="flex items-center gap-2.5 mb-6">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)' }}>
-              <Cloud size={18} className="text-white" />
+              style={{ background: 'var(--accent-primary)' }}>
+              <Cloud size={18} style={{ color: 'var(--bg-base)' }} />
             </div>
             <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>CloudSpire</span>
           </div>
@@ -111,7 +111,7 @@ export default function Onboarding() {
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
                     style={{
-                      background: done ? 'var(--accent-emerald)' : active ? 'var(--accent-blue)' : 'var(--bg-elevated)',
+                      background: done ? 'var(--accent-emerald)' : active ? 'var(--accent-primary)' : 'var(--bg-elevated)',
                       color: done || active ? '#fff' : 'var(--text-muted)',
                     }}
                   >
@@ -133,8 +133,8 @@ export default function Onboarding() {
         <div className="flex items-center justify-center gap-2 mb-8 lg:hidden">
           <div className="flex items-center justify-center gap-2.5">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)' }}>
-              <Cloud size={18} className="text-white" />
+              style={{ background: 'var(--accent-primary)' }}>
+              <Cloud size={18} style={{ color: 'var(--bg-base)' }} />
             </div>
             <span className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>CloudSpire</span>
           </div>
@@ -149,7 +149,7 @@ export default function Onboarding() {
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all"
                     style={{
-                      background: i < step ? 'var(--accent-emerald)' : i === step ? 'var(--accent-blue)' : 'var(--border-default)',
+                      background: i < step ? 'var(--accent-emerald)' : i === step ? 'var(--accent-primary)' : 'var(--border-default)',
                       color: i <= step ? '#fff' : 'var(--text-muted)',
                     }}
                   >
@@ -178,7 +178,7 @@ export default function Onboarding() {
           {step === 0 && (
             <div className="text-center">
               <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)' }}>
+                style={{ background: 'var(--accent-primary)' }}>
                 <Cloud size={30} className="text-white" />
               </div>
               <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Your cloud spend, unified.</h1>
@@ -193,8 +193,8 @@ export default function Onboarding() {
                 ))}
               </div>
               <button onClick={() => setStep(1)}
-                className="w-full py-3 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)', color: '#fff' }}>
+                className="w-full py-3 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+                style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}>
                 Get Started <ArrowRight size={15} />
               </button>
               <button onClick={() => navigate('/dashboard')}
@@ -227,13 +227,13 @@ export default function Onboarding() {
               <div className="flex flex-col gap-3 mt-5">
                 <div className="flex gap-3">
                   <button onClick={() => handleTestConnection('aws')} disabled={testingProvider === 'aws' || connectedProviders.aws}
-                    className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex justify-center items-center gap-2 transition-colors hover:bg-white/10 disabled:opacity-50"
+                    className="flex-1 py-2.5 text-sm font-medium rounded-xl border flex justify-center items-center gap-2 transition-colors hover:bg-[--bg-hover] disabled:opacity-50"
                     style={{ borderColor: 'var(--accent-amber)', color: 'var(--accent-amber)' }}>
                     {testingProvider === 'aws' ? <span className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'currentcolor', borderTopColor: 'transparent' }} /> : 'Test Connection'}
                   </button>
                   <button onClick={() => setStep(2)} disabled={!connectedProviders.aws}
                     className="flex-1 py-2.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                    style={{ background: 'linear-gradient(135deg, #FF9900 0%, #FF6B00 100%)', color: '#fff', opacity: connectedProviders.aws ? 1 : 0.45 }}>
+                    style={{ background: 'var(--color-aws)', color: '#fff', opacity: connectedProviders.aws ? 1 : 0.45 }}>
                     Continue <ArrowRight size={14} />
                   </button>
                 </div>
@@ -280,13 +280,13 @@ export default function Onboarding() {
               <div className="flex flex-col gap-3 mt-5">
                 <div className="flex gap-3">
                   <button onClick={() => setStep(1)}
-                    className="px-4 py-2.5 text-sm rounded-xl border transition-colors hover:bg-white/10"
+                    className="px-4 py-2.5 text-sm rounded-xl border transition-colors hover:bg-[--bg-hover]"
                     style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)' }}>
                     Back
                   </button>
                   <button onClick={() => setStep(3)} disabled={!connectedProviders.gcp}
                     className="flex-1 py-2.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                    style={{ background: 'linear-gradient(135deg, #4285F4 0%, #34A853 100%)', color: '#fff', opacity: connectedProviders.gcp ? 1 : 0.45 }}>
+                    style={{ background: 'var(--color-gcp)', color: '#fff', opacity: connectedProviders.gcp ? 1 : 0.45 }}>
                     Continue <ArrowRight size={14} />
                   </button>
                 </div>
@@ -318,18 +318,18 @@ export default function Onboarding() {
               <div className="flex flex-col gap-3 mt-5">
                 <div className="flex gap-3">
                   <button onClick={() => setStep(2)}
-                    className="px-4 py-2.5 text-sm rounded-xl border transition-colors hover:bg-white/10"
+                    className="px-4 py-2.5 text-sm rounded-xl border transition-colors hover:bg-[--bg-hover]"
                     style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)' }}>
                     Back
                   </button>
                   <button onClick={() => handleTestConnection('azure')} disabled={testingProvider === 'azure' || connectedProviders.azure}
-                    className="py-2.5 px-4 text-sm font-medium rounded-xl border transition-colors flex justify-center items-center hover:bg-white/10 disabled:opacity-50"
+                    className="py-2.5 px-4 text-sm font-medium rounded-xl border transition-colors flex justify-center items-center hover:bg-[--bg-hover] disabled:opacity-50"
                     style={{ borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}>
                     {testingProvider === 'azure' ? <span className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin mx-2" style={{ borderColor: 'currentcolor', borderTopColor: 'transparent' }} /> : 'Test Connection'}
                   </button>
                   <button onClick={startSync} disabled={!connectedProviders.azure}
                     className="flex-1 py-2.5 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                    style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)', color: '#fff', opacity: connectedProviders.azure ? 1 : 0.45 }}>
+                    style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)', opacity: connectedProviders.azure ? 1 : 0.45 }}>
                     Finish Setup <ArrowRight size={14} />
                   </button>
                 </div>
@@ -342,8 +342,8 @@ export default function Onboarding() {
           {step === 4 && (
             <div className="text-center">
               <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)' }}>
-                <Cloud size={30} className="text-white animate-pulse" />
+                style={{ background: 'var(--accent-primary)' }}>
+                <Cloud size={30} style={{ color: 'var(--bg-base)' }} className="animate-pulse" />
               </div>
               <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Syncing Your Data</h2>
               <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
@@ -362,7 +362,7 @@ export default function Onboarding() {
                     >
                       <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all"
                         style={{
-                          background: done ? 'var(--accent-emerald)' : current ? 'rgba(59,130,246,0.3)' : 'var(--border-default)',
+                          background: done ? 'var(--accent-emerald)' : current ? 'var(--accent-primary-subtle)' : 'var(--border-default)',
                         }}>
                         {done && <CheckCircle size={12} className="text-white" />}
                         {!done && current && <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />}
@@ -379,8 +379,8 @@ export default function Onboarding() {
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
                   <p className="text-sm font-semibold mb-3" style={{ color: 'var(--accent-emerald)' }}>All done! Redirecting to dashboard...</p>
                   <button onClick={() => navigate('/dashboard')}
-                    className="w-full py-3 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                    style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)', color: '#fff' }}>
+                    className="w-full py-3 font-semibold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+                    style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}>
                     Go to Dashboard <ArrowRight size={14} />
                   </button>
                 </motion.div>

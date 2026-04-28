@@ -8,12 +8,12 @@ import PageHeader from '../components/layout/PageHeader'
 import { useToast } from '../context/ToastContext'
 
 const reportTemplates = [
-  { id: 1, title: 'Monthly Cost Digest', description: 'PDF summary of all providers with trend analysis and top cost drivers.', icon: BarChart3, color: '#3B82F6' },
-  { id: 2, title: 'Cost by Team', description: 'Budget vs actuals breakdown per team for finance allocation.', icon: Users2, color: '#10B981' },
-  { id: 3, title: 'Anomaly Report', description: 'All detected anomalies with root cause analysis and resolution status.', icon: ShieldAlert, color: '#F43F5E' },
-  { id: 4, title: 'RI Utilization', description: 'Reserved Instance and Committed Use Discount coverage report.', icon: Layers, color: '#8B5CF6' },
-  { id: 5, title: 'Year-over-Year', description: '12-month trend comparison across all cloud providers and services.', icon: TrendingUp, color: '#F59E0B' },
-  { id: 6, title: 'Custom Report', description: 'Build your own report by selecting dimensions, filters, and date range.', icon: SlidersHorizontal, color: '#06B6D4' },
+  { id: 1, title: 'Monthly Cost Digest', description: 'PDF summary of all providers with trend analysis and top cost drivers.', icon: BarChart3, color: 'var(--accent-primary)' },
+  { id: 2, title: 'Cost by Team', description: 'Budget vs actuals breakdown per team for finance allocation.', icon: Users2, color: 'var(--accent-emerald)' },
+  { id: 3, title: 'Anomaly Report', description: 'All detected anomalies with root cause analysis and resolution status.', icon: ShieldAlert, color: 'var(--accent-rose)' },
+  { id: 4, title: 'RI Utilization', description: 'Reserved Instance and Committed Use Discount coverage report.', icon: Layers, color: 'var(--accent-violet)' },
+  { id: 5, title: 'Year-over-Year', description: '12-month trend comparison across all cloud providers and services.', icon: TrendingUp, color: 'var(--accent-amber)' },
+  { id: 6, title: 'Custom Report', description: 'Build your own report by selecting dimensions, filters, and date range.', icon: SlidersHorizontal, color: 'var(--accent-cyan)' },
 ]
 
 const scheduledReports = [
@@ -208,7 +208,7 @@ export default function Reports() {
           <button
             onClick={() => addToast('Export ready, downloading...', 'success')}
             className="mt-4 flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)', color: '#fff' }}
+            style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}
           >
             <Download size={14} /> Download Export
           </button>

@@ -10,6 +10,8 @@ import SeverityBadge from '../components/ui/SeverityBadge'
 import ProviderBadge from '../components/ui/ProviderBadge'
 import { anomalies, budgetAlerts, anomalyHistory } from '../data/mockAlerts'
 import { useToast } from '../context/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
+import { PERMISSIONS } from '../data/mockRoles'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtDate = (iso) => {
@@ -31,6 +33,7 @@ export default function Anomalies() {
   const [alertFrequency, setAlertFrequency] = useState('Immediate')
   const [providerToggles, setProviderToggles] = useState({ aws: true, gcp: true, azure: true })
   const { addToast } = useToast()
+  const { can } = usePermissions()
 
   const filtered = localAnomalies.filter(a =>
     filter === 'all' || a.status === filter
@@ -165,7 +168,7 @@ export default function Anomalies() {
                   <button
                     onClick={() => dismiss(a.id)}
                     className="shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                    style={{ color: 'var(--text-muted)' }}
+                    style={{ color: 'var(--text-muted)', display: can(PERMISSIONS.MANAGE_ANOMALIES) ? undefined : 'none' }}
                   >
                     <X size={14} />
                   </button>
@@ -251,7 +254,7 @@ export default function Anomalies() {
                     : <><ChevronDown size={12} /> View Details</>}
                 </button>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {a.status === 'open' && (
+                  {a.status === 'open' && can(PERMISSIONS.ACKNOWLEDGE_ANOMALIES) && (
                     <button
                       onClick={() => acknowledge(a.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all hover:opacity-80"
@@ -260,7 +263,7 @@ export default function Anomalies() {
                       Acknowledge
                     </button>
                   )}
-                  {a.status !== 'resolved' && (
+                  {a.status !== 'resolved' && can(PERMISSIONS.MANAGE_ANOMALIES) && (
                     <button
                       onClick={() => resolve(a.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all hover:opacity-80"
@@ -269,7 +272,7 @@ export default function Anomalies() {
                       Resolve
                     </button>
                   )}
-                  {a.status !== 'resolved' && (
+                  {a.status !== 'resolved' && can(PERMISSIONS.MANAGE_ANOMALIES) && (
                     <button
                       onClick={() => createTicket(a)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all hover:opacity-80"

@@ -9,6 +9,8 @@ import TrendBadge from '../components/ui/TrendBadge'
 import UserAvatar from '../components/ui/UserAvatar'
 import { teams } from '../data/mockTeams'
 import { useToast } from '../context/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
+import { PERMISSIONS, ROLES } from '../data/mockRoles'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -162,23 +164,31 @@ export default function Teams() {
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const { addToast } = useToast()
+  const { can, isRole, persona } = usePermissions()
 
-  const totalSpend = teams.reduce((s, t) => s + t.monthlySpend, 0)
-  const totalBudget = teams.reduce((s, t) => s + t.monthlyBudget, 0)
-  const overBudgetTeams = teams.filter(t => t.overBudget)
+  // Team Leads only see their own team
+  const visibleTeams = isRole(ROLES.TEAM_LEAD)
+    ? teams.filter(t => t.id === persona.teamId)
+    : teams
+
+  const totalSpend = visibleTeams.reduce((s, t) => s + t.monthlySpend, 0)
+  const totalBudget = visibleTeams.reduce((s, t) => s + t.monthlyBudget, 0)
+  const overBudgetTeams = visibleTeams.filter(t => t.overBudget)
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
       <TeamDetailModal team={selectedTeam} onClose={() => setSelectedTeam(null)} />
 
       <PageHeader title="Teams" subtitle="Cost allocation and budget tracking by team">
-        <button
-          onClick={() => setAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-          style={{ background: 'var(--accent-blue)', color: '#fff' }}
-        >
-          <Plus size={14} /> Add Team
-        </button>
+        {can(PERMISSIONS.MANAGE_TEAMS) && !isRole(ROLES.TEAM_LEAD) && (
+          <button
+            onClick={() => setAddModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+            style={{ background: 'var(--accent-blue)', color: '#fff' }}
+          >
+            <Plus size={14} /> Add Team
+          </button>
+        )}
       </PageHeader>
 
       {/* Summary stats */}
@@ -199,7 +209,7 @@ export default function Teams() {
 
       {/* Team cards grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {teams.map((team, i) => {
+        {visibleTeams.map((team, i) => {
           const pct = team.budgetPercent
           const barColor = team.overBudget ? 'var(--accent-rose)' : pct > 85 ? 'var(--accent-amber)' : 'var(--accent-emerald)'
           const trendPct = +((team.spend30d - team.spend60d) / team.spend60d * 100).toFixed(1)
@@ -288,12 +298,14 @@ export default function Teams() {
                   style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                   <BarChart2 size={12} /> View Details
                 </button>
-                <button
-                  onClick={() => addToast(`Budget updated for ${team.name}`, 'success')}
-                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-[--bg-hover]"
-                  style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
-                  <Edit3 size={12} /> Edit Budget
-                </button>
+                {can(PERMISSIONS.MANAGE_TEAMS) && (
+                  <button
+                    onClick={() => addToast(`Budget updated for ${team.name}`, 'success')}
+                    className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-[--bg-hover]"
+                    style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
+                    <Edit3 size={12} /> Edit Budget
+                  </button>
+                )}
               </div>
             </motion.div>
           )

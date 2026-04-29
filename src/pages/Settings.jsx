@@ -4,11 +4,21 @@ import { User, Bell, Link2, CreditCard, Users, Key, Plus, Trash2, Eye, EyeOff, C
 import PageHeader from '../components/layout/PageHeader'
 import { BrandLogo, getBrandAsset } from '../constants/brandAssets'
 import { useToast } from '../context/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
+import { PERMISSIONS } from '../data/mockRoles'
 import { CURRENT_USER, getOrgMembers } from '../data/mockUsers'
 import UserAvatar from '../components/ui/UserAvatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
 const TABS = ['Profile', 'Notifications', 'Integrations', 'Billing', 'Team Members', 'API Keys']
+
+// Maps each restricted tab to the permission required to see it
+const TAB_PERMISSIONS = {
+  Integrations: PERMISSIONS.MANAGE_INTEGRATIONS,
+  Billing: PERMISSIONS.VIEW_BILLING,
+  'Team Members': PERMISSIONS.MANAGE_TEAM_MEMBERS,
+  'API Keys': PERMISSIONS.MANAGE_API_KEYS,
+}
 
 /** ConfirmModal — generic destructive action confirmation */
 function ConfirmModal({ open, onClose, onConfirm, title, description, action, danger = true }) {
@@ -76,6 +86,8 @@ export default function Settings() {
   const [budgetThreshold, setBudgetThreshold] = useState(80)
   const [inviteRole, setInviteRole] = useState('Viewer')
   const { addToast } = useToast()
+  const { can } = usePermissions()
+  const visibleTabs = TABS.filter(tab => !TAB_PERMISSIONS[tab] || can(TAB_PERMISSIONS[tab]))
 
   const toggleNotif = (key) => setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }))
   const Toggle = ({ name }) => (
@@ -109,7 +121,7 @@ export default function Settings() {
       {/* Tab bar */}
       <div className="overflow-x-auto scrollbar-hide mb-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
         <div className="flex gap-1 min-w-max">
-        {TABS.map(tab => {
+        {visibleTabs.map(tab => {
           const icons = { Profile: User, Notifications: Bell, Integrations: Link2, Billing: CreditCard, 'Team Members': Users, 'API Keys': Key }
           const Icon = icons[tab]
           return (

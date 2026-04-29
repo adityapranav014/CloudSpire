@@ -5,6 +5,7 @@ import {
   Link2, FileText, Settings, TrendingUp
 } from 'lucide-react'
 import { anomalies } from '../../data/mockAlerts'
+import { usePermissions } from '../../hooks/usePermissions'
 import { Sheet, SheetContent } from '../ui/sheet'
 
 const openAnomalies = anomalies.filter(a => a.status === 'open').length
@@ -43,6 +44,7 @@ const navSections = [
 /** Main sidebar navigation */
 export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () => {} }) {
   const location = useLocation()
+  const { canAccessPage } = usePermissions()
 
   const navMarkup = (
     <>
@@ -55,43 +57,47 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-        {navSections.map(section => (
-          <div key={section.label}>
-            <p className="text-[10px] font-semibold tracking-wide px-2 mb-1.5" style={{ color: 'var(--text-muted)' }}>
-              {section.label}
-            </p>
-            <ul className="space-y-0.5">
-              {section.items.map(item => {
-                const Icon = item.icon
-                const isActive = location.pathname === item.to
-                return (
-                  <motion.li key={item.to} whileHover={{ x: 2 }}>
-                    <NavLink
-                      to={item.to}
-                      onClick={() => onMobileOpenChange(false)}
-                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 relative group"
-                      style={({ isActive }) => ({
-                        background: isActive ? 'var(--accent-primary-subtle)' : undefined,
-                        color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                        borderLeft: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                      })}
-                      onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) e.currentTarget.style.background = 'var(--bg-hover)' }}
-                      onMouseLeave={e => { const active = location.pathname === item.to; if (!active) e.currentTarget.style.background = '' }}
-                    >
-                      <Icon size={15} />
-                      <span className="flex-1 font-medium">{item.label}</span>
-                      {item.badge ? (
-                        <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
-                          {item.badge}
-                        </span>
-                      ) : null}
-                    </NavLink>
-                  </motion.li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+        {navSections.map(section => {
+          const visibleItems = section.items.filter(item => canAccessPage(item.to))
+          if (visibleItems.length === 0) return null
+          return (
+            <div key={section.label}>
+              <p className="text-[10px] font-semibold tracking-wide px-2 mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                {section.label}
+              </p>
+              <ul className="space-y-0.5">
+                {visibleItems.map(item => {
+                  const Icon = item.icon
+                  const isActive = location.pathname === item.to
+                  return (
+                    <motion.li key={item.to} whileHover={{ x: 2 }}>
+                      <NavLink
+                        to={item.to}
+                        onClick={() => onMobileOpenChange(false)}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-150 relative group"
+                        style={({ isActive }) => ({
+                          background: isActive ? 'var(--accent-primary-subtle)' : undefined,
+                          color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                          borderLeft: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                        })}
+                        onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) e.currentTarget.style.background = 'var(--bg-hover)' }}
+                        onMouseLeave={e => { const active = location.pathname === item.to; if (!active) e.currentTarget.style.background = '' }}
+                      >
+                        <Icon size={15} />
+                        <span className="flex-1 font-medium">{item.label}</span>
+                        {item.badge ? (
+                          <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </NavLink>
+                    </motion.li>
+                  )
+                })}
+              </ul>
+            </div>
+          )
+        })}
       </nav>
     </>
   )

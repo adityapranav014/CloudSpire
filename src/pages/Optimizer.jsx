@@ -13,6 +13,8 @@ import {
   reservedInstanceOpportunities, scheduledShutdowns
 } from '../data/mockOptimizations'
 import { useToast } from '../context/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
+import { PERMISSIONS } from '../data/mockRoles'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtDec = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -77,6 +79,7 @@ export default function Optimizer() {
   const [dismissed, setDismissed] = useState([])
   const [schedules, setSchedules] = useState(scheduledShutdowns)
   const { addToast } = useToast()
+  const { can } = usePermissions()
 
   const idleInstances = [
     ...awsEC2Instances.filter(i => i.isIdle).map(i => ({
@@ -160,25 +163,29 @@ export default function Optimizer() {
       />
 
       <PageHeader title="Cost Optimizer" subtitle="Identified savings opportunities across all cloud providers">
-        <button
-          onClick={() => addToast('Review scheduled with FinOps team', 'success')}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
-          style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
-        >
-          Schedule Review
-        </button>
-        <button
-          onClick={() => setModal({
-            title: 'Implement All Recommendations',
-            description: `Apply all ${rightsizingRecommendations.length + idleInstances.length} pending recommendations to maximize savings.`,
-            action: 'Implement All',
-            savingsMsg: `${fmt.format(optimizationSummary.totalPotentialSavings)}/month saved`,
-          })}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-          style={{ background: 'var(--accent-emerald)', color: '#fff' }}
-        >
-          <Zap size={14} /> Implement All ({fmt.format(optimizationSummary.totalPotentialSavings)}/mo)
-        </button>
+        {can(PERMISSIONS.APPLY_OPTIMIZATIONS) && (
+          <button
+            onClick={() => addToast('Review scheduled with FinOps team', 'success')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
+            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+          >
+            Schedule Review
+          </button>
+        )}
+        {can(PERMISSIONS.APPLY_OPTIMIZATIONS) && (
+          <button
+            onClick={() => setModal({
+              title: 'Implement All Recommendations',
+              description: `Apply all ${rightsizingRecommendations.length + idleInstances.length} pending recommendations to maximize savings.`,
+              action: 'Implement All',
+              savingsMsg: `${fmt.format(optimizationSummary.totalPotentialSavings)}/month saved`,
+            })}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+            style={{ background: 'var(--accent-emerald)', color: '#fff' }}
+          >
+            <Zap size={14} /> Implement All ({fmt.format(optimizationSummary.totalPotentialSavings)}/mo)
+          </button>
+        )}
       </PageHeader>
 
       {/* Summary bar */}
@@ -235,7 +242,7 @@ export default function Optimizer() {
       {/* Tab: Idle Instances */}
       {activeTab === 'Idle Instances' && (
         <div>
-          {selectedRows.length > 0 && (
+          {selectedRows.length > 0 && can(PERMISSIONS.APPLY_OPTIMIZATIONS) && (
             <div className="flex items-center gap-3 mb-3 p-3 rounded-xl border"
               style={{ background: 'color-mix(in srgb, var(--accent-rose) 8%, transparent)', borderColor: 'var(--accent-rose)' }}>
               <span className="text-sm font-medium" style={{ color: 'var(--accent-rose)' }}>
@@ -295,20 +302,24 @@ export default function Optimizer() {
                       {fmtDec.format(inst.savings)}/mo
                     </td>
                     <td className="px-3 py-3">
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => setModal({ title: 'Terminate Instance', description: `Terminate "${inst.name}" (${inst.type})?`, action: 'Terminate', savingsMsg: `${fmtDec.format(inst.savings)}/month saved` })}
-                          className="px-2 py-1 text-[10px] font-semibold rounded-lg flex items-center gap-1"
-                          style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)' }}>
-                          <Trash2 size={10} /> Terminate
-                        </button>
-                        <button
-                          onClick={() => setModal({ title: 'Stop Instance', description: `Stop "${inst.name}" to save on compute costs?`, action: 'Stop', savingsMsg: 'Compute charges paused' })}
-                          className="px-2 py-1 text-[10px] font-semibold rounded-lg flex items-center gap-1"
-                          style={{ background: 'color-mix(in srgb, var(--accent-amber) 12%, transparent)', color: 'var(--accent-amber)' }}>
-                          <StopCircle size={10} /> Stop
-                        </button>
-                      </div>
+                      {can(PERMISSIONS.APPLY_OPTIMIZATIONS) ? (
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => setModal({ title: 'Terminate Instance', description: `Terminate "${inst.name}" (${inst.type})?`, action: 'Terminate', savingsMsg: `${fmtDec.format(inst.savings)}/month saved` })}
+                            className="px-2 py-1 text-[10px] font-semibold rounded-lg flex items-center gap-1"
+                            style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)' }}>
+                            <Trash2 size={10} /> Terminate
+                          </button>
+                          <button
+                            onClick={() => setModal({ title: 'Stop Instance', description: `Stop "${inst.name}" to save on compute costs?`, action: 'Stop', savingsMsg: 'Compute charges paused' })}
+                            className="px-2 py-1 text-[10px] font-semibold rounded-lg flex items-center gap-1"
+                            style={{ background: 'color-mix(in srgb, var(--accent-amber) 12%, transparent)', color: 'var(--accent-amber)' }}>
+                            <StopCircle size={10} /> Stop
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>View only</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -348,17 +359,19 @@ export default function Optimizer() {
                       <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{r.daysSinceLastUsed} days ago</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setModal({
-                      title: `Delete ${r.type}`,
-                      description: `Delete "${r.name}"? This will save ${fmtDec.format(r.savingsIfDeleted)}/month.`,
-                      action: 'Delete',
-                      savingsMsg: `${fmtDec.format(r.savingsIfDeleted)}/month saved`,
-                    })}
-                    className="w-full py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
-                    style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)', border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)' }}>
-                    <Trash2 size={12} /> Delete Resource
-                  </button>
+                  {can(PERMISSIONS.APPLY_OPTIMIZATIONS) && (
+                    <button
+                      onClick={() => setModal({
+                        title: `Delete ${r.type}`,
+                        description: `Delete "${r.name}"? This will save ${fmtDec.format(r.savingsIfDeleted)}/month.`,
+                        action: 'Delete',
+                        savingsMsg: `${fmtDec.format(r.savingsIfDeleted)}/month saved`,
+                      })}
+                      className="w-full py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
+                      style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)', border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)' }}>
+                      <Trash2 size={12} /> Delete Resource
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -416,17 +429,21 @@ export default function Optimizer() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => setModal({
-                        title: `Apply Right-Sizing`,
-                        description: `Resize "${r.resourceName}" from ${r.currentType} to ${r.recommendedType}. Estimated monthly savings: ${fmtDec.format(r.monthlySavings)}.`,
-                        action: 'Apply',
-                        savingsMsg: `${fmtDec.format(r.monthlySavings)}/month saved`,
-                      })}
-                      className="px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-opacity hover:opacity-90"
-                      style={{ background: 'var(--accent-blue)', color: '#fff' }}>
-                      Apply
-                    </button>
+                    {can(PERMISSIONS.APPLY_OPTIMIZATIONS) ? (
+                      <button
+                        onClick={() => setModal({
+                          title: `Apply Right-Sizing`,
+                          description: `Resize "${r.resourceName}" from ${r.currentType} to ${r.recommendedType}. Estimated monthly savings: ${fmtDec.format(r.monthlySavings)}.`,
+                          action: 'Apply',
+                          savingsMsg: `${fmtDec.format(r.monthlySavings)}/month saved`,
+                        })}
+                        className="px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-opacity hover:opacity-90"
+                        style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+                        Apply
+                      </button>
+                    ) : (
+                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>View only</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -476,17 +493,19 @@ export default function Optimizer() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setModal({
-                  title: ri.provider === 'gcp' ? 'Create Committed Use Discount' : 'Purchase Reserved Instance',
-                  description: `Commit to ${ri.instanceType} for ${ri.term} at ${ri.paymentOption}. Annual savings: ${fmt.format(ri.monthlySavings * 12)}.`,
-                  action: ri.provider === 'gcp' ? 'Create CUD' : 'Purchase RI',
-                  savingsMsg: `${fmt.format(ri.monthlySavings * 12)}/year saved`,
-                })}
-                className="w-full py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-                style={{ background: 'var(--accent-blue)', color: '#fff' }}>
-                {ri.provider === 'gcp' ? 'Create CUD' : 'Purchase RI'}
-              </button>
+              {can(PERMISSIONS.APPLY_OPTIMIZATIONS) && (
+                <button
+                  onClick={() => setModal({
+                    title: ri.provider === 'gcp' ? 'Create Committed Use Discount' : 'Purchase Reserved Instance',
+                    description: `Commit to ${ri.instanceType} for ${ri.term} at ${ri.paymentOption}. Annual savings: ${fmt.format(ri.monthlySavings * 12)}.`,
+                    action: ri.provider === 'gcp' ? 'Create CUD' : 'Purchase RI',
+                    savingsMsg: `${fmt.format(ri.monthlySavings * 12)}/year saved`,
+                  })}
+                  className="w-full py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+                  style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+                  {ri.provider === 'gcp' ? 'Create CUD' : 'Purchase RI'}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -498,14 +517,24 @@ export default function Optimizer() {
           {schedules.map(s => (
             <div key={s.id} className="rounded-xl border p-5 flex items-start gap-4"
               style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
-              <button
-                onClick={() => toggleSchedule(s.id)}
-                className="w-11 h-6 rounded-full transition-colors relative overflow-hidden shrink-0 mt-0.5"
-                style={{ background: s.enabled ? 'var(--accent-emerald)' : 'var(--border-default)' }}
-              >
-                <span className="absolute left-0.5 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform"
-                  style={{ transform: s.enabled ? 'translateX(20px)' : 'translateX(0px)' }} />
-              </button>
+              {can(PERMISSIONS.SCHEDULE_SHUTDOWNS) ? (
+                <button
+                  onClick={() => toggleSchedule(s.id)}
+                  className="w-11 h-6 rounded-full transition-colors relative overflow-hidden shrink-0 mt-0.5"
+                  style={{ background: s.enabled ? 'var(--accent-emerald)' : 'var(--border-default)' }}
+                >
+                  <span className="absolute left-0.5 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                    style={{ transform: s.enabled ? 'translateX(20px)' : 'translateX(0px)' }} />
+                </button>
+              ) : (
+                <div
+                  className="w-11 h-6 rounded-full relative overflow-hidden shrink-0 mt-0.5 opacity-40"
+                  style={{ background: s.enabled ? 'var(--accent-emerald)' : 'var(--border-default)' }}
+                >
+                  <span className="absolute left-0.5 top-1 w-4 h-4 rounded-full bg-white shadow"
+                    style={{ transform: s.enabled ? 'translateX(20px)' : 'translateX(0px)' }} />
+                </div>
+              )}
               <div className="flex-1">
                 <p className="font-semibold text-sm mb-0.5" style={{ color: 'var(--text-primary)' }}>{s.name}</p>
                 <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{s.description}</p>

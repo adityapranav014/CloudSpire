@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ToastProvider } from './context/ToastContext'
 import AppLayout from './components/layout/AppLayout'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import CostExplorer from './pages/CostExplorer'
 import Anomalies from './pages/Anomalies'
@@ -29,14 +30,14 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/cost-explorer" element={<CostExplorer />} />
-            <Route path="/anomalies" element={<Anomalies />} />
-            <Route path="/optimizer" element={<Optimizer />} />
-            <Route path="/teams" element={<Teams />} />
-            <Route path="/accounts" element={<Accounts />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/dashboard"     element={<ProtectedRoute page="/dashboard"><Dashboard /></ProtectedRoute>} />
+            <Route path="/cost-explorer" element={<ProtectedRoute page="/cost-explorer"><CostExplorer /></ProtectedRoute>} />
+            <Route path="/anomalies"     element={<ProtectedRoute page="/anomalies"><Anomalies /></ProtectedRoute>} />
+            <Route path="/optimizer"     element={<ProtectedRoute page="/optimizer"><Optimizer /></ProtectedRoute>} />
+            <Route path="/teams"         element={<ProtectedRoute page="/teams"><Teams /></ProtectedRoute>} />
+            <Route path="/accounts"      element={<ProtectedRoute page="/accounts"><Accounts /></ProtectedRoute>} />
+            <Route path="/reports"       element={<ProtectedRoute page="/reports"><Reports /></ProtectedRoute>} />
+            <Route path="/settings"      element={<ProtectedRoute page="/settings"><Settings /></ProtectedRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>

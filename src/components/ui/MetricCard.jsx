@@ -4,15 +4,13 @@ import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', isCurrency = false }) {
+export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', isCurrency = false, upIsGood = false }) {
   const displayValue = isCurrency && typeof value === 'number' ? fmt.format(value) : value
-  const isSavings = title.toLowerCase().includes('savings')
-  const trendUp   = trend === 'up'
-  const trendColor = trend === 'neutral'
-    ? 'var(--text-muted)'
-    : trendUp
-      ? (isSavings ? 'var(--accent-emerald)' : 'var(--accent-rose)')
-      : (isSavings ? 'var(--accent-rose)'    : 'var(--accent-emerald)')
+  const trendColor =
+    trend === 'neutral' ? 'var(--text-muted)' :
+    trend === 'warning' ? 'var(--accent-amber)' :
+    trend === 'up'      ? (upIsGood ? 'var(--accent-emerald)' : 'var(--accent-rose)') :
+    /* down */            (upIsGood ? 'var(--accent-rose)'    : 'var(--accent-emerald)')
 
   return (
     <motion.div
@@ -70,7 +68,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
           >
             {trend === 'up'      && <TrendingUp  size={11} />}
             {trend === 'down'    && <TrendingDown size={11} />}
-            {trend === 'neutral' && <Minus        size={11} />}
+            {(trend === 'neutral' || trend === 'warning') && <Minus size={11} />}
             {trendValue}
           </span>
           {subtitle && (

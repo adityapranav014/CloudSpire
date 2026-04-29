@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLeftOpen } from 'lucide-react'
 import { anomalies } from '../../data/mockAlerts'
 import { awsAccounts } from '../../data/mockAWS'
-import { CURRENT_USER } from '../../data/mockUsers'
+import { usePermissions } from '../../hooks/usePermissions'
+import { ROLE_META } from '../../data/mockRoles'
 import UserAvatar from '../ui/UserAvatar'
 import {
   CommandDialog,
@@ -39,6 +40,8 @@ export default function TopBar({ onOpenMenu = () => {} }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
+  const { persona } = usePermissions()
+  const meta = ROLE_META[persona.role]
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -115,19 +118,32 @@ export default function TopBar({ onOpenMenu = () => {} }) {
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-[--bg-hover]"
             onClick={() => setUserMenuOpen(v => !v)}
           >
-            <UserAvatar user={CURRENT_USER} size="sm" />
-            <span className="hidden sm:block text-sm" style={{ color: 'var(--text-secondary)' }}>{CURRENT_USER.name.split(' ')[0]} {CURRENT_USER.name.split(' ')[1]?.[0]}.</span>
+            <UserAvatar user={persona} size="sm" />
+            <span className="hidden sm:block text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {persona.name.split(' ')[0]} {persona.name.split(' ')[1]?.[0]}.
+            </span>
             <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} />
           </button>
 
           {userMenuOpen && (
             <div
-              className="absolute right-0 top-full mt-2 w-48 rounded-xl border shadow-2xl py-1 z-50"
+              className="absolute right-0 top-full mt-2 w-52 rounded-xl border shadow-2xl py-1 z-50"
               style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}
             >
               <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'var(--border-subtle)' }}>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{CURRENT_USER.name}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{CURRENT_USER.email}</p>
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <UserAvatar user={persona} size="md" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{persona.name}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{persona.email}</p>
+                  </div>
+                </div>
+                <span
+                  className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                  style={{ background: meta.bg, color: meta.color }}
+                >
+                  {meta.label}
+                </span>
               </div>
               {[
                 { icon: User, label: 'Profile' },
@@ -148,10 +164,13 @@ export default function TopBar({ onOpenMenu = () => {} }) {
                 <button
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
                   style={{ color: 'var(--accent-rose)' }}
-                  onClick={() => setUserMenuOpen(false)}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('cloudspire:open-role-switcher'))
+                    setUserMenuOpen(false)
+                  }}
                 >
                   <LogOut size={14} />
-                  Sign out
+                  Switch Role / Sign out
                 </button>
               </div>
             </div>

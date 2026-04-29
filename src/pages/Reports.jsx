@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import { useToast } from '../context/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
+import { PERMISSIONS } from '../data/mockRoles'
 
 const reportTemplates = [
   { id: 1, title: 'Monthly Cost Digest', description: 'PDF summary of all providers with trend analysis and top cost drivers.', icon: BarChart3, color: 'var(--accent-primary)' },
@@ -28,17 +30,20 @@ export default function Reports() {
   const [exportGranularity, setExportGranularity] = useState('Daily')
   const [exportProvider, setExportProvider] = useState('All Providers')
   const { addToast } = useToast()
+  const { can } = usePermissions()
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
       <PageHeader title="Reports" subtitle="Scheduled reports, templates, and billing data exports">
-        <button
-          onClick={() => addToast('New report schedule created', 'success')}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-          style={{ background: 'var(--accent-blue)', color: '#fff' }}
-        >
-          <Plus size={14} /> Schedule Report
-        </button>
+        {can(PERMISSIONS.SCHEDULE_REPORTS) && (
+          <button
+            onClick={() => addToast('New report schedule created', 'success')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+            style={{ background: 'var(--accent-blue)', color: '#fff' }}
+          >
+            <Plus size={14} /> Schedule Report
+          </button>
+        )}
       </PageHeader>
 
       {/* Report Templates */}
@@ -72,13 +77,15 @@ export default function Reports() {
               >
                 <Play size={11} /> Generate Now
               </button>
-              <button
-                onClick={() => addToast(`"${r.title}" scheduled`, 'success')}
-                className="flex-1 py-1.5 text-xs font-medium rounded-xl border transition-colors hover:bg-white/10 flex items-center justify-center gap-1"
-                style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
-              >
-                <Clock size={11} /> Schedule
-              </button>
+              {can(PERMISSIONS.SCHEDULE_REPORTS) && (
+                <button
+                  onClick={() => addToast(`"${r.title}" scheduled`, 'success')}
+                  className="flex-1 py-1.5 text-xs font-medium rounded-xl border transition-colors hover:bg-white/10 flex items-center justify-center gap-1"
+                  style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+                >
+                  <Clock size={11} /> Schedule
+                </button>
+              )}
             </div>
           </motion.div>
         ))}
@@ -125,10 +132,12 @@ export default function Reports() {
                         style={{ color: 'var(--accent-blue)' }}>
                         Run Now
                       </button>
-                      <button onClick={() => addToast('Report schedule updated', 'success')}
-                        className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
-                        <Settings size={12} />
-                      </button>
+                      {can(PERMISSIONS.SCHEDULE_REPORTS) && (
+                        <button onClick={() => addToast('Report schedule updated', 'success')}
+                          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                          <Settings size={12} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -205,13 +214,15 @@ export default function Reports() {
               ))}
             </div>
           </div>
-          <button
-            onClick={() => addToast('Export ready, downloading...', 'success')}
-            className="mt-4 flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}
-          >
-            <Download size={14} /> Download Export
-          </button>
+          {can(PERMISSIONS.EXPORT_DATA) && (
+            <button
+              onClick={() => addToast('Export ready, downloading...', 'success')}
+              className="mt-4 flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+              style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}
+            >
+              <Download size={14} /> Download Export
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

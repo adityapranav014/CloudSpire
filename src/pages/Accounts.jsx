@@ -18,6 +18,8 @@ import { gcpProjects, gcpServiceBreakdown } from '../data/mockGCP'
 import { azureSubscriptions, azureServiceBreakdown } from '../data/mockAzure'
 import { dailySpend } from '../data/mockUnified'
 import { useToast } from '../context/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
+import { PERMISSIONS } from '../data/mockRoles'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtShort = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 1, notation: 'compact' })
@@ -98,6 +100,7 @@ export default function Accounts() {
   const selectedTrend = selectedAccount ? buildAccountTrend(selectedAccount) : []
   const selectedResources = selectedAccount ? buildAccountResources(selectedAccount) : []
 
+  const { can } = usePermissions()
   const handleSync = () => addToast('Syncing all accounts...', 'info')
   const handleConnect = () => {
     setConnectOpen(false)
@@ -107,16 +110,20 @@ export default function Accounts() {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
       <PageHeader title="Cloud Accounts" subtitle="Manage connected cloud accounts and view per-account data">
-        <button onClick={handleSync}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-white/10"
-          style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
-          <RefreshCw size={14} /> Sync All
-        </button>
-        <button onClick={() => setConnectOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-          style={{ background: 'var(--accent-blue)', color: '#fff' }}>
-          <Plus size={14} /> Connect Account
-        </button>
+        {can(PERMISSIONS.SYNC_ACCOUNTS) && (
+          <button onClick={handleSync}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-white/10"
+            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+            <RefreshCw size={14} /> Sync All
+          </button>
+        )}
+        {can(PERMISSIONS.CONNECT_ACCOUNTS) && (
+          <button onClick={() => setConnectOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+            style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+            <Plus size={14} /> Connect Account
+          </button>
+        )}
       </PageHeader>
 
       {/* Summary cards */}
@@ -200,10 +207,12 @@ export default function Accounts() {
                 <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{acct.lastSync}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5">
-                    <button onClick={() => addToast(`Syncing ${acct.name}...`, 'info')}
-                      className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--text-muted)' }} title="Sync now">
-                      <RefreshCw size={12} />
-                    </button>
+                    {can(PERMISSIONS.SYNC_ACCOUNTS) && (
+                      <button onClick={() => addToast(`Syncing ${acct.name}...`, 'info')}
+                        className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--text-muted)' }} title="Sync now">
+                        <RefreshCw size={12} />
+                      </button>
+                    )}
                     <button onClick={() => addToast('Opening in cloud console', 'info')}
                       className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--text-muted)' }} title="Open in console">
                       <ExternalLink size={12} />

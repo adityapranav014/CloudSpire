@@ -114,6 +114,17 @@
   background: var(--text-muted);
 }
 
+/* Hide scrollbar utility — hides scrollbar while keeping scroll functional */
+.scrollbar-hide,
+.no-scrollbar {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari/WebKit */
+}
+
 /* Grid dot background pattern */
 .bg-grid-pattern {
   background-image:

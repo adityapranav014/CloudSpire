@@ -475,7 +475,7 @@ export default function CostExplorer() {
           </span>
           <Filter size={14} style={{ color: 'var(--text-muted)' }} />
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
         <table className="w-full text-xs min-w-[640px]">
           <thead>
             <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>

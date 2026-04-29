@@ -6,6 +6,7 @@ import { BrandLogo, getBrandAsset } from '../constants/brandAssets'
 import { useToast } from '../context/ToastContext'
 import { CURRENT_USER, getOrgMembers } from '../data/mockUsers'
 import UserAvatar from '../components/ui/UserAvatar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
 const TABS = ['Profile', 'Notifications', 'Integrations', 'Billing', 'Team Members', 'API Keys']
 
@@ -73,6 +74,7 @@ export default function Settings() {
     emailAnomalies: true, slack: false, weeklyDigest: true, budgetAlerts: true, dailySummary: false,
   })
   const [budgetThreshold, setBudgetThreshold] = useState(80)
+  const [inviteRole, setInviteRole] = useState('Viewer')
   const { addToast } = useToast()
 
   const toggleNotif = (key) => setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }))
@@ -347,12 +349,17 @@ export default function Settings() {
                 style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                 onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
-              <select className="px-3 py-2 text-sm rounded-xl border outline-none"
-                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
-                <option>Viewer</option>
-                <option>FinOps</option>
-                <option>Admin</option>
-              </select>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger className="h-[38px] min-w-[100px] rounded-xl border text-sm"
+                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Viewer">Viewer</SelectItem>
+                  <SelectItem value="FinOps">FinOps</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
               <button onClick={() => addToast('Invitation sent', 'success')}
                 className="px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90 flex items-center gap-1.5"
                 style={{ background: 'var(--accent-blue)', color: '#fff' }}>

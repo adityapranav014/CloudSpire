@@ -254,7 +254,7 @@ export default function Optimizer() {
               </button>
             </div>
           )}
-          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="overflow-x-auto scrollbar-hide rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
             <table className="w-full text-xs min-w-[700px]">
               <thead>
                 <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -374,7 +374,7 @@ export default function Optimizer() {
 
       {/* Tab: Right-Sizing */}
       {activeTab === 'Right-Sizing' && (
-        <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-xs min-w-[700px]">
             <thead>
               <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>

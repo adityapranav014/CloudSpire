@@ -142,7 +142,7 @@ export default function Accounts() {
       </div>
 
       {/* Tab filter */}
-      <div className="flex gap-1 mb-4">
+      <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all"
@@ -157,7 +157,7 @@ export default function Accounts() {
       </div>
 
       {/* Accounts table */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+      <div className="rounded-xl border overflow-x-auto scrollbar-hide" style={{ borderColor: 'var(--border-default)' }}>
         <table className="w-full text-xs">
           <thead>
             <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -314,146 +314,168 @@ export default function Accounts() {
 
       {/* Account Details Sheet */}
       <Sheet open={!!selectedAccount} onOpenChange={(open) => !open && setSelectedAccount(null)}>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto border-l" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
-          {selectedAccount && (
-            <>
-              <SheetHeader className="mb-6">
-                <div className="flex items-center gap-3">
-                  <ProviderBadge provider={selectedAccount.provider} size="lg" />
-                  <div>
-                    <SheetTitle style={{ color: 'var(--text-primary)', fontSize: '1.25rem' }}>{selectedAccount.name}</SheetTitle>
-                    <SheetDescription style={{ color: 'var(--text-muted)' }} className="font-mono text-[10px] mt-0.5">
-                      {selectedAccount.id}
-                    </SheetDescription>
-                  </div>
-                </div>
-              </SheetHeader>
-              <div className="space-y-6">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                    <p className="text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>Mtd Spend</p>
-                    <p className="font-mono text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      {fmt.format(selectedAccount.spend)}
-                    </p>
-                    <div className="mt-2 text-xs text-red-400 flex items-center gap-1">↑ 12% vs last mo</div>
-                  </div>
-                  <div className="p-4 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                    <p className="text-xs mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>Active Resources</p>
-                    <p className="font-mono text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      {selectedAccount.resources}
-                    </p>
-                  </div>
-                </div>
+        <SheetContent showCloseButton={false} className="w-[420px] sm:w-[500px] overflow-y-auto p-0 border-l" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
+          {selectedAccount && (() => {
+            const accentColor =
+              selectedAccount.provider === 'aws' ? '#F79009' :
+              selectedAccount.provider === 'gcp' ? '#3B82F6' : '#0078D4'
+            return (
+              <>
+                {/* Header band */}
+                <div className="relative px-6 pt-5 pb-5 border-b" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}>
+                  {/* Provider accent stripe */}
+                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: accentColor }} />
 
-                {/* Status List */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                    <div className="flex items-center gap-2 text-sm"><Shield size={16} className="text-emerald-400" /> IAM Status</div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Secure</span>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ProviderBadge provider={selectedAccount.provider} size="lg" />
+                      <div className="min-w-0">
+                        <SheetTitle className="text-base font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
+                          {selectedAccount.name}
+                        </SheetTitle>
+                        <SheetDescription className="mt-0.5 font-mono text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>
+                          {selectedAccount.id}
+                        </SheetDescription>
+                      </div>
+                    </div>
+                    <SheetClose className="shrink-0 p-1.5 rounded-lg hover:bg-black/[0.06] transition-colors" style={{ color: 'var(--text-muted)' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </SheetClose>
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                    <div className="flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-blue-400" /> Sync Schedule</div>
-                    <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>Every 1 hour</span>
-                  </div>
-                </div>
 
-                {/* 90 Day Spend Chart */}
-                <div className="p-4 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>90-Day Spend Trend</h4>
-                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily spend for this account</span>
-                  </div>
-                  <div className="h-40 w-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={selectedTrend}>
-                        <defs>
-                          <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={
-                              selectedAccount.provider === 'aws' ? '#F79009' :
-                              selectedAccount.provider === 'gcp' ? '#3B82F6' : '#06B6D4'
-                            } stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor={
-                              selectedAccount.provider === 'aws' ? '#F79009' :
-                              selectedAccount.provider === 'gcp' ? '#3B82F6' : '#06B6D4'
-                            } stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                        <XAxis dataKey="date" hide />
-                        <YAxis tickFormatter={v => `$${v/1000}k`} width={40} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
-                          itemStyle={{ color: '#fff' }} formatter={v => fmt.format(v)}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="spend"
-                          stroke={
-                            selectedAccount.provider === 'aws' ? '#F79009' :
-                            selectedAccount.provider === 'gcp' ? '#3B82F6' : '#06B6D4'
-                          }
-                          fillOpacity={1}
-                          fill="url(#areaColor)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Services Bar Chart */}
-                <div className="p-4 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                  <h4 className="text-xs font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Top Spend by Service</h4>
-                  <div className="h-40 w-full" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={selectedServices} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="var(--border-subtle)" />
-                        <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="service" width={80} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
-                          cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                          formatter={v => fmt.format(v)}
-                        />
-                        <Bar dataKey="spend" radius={[0, 4, 4, 0]} fill={
-                          selectedAccount.provider === 'aws' ? '#F79009' :
-                          selectedAccount.provider === 'gcp' ? '#3B82F6' : '#06B6D4'
-                        }/>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Resources List */}
-                <div className="p-4 rounded-xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface)' }}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Top Resources</h4>
-                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Representative resources in this account</span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {selectedResources.map((resource) => (
-                      <div
-                        key={resource.name}
-                        className="flex items-center justify-between p-3 rounded-xl border"
-                        style={{ borderColor: 'var(--border-default)', background: 'rgba(255,255,255,0.02)' }}
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{resource.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--bg-card)', color: 'var(--text-muted)' }}>{resource.type}</span>
-                          </div>
-                          <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{resource.region} · {resource.status}</p>
-                        </div>
-                        <span className="text-xs font-mono font-semibold shrink-0" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-                          {fmtShort.format(resource.monthlyCost)}/mo
-                        </span>
+                  {/* Inline stats row */}
+                  <div className="mt-4 grid grid-cols-3 divide-x" style={{ divideColor: 'var(--border-subtle)' }}>
+                    {[
+                      { label: 'MTD Spend', value: fmt.format(selectedAccount.spend), sub: '↑ 12% vs last mo', subColor: '#F43F5E' },
+                      { label: 'Resources', value: selectedAccount.resources, sub: selectedAccount.region },
+                      { label: 'Status', value: 'Connected', sub: `Synced ${selectedAccount.lastSync}`, valueColor: '#10B981' },
+                    ].map((s, i) => (
+                      <div key={i} className="px-3 first:pl-0 last:pr-0">
+                        <p className="text-[10px] font-medium mb-0.5" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                        <p className="text-sm font-bold font-mono leading-tight" style={{ color: s.valueColor ?? 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{s.value}</p>
+                        <p className="text-[10px] mt-0.5 truncate" style={{ color: s.subColor ?? 'var(--text-muted)' }}>{s.sub}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+
+                <div className="px-6 py-5 space-y-5">
+
+                  {/* Account health */}
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest mb-2.5" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>ACCOUNT HEALTH</p>
+                    <div className="rounded-xl border overflow-hidden divide-y" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                      <div className="flex items-center justify-between px-4 py-2.5">
+                        <div className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          <Shield size={13} style={{ color: '#10B981' }} />
+                          <span>IAM Status</span>
+                        </div>
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981' }}>Secure</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-2.5">
+                        <div className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          <CheckCircle size={13} style={{ color: 'var(--accent-blue)' }} />
+                          <span>Sync Schedule</span>
+                        </div>
+                        <span className="text-[11px] font-mono" style={{ color: 'var(--text-secondary)' }}>Every 1 hour</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-2.5">
+                        <div className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          <Server size={13} style={{ color: 'var(--text-muted)' }} />
+                          <span>Region</span>
+                        </div>
+                        <span className="text-[11px] font-mono" style={{ color: 'var(--text-secondary)' }}>{selectedAccount.region}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 90-Day Spend Trend */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <p className="text-[10px] font-semibold tracking-widest" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>90-DAY SPEND TREND</p>
+                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily</span>
+                    </div>
+                    <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                      <div className="h-36 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={selectedTrend} margin={{ top: 4, right: 0, left: -8, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={accentColor} stopOpacity={0.18} />
+                                <stop offset="95%" stopColor={accentColor} stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                            <XAxis dataKey="date" hide />
+                            <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}k`} width={36} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '11px' }}
+                              formatter={v => [fmt.format(v), 'Spend']}
+                            />
+                            <Area type="monotone" dataKey="spend" stroke={accentColor} strokeWidth={1.5} fillOpacity={1} fill="url(#areaColor)" dot={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top Spend by Service */}
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest mb-2.5" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>TOP SERVICES</p>
+                    <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                      {selectedServices.map((svc, i) => {
+                        const max = selectedServices[0]?.spend ?? 1
+                        const pct = Math.round((svc.spend / max) * 100)
+                        return (
+                          <div key={svc.service} className="flex items-center gap-3 px-4 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--border-subtle)' }}>
+                            <span className="text-xs w-5 text-right shrink-0 font-mono" style={{ color: 'var(--text-muted)' }}>{i + 1}</span>
+                            <span className="text-xs font-medium flex-1 truncate" style={{ color: 'var(--text-secondary)' }}>{svc.service}</span>
+                            <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: accentColor }} />
+                            </div>
+                            <span className="text-[11px] font-mono font-semibold shrink-0" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort.format(svc.spend)}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Top Resources */}
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest mb-2.5" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>TOP RESOURCES</p>
+                    <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                      {selectedResources.map((resource) => (
+                        <div key={resource.name} className="flex items-center gap-3 px-4 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--border-subtle)' }}>
+                          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: 'var(--bg-elevated)' }}>
+                            <Box size={11} style={{ color: 'var(--text-muted)' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{resource.name}</p>
+                            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{resource.type} · {resource.status}</p>
+                          </div>
+                          <span className="text-[11px] font-mono font-semibold shrink-0" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort.format(resource.monthlyCost)}/mo</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-1 pb-2">
+                    <button onClick={() => addToast(`Syncing ${selectedAccount.name}...`, 'info')}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium rounded-xl border transition-colors hover:bg-black/[0.04]"
+                      style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                      <RefreshCw size={12} /> Sync Now
+                    </button>
+                    <button onClick={() => addToast('Opening in cloud console', 'info')}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold rounded-xl transition-opacity hover:opacity-90"
+                      style={{ background: accentColor, color: '#fff' }}>
+                      <ExternalLink size={12} /> Open Console
+                    </button>
+                  </div>
+                </div>
+              </>
+            )
+          })()}
         </SheetContent>
       </Sheet>
     </motion.div>

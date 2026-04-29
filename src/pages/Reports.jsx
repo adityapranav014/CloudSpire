@@ -87,7 +87,7 @@ export default function Reports() {
       {/* Scheduled Reports */}
       <div className="mb-8">
         <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Scheduled Reports</h2>
-        <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-xs min-w-[560px]">
             <thead>
               <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>

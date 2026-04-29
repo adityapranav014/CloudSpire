@@ -139,7 +139,7 @@ function TeamDetailModal({ team, onClose }) {
 
         <div>
           <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Resource List</p>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <div className="space-y-2 min-w-[380px]">
               {details.resources.map((resource) => (
                 <div key={resource.name} className="grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr] gap-3 p-3 rounded-xl text-xs" style={{ background: 'var(--bg-card)' }}>

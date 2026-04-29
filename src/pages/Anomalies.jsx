@@ -174,19 +174,19 @@ export default function Anomalies() {
                 {/* Metrics grid — 2 cols on mobile, 4 cols on sm+ */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
                   <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Spend Today</p>
+                    <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Spend Today</p>
                     <p className="text-base font-bold font-mono leading-none" style={{ color: '#F43F5E', fontFamily: "'JetBrains Mono', monospace" }}>
                       {fmt.format(a.spendToday)}
                     </p>
                   </div>
                   <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Expected</p>
+                    <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Expected</p>
                     <p className="text-base font-bold font-mono leading-none" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
                       {fmt.format(a.expectedSpend)}
                     </p>
                   </div>
                   <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Deviation</p>
+                    <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Deviation</p>
                     <p className="text-base font-bold font-mono leading-none" style={{ color: deviationColor, fontFamily: "'JetBrains Mono', monospace" }}>
                       +{a.deviationPercent}%
                     </p>
@@ -195,7 +195,7 @@ export default function Anomalies() {
                     </p>
                   </div>
                   <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Detected</p>
+                    <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Detected</p>
                     <p className="text-sm font-semibold leading-none" style={{ color: 'var(--text-secondary)' }}>
                       {fmtDate(a.detectedAt)}
                     </p>
@@ -217,13 +217,13 @@ export default function Anomalies() {
                       <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-3"
                         style={{ borderColor: 'var(--border-subtle)' }}>
                         <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
-                          <p className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                          <p className="text-[10px] font-semibold tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
                             Possible Cause
                           </p>
                           <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>{a.possibleCause}</p>
                         </div>
                         <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
-                          <p className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                          <p className="text-[10px] font-semibold tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
                             Affected Resource
                           </p>
                           <p className="text-[10px] font-mono break-all leading-relaxed" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -390,7 +390,7 @@ export default function Anomalies() {
                       <button
                         key={provider}
                         onClick={() => setProviderToggles((current) => ({ ...current, [provider]: !current[provider] }))}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors uppercase"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
                         style={{
                           background: providerToggles[provider] ? 'rgba(59,130,246,0.12)' : 'var(--bg-elevated)',
                           color: providerToggles[provider] ? 'var(--accent-blue)' : 'var(--text-secondary)',

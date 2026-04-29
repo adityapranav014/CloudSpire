@@ -20,119 +20,42 @@
   /* ── Radii ── */
   --radius: 0.5rem;
 
-  /* ── Backgrounds (Zinc scale) ── */
-  --bg-base: #09090B;
-  --bg-surface: #18181B;
-  --bg-elevated: #27272A;
-  --bg-card: #27272A;
-  --bg-hover: #3F3F46;
+  --bg-base: #f4f7fb;
+  --bg-surface: #ffffff;
+  --bg-elevated: #eef3f9;
+  --bg-card: #ffffff;
+  --bg-hover: #e2e8f0;
 
-  /* ── Borders ── */
-  --border-subtle: #27272A;
-  --border-default: #3F3F46;
-  --border-strong: #52525B;
+  --border-subtle: #d6dfeb;
+  --border-default: #c2cfdf;
+  --border-strong: #94a3b8;
 
-  /* ── Text ── */
-  --text-primary: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
 
-  /* ── Primary accent (Indigo) ── */
-  --accent-primary: #818CF8;
-  --accent-primary-hover: #6366F1;
-  --accent-primary-subtle: rgba(129, 140, 248, 0.12);
+  --accent-primary: #3B82F6;
+  --accent-primary-hover: #2563EB;
+  --accent-primary-subtle: rgba(59, 130, 246, 0.08);
 
-  /* ── Semantic status colors (dark-mode-optimised) ── */
-  --accent-emerald: #34D399;
-  --accent-amber: #FBBF24;
-  --accent-rose: #FB7185;
-  --accent-cyan: #22D3EE;
-  --accent-violet: #A78BFA;
-  --accent-blue: #818CF8;
-
-  /* ── Cloud provider brand colors (flat, no gradients) ── */
-  --color-aws: #FF9900;
-  --color-gcp: #4285F4;
-  --color-azure: #0078D4;
-
-  /* ── Shadcn/ui component tokens (HSL) ── */
-  --background: 240 6% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 3.7% 15.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 3.7% 15.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 235 90% 74%;
-  --primary-foreground: 240 6% 3.9%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 350 89% 72%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 5.3% 26.1%;
-  --ring: 235 90% 74%;
-
-  /* ── Chart palette ── */
-  --chart-1: 235 90% 74%;
-  --chart-2: 160 64% 52%;
-  --chart-3: 45 97% 56%;
-  --chart-4: 258 90% 76%;
-  --chart-5: 350 89% 72%;
-
-  /* ── Sidebar tokens ── */
-  --sidebar: 240 5.9% 10%;
-  --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 235 90% 74%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 235 90% 74%;
-}
-
-/* ── Light Theme ── */
-.light {
-  --bg-base: #FAFAFA;
-  --bg-surface: #FFFFFF;
-  --bg-elevated: #F4F4F5;
-  --bg-card: #FFFFFF;
-  --bg-hover: #E4E4E7;
-
-  --border-subtle: #E4E4E7;
-  --border-default: #D4D4D8;
-  --border-strong: #A1A1AA;
-
-  --text-primary: #18181B;
-  --text-secondary: #52525B;
-  --text-muted: #71717A;
-
-  --accent-primary: #6366F1;
-  --accent-primary-hover: #4F46E5;
-  --accent-primary-subtle: rgba(99, 102, 241, 0.08);
-
-  --accent-emerald: #059669;
-  --accent-amber: #D97706;
-  --accent-rose: #E11D48;
-  --accent-cyan: #0891B2;
-  --accent-violet: #7C3AED;
-  --accent-blue: #6366F1;
+  --accent-emerald: #10B981;
+  --accent-amber: #F59E0B;
+  --accent-rose: #F43F5E;
+  --accent-cyan: #06B6D4;
+  --accent-violet: #8B5CF6;
+  --accent-blue: #3B82F6;
 
   --color-aws: #FF9900;
   --color-gcp: #4285F4;
   --color-azure: #0078D4;
 
-  /* ── Shadcn/ui overrides ── */
   --background: 0 0% 98%;
   --foreground: 240 5.9% 10%;
   --card: 0 0% 100%;
   --card-foreground: 240 5.9% 10%;
   --popover: 0 0% 100%;
   --popover-foreground: 240 5.9% 10%;
-  --primary: 239 84% 67%;
+  --primary: 217 91% 60%;
   --primary-foreground: 0 0% 98%;
   --secondary: 240 5% 96.1%;
   --secondary-foreground: 240 5.9% 10%;
@@ -144,90 +67,22 @@
   --destructive-foreground: 0 0% 98%;
   --border: 240 4.9% 90%;
   --input: 240 5.2% 83.9%;
-  --ring: 239 84% 67%;
+  --ring: 217 91% 60%;
 
-  --chart-1: 239 84% 67%;
-  --chart-2: 160 84% 30.6%;
-  --chart-3: 32 95% 44%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 38 92% 50%;
   --chart-4: 263 70% 58%;
   --chart-5: 347 77% 50%;
 
   --sidebar: 0 0% 100%;
   --sidebar-foreground: 240 5.9% 10%;
-  --sidebar-primary: 239 84% 67%;
+  --sidebar-primary: 217 91% 60%;
   --sidebar-primary-foreground: 0 0% 98%;
   --sidebar-accent: 240 5% 96.1%;
   --sidebar-accent-foreground: 240 5.9% 10%;
   --sidebar-border: 240 4.9% 90%;
-  --sidebar-ring: 239 84% 67%;
-}
-
-/* ── Dark Theme (explicit class — mirrors :root defaults) ── */
-.dark {
-  --bg-base: #09090B;
-  --bg-surface: #18181B;
-  --bg-elevated: #27272A;
-  --bg-card: #27272A;
-  --bg-hover: #3F3F46;
-
-  --border-subtle: #27272A;
-  --border-default: #3F3F46;
-  --border-strong: #52525B;
-
-  --text-primary: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
-
-  --accent-primary: #818CF8;
-  --accent-primary-hover: #6366F1;
-  --accent-primary-subtle: rgba(129, 140, 248, 0.12);
-
-  --accent-emerald: #34D399;
-  --accent-amber: #FBBF24;
-  --accent-rose: #FB7185;
-  --accent-cyan: #22D3EE;
-  --accent-violet: #A78BFA;
-  --accent-blue: #818CF8;
-
-  --color-aws: #FF9900;
-  --color-gcp: #4285F4;
-  --color-azure: #0078D4;
-
-  /* Shadcn/ui — same as :root */
-  --background: 240 6% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 3.7% 15.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 3.7% 15.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 235 90% 74%;
-  --primary-foreground: 240 6% 3.9%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 350 89% 72%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 5.3% 26.1%;
-  --ring: 235 90% 74%;
-
-  --chart-1: 235 90% 74%;
-  --chart-2: 160 64% 52%;
-  --chart-3: 45 97% 56%;
-  --chart-4: 258 90% 76%;
-  --chart-5: 350 89% 72%;
-
-  --sidebar: 240 5.9% 10%;
-  --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 235 90% 74%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 235 90% 74%;
+  --sidebar-ring: 217 91% 60%;
 }
 
 @layer base {
@@ -240,10 +95,6 @@
     margin: 0;
     background-color: var(--bg-base);
     color: var(--text-primary);
-    transition: background-color 200ms ease, color 200ms ease;
-  }
-  html {
-    @apply font-sans;
   }
 }
 

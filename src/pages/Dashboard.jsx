@@ -35,11 +35,11 @@ const topServices = [
 
 // Top regions across providers
 const topRegions = [
-  { label: 'US East (N. Virginia)', cost: 41200, provider: 'aws' },
-  { label: 'Iowa, USA (GCP)', cost: 22800, provider: 'gcp' },
-  { label: 'US West (Oregon)', cost: 18600, provider: 'aws' },
-  { label: 'East US (Virginia)', cost: 16800, provider: 'azure' },
-  { label: 'Europe (Ireland)', cost: 11400, provider: 'aws' },
+  { label: 'N. Virginia', cost: 41200, provider: 'aws' },
+  { label: 'Iowa (GCP)', cost: 22800, provider: 'gcp' },
+  { label: 'US West', cost: 18600, provider: 'aws' },
+  { label: 'East US', cost: 16800, provider: 'azure' },
+  { label: 'EU Ireland', cost: 11400, provider: 'aws' },
 ]
 
 const sparkData = dailySpend.slice(-14).map(d => ({

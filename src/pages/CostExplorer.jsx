@@ -70,19 +70,21 @@ const ChartTooltip = ({ active, payload, label }) => {
 }
 
 const ChartLegend = ({ payload }) => (
-  <div className="flex items-center justify-center gap-6 pt-3">
-    {(payload ?? PROVIDERS_ORDER.map(k => ({ dataKey: k, color: providerColors[k] }))).map(p => (
-      <div key={p.dataKey} className="flex items-center gap-2">
-        <svg width="22" height="12" className="shrink-0" aria-hidden="true">
-          <line x1="1" y1="6" x2="21" y2="6" stroke={p.color ?? providerColors[p.dataKey]} strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="11" cy="6" r="2.5" fill={p.color ?? providerColors[p.dataKey]} />
-        </svg>
-        <BrandLogo brandKey={p.dataKey} size={14} />
-        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-          {getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}
-        </span>
-      </div>
-    ))}
+  <div className="flex items-center justify-center gap-2 pt-3">
+    {(payload ?? PROVIDERS_ORDER.map(k => ({ dataKey: k, color: providerColors[k] }))).map(p => {
+      const color = p.color ?? providerColors[p.dataKey]
+      const label = getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()
+      return (
+        <div
+          key={p.dataKey}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium"
+          style={{ borderColor: color + '40', background: color + '12', color: 'var(--text-secondary)' }}
+        >
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+          {label}
+        </div>
+      )
+    })}
   </div>
 )
 
@@ -294,7 +296,7 @@ export default function CostExplorer() {
       >
         {/* Date preset */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Date Range</p>
+          <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Date Range</p>
           <div className="flex gap-1">
             {DATE_PRESETS.map(p => (
               <button key={p} onClick={() => { setDatePreset(p); setPage(0) }}
@@ -314,7 +316,7 @@ export default function CostExplorer() {
 
         {/* Granularity */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Granularity</p>
+          <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Granularity</p>
           <div className="flex gap-1">
             {['Daily', 'Weekly', 'Monthly'].map(g => (
               <button key={g} onClick={() => setGranularity(g)}
@@ -334,7 +336,7 @@ export default function CostExplorer() {
 
         {/* Provider */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Provider</p>
+          <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Provider</p>
           <div className="flex gap-1">
             {PROVIDERS.map(p => (
               <button key={p} onClick={() => toggleProvider(p)}
@@ -354,7 +356,7 @@ export default function CostExplorer() {
 
         {/* Group by */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Group By</p>
+          <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Group By</p>
           <div className="flex gap-1">
             {GROUP_BY.map(g => (
               <button key={g} onClick={() => { setGroupBy(g); setPage(0) }}
@@ -373,7 +375,7 @@ export default function CostExplorer() {
         <div className="w-px" style={{ background: 'var(--border-subtle)' }} />
 
         <div>
-          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Chart</p>
+          <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Chart</p>
           <div className="flex gap-1">
             {CHART_MODE.map(mode => (
               <button key={mode} onClick={() => setChartMode(mode)}

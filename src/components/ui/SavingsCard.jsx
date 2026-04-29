@@ -13,7 +13,7 @@ export function SavingsCard({ recommendation, savings, service, metadata, onActi
             <div className="text-xl font-bold font-mono text-emerald-500">
               ${savings.toLocaleString()}/mo
             </div>
-            <div className="text-xs text-muted-foreground uppercase mt-1">Est. Savings</div>
+            <div className="text-xs text-muted-foreground mt-1">Est. Savings</div>
           </div>
         </div>
       </CardHeader>

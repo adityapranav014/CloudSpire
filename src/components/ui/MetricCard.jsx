@@ -35,7 +35,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
       <div className="px-5 pt-5 pb-3 flex flex-col gap-3 flex-1">
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-widest leading-none" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-xs font-semibold tracking-wide leading-none" style={{ color: 'var(--text-muted)' }}>
             {title}
           </p>
           {Icon && (
@@ -81,7 +81,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
 
       {/* Sparkline flush to bottom */}
       {sparklineData.length > 0 && (
-        <div className="h-14 w-full -mb-px">
+        <div className="h-14 w-full -mb-px" style={{ minHeight: 56 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>

@@ -114,17 +114,15 @@ export default function AreaSpendChart() {
           <Legend
             wrapperStyle={{ paddingTop: 12 }}
             content={({ payload }) => (
-              <div className="flex items-center justify-center gap-6 pt-3">
+              <div className="flex items-center justify-center gap-2 pt-3">
                 {payload.map(p => (
-                  <div key={p.dataKey} className="flex items-center gap-2">
-                    <svg width="22" height="12" className="shrink-0" aria-hidden="true">
-                      <line x1="1" y1="6" x2="21" y2="6" stroke={p.color} strokeWidth="2.5" strokeLinecap="round" />
-                      <circle cx="11" cy="6" r="2.5" fill={p.color} />
-                    </svg>
-                    <BrandLogo brandKey={p.dataKey} size={14} />
-                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-                      {getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}
-                    </span>
+                  <div
+                    key={p.dataKey}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium"
+                    style={{ borderColor: p.color + '40', background: p.color + '12', color: 'var(--text-secondary)' }}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
+                    {getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}
                   </div>
                 ))}
               </div>

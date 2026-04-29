@@ -66,20 +66,21 @@ export default function ForecastChart() {
           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Spend & Forecast</h3>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>60-day history + 10-day projection</p>
         </div>
-        <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-          <span className="flex items-center gap-1.5">
-            <svg width="22" height="12" className="shrink-0" aria-hidden="true">
-              <line x1="1" y1="6" x2="21" y2="6" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="11" cy="6" r="2.5" fill="#3B82F6" />
-            </svg>
+        <div className="flex items-center gap-2 text-xs">
+          <div
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium"
+            style={{ borderColor: '#3B82F640', background: '#3B82F612', color: 'var(--text-secondary)' }}
+          >
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#3B82F6' }} />
             Actual
-          </span>
-          <span className="flex items-center gap-1.5">
-            <svg width="22" height="12" className="shrink-0" aria-hidden="true">
-              <line x1="1" y1="6" x2="21" y2="6" stroke="#F59E0B" strokeWidth="2.5" strokeDasharray="5 3" strokeLinecap="round" />
-            </svg>
+          </div>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium"
+            style={{ borderColor: '#F59E0B40', background: '#F59E0B12', color: 'var(--text-secondary)' }}
+          >
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#F59E0B' }} />
             Forecast
-          </span>
+          </div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={260}>

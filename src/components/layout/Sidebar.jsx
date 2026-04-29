@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Search, AlertTriangle, Zap, Users,
-  Link2, FileText, Settings, TrendingUp, CreditCard, ChevronRight
+  Link2, FileText, Settings, TrendingUp
 } from 'lucide-react'
 import { anomalies } from '../../data/mockAlerts'
 import { Sheet, SheetContent } from '../ui/sheet'
@@ -11,14 +11,14 @@ const openAnomalies = anomalies.filter(a => a.status === 'open').length
 
 const navSections = [
   {
-    label: 'OVERVIEW',
+    label: 'Overview',
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
       { label: 'Cost Explorer', icon: Search, to: '/cost-explorer' },
     ],
   },
   {
-    label: 'MANAGEMENT',
+    label: 'Management',
     items: [
       { label: 'Anomalies', icon: AlertTriangle, to: '/anomalies', badge: openAnomalies },
       { label: 'Optimizer', icon: Zap, to: '/optimizer' },
@@ -27,13 +27,13 @@ const navSections = [
     ],
   },
   {
-    label: 'REPORTING',
+    label: 'Reporting',
     items: [
       { label: 'Reports', icon: FileText, to: '/reports' },
     ],
   },
   {
-    label: 'SYSTEM',
+    label: 'System',
     items: [
       { label: 'Settings', icon: Settings, to: '/settings' },
     ],
@@ -57,7 +57,7 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         {navSections.map(section => (
           <div key={section.label}>
-            <p className="text-[10px] font-semibold tracking-widest px-2 mb-1.5" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[10px] font-semibold tracking-wide px-2 mb-1.5" style={{ color: 'var(--text-muted)' }}>
               {section.label}
             </p>
             <ul className="space-y-0.5">
@@ -93,24 +93,6 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
           </div>
         ))}
       </nav>
-
-      {/* Plan badge */}
-      <div
-        className="mx-3 mb-4 p-3 rounded-xl border"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <CreditCard size={12} style={{ color: 'var(--accent-amber)' }} />
-          <span className="text-[11px] font-semibold" style={{ color: 'var(--accent-amber)' }}>Growth Plan</span>
-        </div>
-        <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>$149/month</p>
-        <button
-          className="w-full text-[11px] font-semibold py-1.5 rounded-lg flex items-center justify-center gap-1 transition-colors hover:opacity-90"
-          style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}
-        >
-          Upgrade <ChevronRight size={11} />
-        </button>
-      </div>
     </>
   )
 

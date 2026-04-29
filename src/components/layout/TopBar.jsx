@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, Sun, Moon, PanelLeftOpen } from 'lucide-react'
+import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLeftOpen } from 'lucide-react'
 import { anomalies } from '../../data/mockAlerts'
 import { awsAccounts } from '../../data/mockAWS'
-import { useTheme } from "../../context/ThemeContext"
 import { CURRENT_USER } from '../../data/mockUsers'
 import UserAvatar from '../ui/UserAvatar'
 import {
@@ -38,8 +37,18 @@ const commandItems = {
 export default function TopBar({ onOpenMenu = () => {} }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const userMenuRef = useRef(null)
   const navigate = useNavigate()
-  const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false)
+      }
+    }
+    if (userMenuOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [userMenuOpen])
 
   useEffect(() => {
     const down = (e) => {
@@ -86,15 +95,6 @@ export default function TopBar({ onOpenMenu = () => {} }) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Settings */}
-        <button
-          className="hidden sm:flex items-center justify-center p-2 rounded-lg transition-colors hover:bg-[--bg-hover]"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title="Toggle theme"
-        >
-          {theme === 'dark' ? <Sun size={17} style={{ color: 'var(--text-secondary)' }} /> : <Moon size={17} style={{ color: 'var(--text-secondary)' }} />}
-        </button>
-
         {/* Notification bell */}
         <button
           className="relative p-2 rounded-lg transition-colors hover:bg-[--bg-hover]"
@@ -110,7 +110,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
         </button>
 
         {/* User avatar dropdown */}
-        <div className="relative">
+        <div className="relative" ref={userMenuRef}>
           <button
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-[--bg-hover]"
             onClick={() => setUserMenuOpen(v => !v)}

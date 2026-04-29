@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#080B14"/>
+      <stop offset="100%" style="stop-color:#0D1520"/>
+    </linearGradient>
+
+    <!-- Purple glow gradient for logo -->
+    <radialGradient id="logoGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:#863bff;stop-opacity:0.35"/>
+      <stop offset="100%" style="stop-color:#863bff;stop-opacity:0"/>
+    </radialGradient>
+
+    <!-- Subtle grid lines -->
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1E2D40" stroke-width="0.6"/>
+    </pattern>
+
+    <!-- Left accent gradient -->
+    <linearGradient id="accentLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#863bff;stop-opacity:0.7"/>
+      <stop offset="100%" style="stop-color:#863bff;stop-opacity:0"/>
+    </linearGradient>
+
+    <!-- Bottom accent gradient -->
+    <linearGradient id="accentBottom" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0"/>
+      <stop offset="40%" style="stop-color:#8B5CF6;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:0"/>
+    </linearGradient>
+
+    <!-- Glowing orb -->
+    <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#863bff;stop-opacity:0.25"/>
+      <stop offset="100%" style="stop-color:#863bff;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.18"/>
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0"/>
+    </radialGradient>
+
+    <!-- Chip badge gradient -->
+    <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1E2D40"/>
+      <stop offset="100%" style="stop-color:#243352"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Grid overlay -->
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.5"/>
+
+  <!-- Ambient glow orbs -->
+  <ellipse cx="220" cy="280" rx="380" ry="340" fill="url(#orb1)"/>
+  <ellipse cx="980" cy="350" rx="320" ry="280" fill="url(#orb2)"/>
+
+  <!-- Left vertical accent bar -->
+  <rect x="0" y="0" width="4" height="630" fill="url(#accentLeft)"/>
+
+  <!-- Bottom accent line -->
+  <rect x="0" y="618" width="1200" height="3" fill="url(#accentBottom)" rx="2"/>
+
+  <!-- Top-right decorative lines -->
+  <g opacity="0.18">
+    <line x1="820" y1="0" x2="1200" y2="200" stroke="#863bff" stroke-width="1"/>
+    <line x1="920" y1="0" x2="1200" y2="120" stroke="#3B82F6" stroke-width="0.8"/>
+    <line x1="1050" y1="0" x2="1200" y2="60" stroke="#06B6D4" stroke-width="0.6"/>
+  </g>
+
+  <!-- Bottom-left decorative lines -->
+  <g opacity="0.12">
+    <line x1="0" y1="450" x2="200" y2="630" stroke="#863bff" stroke-width="1"/>
+    <line x1="0" y1="530" x2="120" y2="630" stroke="#8B5CF6" stroke-width="0.8"/>
+  </g>
+
+  <!-- Logo glow circle -->
+  <ellipse cx="172" cy="298" rx="120" ry="120" fill="url(#logoGlow)"/>
+
+  <!-- CloudSpire Logo icon (scaled up, positioned left) -->
+  <g transform="translate(104, 240) scale(2.9)">
+    <path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z"/>
+    <!-- Highlight shimmer -->
+    <path fill="url(#accentLeft)" opacity="0.5" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z"/>
+  </g>
+
+  <!-- Brand name -->
+  <text x="252" y="277" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="72" font-weight="700" fill="#E8EDF5" letter-spacing="-1">Cloud</text>
+  <text x="489" y="277" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="72" font-weight="700" fill="#863bff" letter-spacing="-1">Spire</text>
+
+  <!-- Tagline -->
+  <text x="252" y="325" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="400" fill="#8A9BB8" letter-spacing="0.5">Unified Multi-Cloud FinOps Platform</text>
+
+  <!-- Divider line -->
+  <line x1="252" y1="356" x2="720" y2="356" stroke="#243352" stroke-width="1.5"/>
+
+  <!-- Feature chips -->
+  <g transform="translate(252, 375)">
+    <!-- AWS chip -->
+    <rect x="0" y="0" width="110" height="34" rx="17" fill="url(#chipGrad)" stroke="#2E3D54" stroke-width="1"/>
+    <circle cx="22" cy="17" r="8" fill="#FF9900" opacity="0.9"/>
+    <text x="22" y="21.5" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="8.5" font-weight="700" fill="#080B14">aws</text>
+    <text x="42" y="22" font-family="'Segoe UI', Arial, sans-serif" font-size="13" font-weight="500" fill="#C8D4E8">Amazon</text>
+
+    <!-- Azure chip -->
+    <rect x="122" y="0" width="100" height="34" rx="17" fill="url(#chipGrad)" stroke="#2E3D54" stroke-width="1"/>
+    <circle cx="144" cy="17" r="8" fill="#0078D4" opacity="0.9"/>
+    <text x="144" y="21.5" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="9" font-weight="700" fill="#ffffff">Az</text>
+    <text x="163" y="22" font-family="'Segoe UI', Arial, sans-serif" font-size="13" font-weight="500" fill="#C8D4E8">Azure</text>
+
+    <!-- GCP chip -->
+    <rect x="234" y="0" width="92" height="34" rx="17" fill="url(#chipGrad)" stroke="#2E3D54" stroke-width="1"/>
+    <circle cx="255" cy="17" r="8" fill="#4285F4" opacity="0.9"/>
+    <text x="255" y="21.5" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="9" font-weight="700" fill="#ffffff">G</text>
+    <text x="273" y="22" font-family="'Segoe UI', Arial, sans-serif" font-size="13" font-weight="500" fill="#C8D4E8">GCP</text>
+  </g>
+
+  <!-- Right side — mini dashboard mockup -->
+  <g transform="translate(780, 100)">
+    <!-- Card background -->
+    <rect x="0" y="0" width="340" height="430" rx="16" fill="#0D1117" stroke="#1E2D40" stroke-width="1.5" opacity="0.95"/>
+
+    <!-- Card header bar -->
+    <rect x="0" y="0" width="340" height="48" rx="16" fill="#161B27"/>
+    <rect x="0" y="32" width="340" height="16" fill="#161B27"/>
+    <circle cx="22" cy="24" r="6" fill="#243352"/>
+    <circle cx="42" cy="24" r="6" fill="#243352"/>
+    <circle cx="62" cy="24" r="6" fill="#243352"/>
+    <rect x="80" y="18" width="120" height="12" rx="6" fill="#243352"/>
+
+    <!-- Metric cards row -->
+    <rect x="16" y="64" width="93" height="66" rx="10" fill="#161B27" stroke="#243352" stroke-width="1"/>
+    <text x="26" y="86" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">Total Spend</text>
+    <text x="26" y="108" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="700" fill="#E8EDF5">$149K</text>
+    <rect x="26" y="116" width="30" height="6" rx="3" fill="#10B981" opacity="0.7"/>
+
+    <rect x="121" y="64" width="93" height="66" rx="10" fill="#161B27" stroke="#243352" stroke-width="1"/>
+    <text x="131" y="86" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">Savings</text>
+    <text x="131" y="108" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="700" fill="#10B981">$21K</text>
+    <rect x="131" y="116" width="22" height="6" rx="3" fill="#863bff" opacity="0.7"/>
+
+    <rect x="226" y="64" width="98" height="66" rx="10" fill="#161B27" stroke="#243352" stroke-width="1"/>
+    <text x="236" y="86" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">Efficiency</text>
+    <text x="236" y="108" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="700" fill="#3B82F6">87%</text>
+    <rect x="236" y="116" width="36" height="6" rx="3" fill="#3B82F6" opacity="0.7"/>
+
+    <!-- Chart area -->
+    <rect x="16" y="146" width="308" height="130" rx="10" fill="#161B27" stroke="#243352" stroke-width="1"/>
+    <text x="28" y="166" font-family="'Segoe UI', Arial, sans-serif" font-size="10" fill="#8A9BB8">Monthly Spend Trend</text>
+
+    <!-- Simplified area chart lines -->
+    <polyline points="28,254 62,240 96,245 130,228 164,232 198,218 232,222 266,208 300,215" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linejoin="round"/>
+    <polyline points="28,262 62,252 96,256 130,244 164,248 198,238 232,242 266,228 300,232" fill="none" stroke="#863bff" stroke-width="2" stroke-linejoin="round" stroke-dasharray="4,2"/>
+
+    <!-- Chart fill -->
+    <polygon points="28,254 62,240 96,245 130,228 164,232 198,218 232,222 266,208 300,215 300,270 28,270" fill="#3B82F6" opacity="0.07"/>
+
+    <!-- Provider breakdown bars -->
+    <rect x="16" y="292" width="308" height="122" rx="10" fill="#161B27" stroke="#243352" stroke-width="1"/>
+    <text x="28" y="312" font-family="'Segoe UI', Arial, sans-serif" font-size="10" fill="#8A9BB8">Provider Breakdown</text>
+
+    <!-- AWS bar -->
+    <text x="28" y="334" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">AWS</text>
+    <rect x="66" y="324" width="220" height="10" rx="5" fill="#243352"/>
+    <rect x="66" y="324" width="154" height="10" rx="5" fill="#FF9900" opacity="0.85"/>
+    <text x="294" y="333" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">70%</text>
+
+    <!-- Azure bar -->
+    <text x="28" y="360" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">Azure</text>
+    <rect x="66" y="350" width="220" height="10" rx="5" fill="#243352"/>
+    <rect x="66" y="350" width="66" height="10" rx="5" fill="#0078D4" opacity="0.85"/>
+    <text x="294" y="359" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">30%</text>
+
+    <!-- GCP bar -->
+    <text x="28" y="386" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">GCP</text>
+    <rect x="66" y="376" width="220" height="10" rx="5" fill="#243352"/>
+    <rect x="66" y="376" width="44" height="10" rx="5" fill="#4285F4" opacity="0.85"/>
+    <text x="294" y="385" font-family="'Segoe UI', Arial, sans-serif" font-size="9" fill="#8A9BB8">20%</text>
+
+    <!-- Bottom row dots -->
+    <circle cx="110" cy="410" r="3" fill="#863bff" opacity="0.6"/>
+    <circle cx="170" cy="410" r="3" fill="#3B82F6" opacity="0.6"/>
+    <circle cx="230" cy="410" r="3" fill="#06B6D4" opacity="0.6"/>
+  </g>
+
+  <!-- Bottom URL -->
+  <text x="252" y="564" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="19" font-weight="400" fill="#4A5568">cloud-spire.vercel.app</text>
+
+  <!-- Small copyright/tagline bottom left -->
+  <text x="252" y="596" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="#2E3D54">Cut cloud costs. Gain full visibility. Ship faster.</text>
+</svg>

@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList, ResponsiveContainer } from 'recharts'
 import { BrandLogo, getBrandAsset } from '../../constants/brandAssets'
 
 const fmt = (v) => `$${(v / 1000).toFixed(0)}k`
@@ -25,30 +25,73 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
+const CustomBarLabel = ({ x, y, width, height, value }) => {
+  if (!value) return null
+  return (
+    <text
+      x={x + width + 8}
+      y={y + height / 2 + 1}
+      fill="var(--text-muted)"
+      fontSize={10}
+      fontFamily="'JetBrains Mono', monospace"
+      dominantBaseline="middle"
+    >
+      {fmt(value)}
+    </text>
+  )
+}
+
 /**
  * Horizontal bar chart for region/account spend breakdown.
  * Props: data (array of {label, cost, provider?}), title, colorMap
  */
-export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWidth = 80 }) {
+export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWidth = 90 }) {
   const COLORS = ['#3B82F6', '#06B6D4', '#8B5CF6', '#10B981', '#F59E0B']
 
+  // build unique providers for legend
+  const providers = [...new Set(data.map(d => d.provider).filter(Boolean))]
+
   return (
-    <div className="rounded-xl border p-5 h-full" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
-      <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>{title}</h3>
-      <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" horizontal={false} />
-          <XAxis type="number" tickFormatter={fmt} tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} />
+    <div className="rounded-xl border p-5 h-full flex flex-col" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+        {providers.length > 0 && (
+          <div className="flex items-center gap-3">
+            {providers.map(p => {
+              const brand = getBrandAsset(p)
+              return brand ? (
+                <div key={p} className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: brand.color }} />
+                  <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{brand.label ?? p.toUpperCase()}</span>
+                </div>
+              ) : null
+            })}
+          </div>
+        )}
+      </div>
+
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data} layout="vertical" margin={{ top: 2, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" horizontal={false} />
+          <XAxis
+            type="number"
+            tickFormatter={fmt}
+            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}
+            tickLine={false}
+            axisLine={false}
+          />
           <YAxis
             type="category"
             dataKey="label"
             width={yAxisWidth}
-            tick={{ fill: '#8A9BB8', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
             tickLine={false}
             axisLine={false}
           />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="cost" radius={[0, 4, 4, 0]} maxBarSize={16}>
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.05)' }} />
+          <Bar dataKey="cost" radius={[0, 4, 4, 0]} maxBarSize={14}>
+            <LabelList content={<CustomBarLabel />} />
             {data.map((entry, i) => (
               <Cell key={i} fill={entry.provider ? (getBrandAsset(entry.provider)?.color ?? COLORS[i % COLORS.length]) : COLORS[i % COLORS.length]} />
             ))}

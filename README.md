@@ -1,160 +1,122 @@
 # CloudSpire
 
-> Unified multi-cloud FinOps platform for engineering and finance teams.
+**Multi-cloud FinOps platform** for engineering and finance teams — AWS, GCP, and Azure in one place.
 
-**Live:** https://cloud-spire.vercel.app · `npm run dev` → http://localhost:5173
-
----
-
-## What it does
-
-CloudSpire gives teams a single dashboard across AWS, GCP, and Azure — with anomaly detection, AI-driven cost optimization, team budgets, and automated reporting.
+🔗 [cloud-spire.vercel.app](https://cloud-spire.vercel.app) · No backend required · All data is mocked
 
 ---
 
-## Tech Stack
-
-| | |
-|---|---|
-| Framework | React 18 + Vite |
-| Routing | React Router v6 |
-| Styling | Tailwind CSS |
-| Charts | Recharts |
-| Animations | Framer Motion |
-| UI | shadcn/ui (Radix primitives) |
-| Icons | Lucide React |
-| Hosting | Vercel |
-
----
-
-## Local Setup
+## Quick Start
 
 ```bash
 npm install
-npm run dev
+npm run dev   # → http://localhost:5173
 ```
 
 ---
 
-## App Flow
+## Stack
 
-### Landing (`/`)
-Marketing page. Explains the product, features, and pricing. CTAs lead to `/onboarding`.
-
----
-
-### Step 1 — Onboarding (`/onboarding`)
-
-5-step wizard: Welcome → Connect AWS → Connect GCP → Connect Azure → Syncing Data
-
-- Click **Test Connection** on each provider step — simulates a live credential check
-- Click **Start Sync** — auto-advances through 5 sync stages then redirects to the Dashboard
-- Read-only credentials only; CloudSpire never writes to your cloud
+React 18 · Vite · React Router v6 · Tailwind CSS · Recharts · Framer Motion · shadcn/ui · Lucide
 
 ---
 
-### Step 2 — Dashboard (`/dashboard`)
+## Features
 
-Main overview. First screen after login.
-
-- **KPI cards** — Total Spend, Savings Identified, Active Anomalies, Budget Health (with MoM trend arrows)
-- **Multi-Cloud Spend Trend** — area chart across AWS / GCP / Azure
-- **Provider Allocation** — donut chart showing spend split
-- **Top Services & Regions** — ranked bar charts, color-coded by provider
-- Summary cards for active anomalies and optimization opportunities with "View All" links
-
----
-
-### Step 3 — Cost Explorer (`/cost-explorer`)
-
-Drill into spend data with filters.
-
-- Filter by **Date Range** (30 / 90 / 180 days), **Granularity** (Daily / Weekly / Monthly), **Provider**, **Group By** (Service / Region / Account)
-- Toggle between **Bar** and **Area** chart modes
-- **Provider Comparison cards** — current vs. last period with trend badges
-- **Spend Records table** — full sortable billing line items at the bottom
-
----
-
-### Step 4 — Anomalies (`/anomalies`)
-
-Spike detection and alerting.
-
-- Tabs: **All / Open / Acknowledged / Resolved**
-- Expand any anomaly to see Spend Today vs Expected, Deviation %, and Detected time
-- Actions: **Acknowledge** (amber), **Resolve** (green, moves to Resolved tab), **Create Ticket** (toast)
-- **Anomaly History** chart (last 30 days) and **Configure Alert Rules** panel at the bottom
-
----
-
-### Step 5 — Optimizer (`/optimizer`)
-
-Five tabs of cost-saving recommendations.
-
-| Tab | What it shows |
+| Area | Highlights |
 |---|---|
-| Idle Instances | Under-utilized EC2 / VMs — select rows → **Stop Selected** |
-| Orphaned Resources | Unattached EBS, unused IPs, stale snapshots — **Delete** with confirmation |
-| Right-Sizing | Over-provisioned instances with recommended size + monthly savings |
-| Reserved Instances | Commitment purchase opportunities with break-even month |
-| Scheduled Shutdowns | Dev/staging resources set to auto-stop outside business hours |
+| **Dashboard** | KPI cards with semantic colors, provider breakdown, spend trend, budget health |
+| **Cost Explorer** | Filter by date / provider / group · bar & area chart modes · billing table |
+| **Anomalies** | Spike detection · acknowledge / resolve workflow · 30-day history chart |
+| **Optimizer** | Idle instances, orphaned resources, right-sizing, reserved instances, scheduled shutdowns |
+| **Accounts** | Per-account cards with spend, resource count, 30-day trend drawer |
+| **Teams** | Budget bars, team modals, spend history · scoped per role |
+| **Reports** | 6 templates · schedule · export (CSV / JSON / Excel) |
+| **Settings** | Profile, notifications, integrations, team members, API keys · tabs gated by role |
 
 ---
 
-### Step 6 — Accounts (`/accounts`)
+## Role-Based Access Control
 
-Per-account visibility across all cloud providers.
+Switch personas using the **floating pill** (bottom-right). Role persists across refreshes.
 
-- Tabs: **All / AWS / GCP / Azure**
-- Each card shows current spend, resource count, environment tag, last sync time
-- Click any card → side drawer with 30-day spend trend, service breakdown, top resources, and account metadata
+| Role | Key restrictions |
+|---|---|
+| Super Admin | Full access |
+| FinOps Manager | No API key management |
+| Cloud Engineer | No billing, no team admin |
+| Team Lead | Teams scoped to own team · no Accounts page |
+| Finance Analyst | Read + export only · no infra actions |
+| Read-Only | View only · all action buttons hidden |
 
----
-
-### Step 7 — Teams & Budgets (`/teams`)
-
-Budget allocation by team.
-
-- Each team card shows lead, monthly budget, current spend, and a utilization bar (amber > 80%, red = over budget)
-- Click a card → modal with 30/60/90-day spend history, service breakdown, team members, linked resources
-- **New Team** button → create team modal with budget input
+RBAC controls: sidebar links · page-level 403 guards · action button visibility · settings tab access · data scoping.
 
 ---
 
-### Step 8 — Reports (`/reports`)
+## Semantic Color System
 
-Automated reporting for stakeholders.
-
-- 6 pre-built templates: Monthly Cost Digest, Cost by Team, Anomaly Report, RI Utilization, Year-over-Year, Custom
-- **Generate** (toast) or **Preview** any template
-- **Scheduled Reports** section — reports already running to CFO, DevOps, and Finance
-- **Export Billing Data** — choose format (CSV / JSON / Excel), granularity, and provider
-
----
-
-### Step 9 — Settings (`/settings`)
-
-- **Profile** — name, email, role, avatar
-- **Notifications** — email / Slack / in-app toggles with threshold controls
-- **Integrations** — Slack, Teams, Jira, PagerDuty, Terraform, GitHub Actions
-- **Team Members** — invite, set roles (Admin / Member / Viewer), remove
-- **API Keys** — generate, revoke, toggle visibility
+| Color | Meaning |
+|---|---|
+| 🔴 Red | Act now — overspend or critical alert |
+| 🟡 Amber | Caution — approaching a limit |
+| 🟢 Green | Positive — savings or under budget |
+| ⚪ Gray | Informational only |
 
 ---
 
-## 5-Minute Demo Cheat Sheet
+## Demo Script (5 min)
 
-| # | Page | What to do |
-|---|---|---|
-| 1 | `/onboarding` | Test Connection on all 3 providers → Start Sync |
-| 2 | `/dashboard` | KPI cards + spend trend chart |
-| 3 | `/cost-explorer` | Change Group By → switch chart type |
-| 4 | `/anomalies` | Expand a card → Acknowledge → Resolve |
-| 5 | `/optimizer` | Idle Instances → select rows → Stop |
-| 6 | `/teams` | Click a team card → budget bar |
-| 7 | `/reports` | Generate a Monthly Cost Digest |
+> Default persona on load: **FinOps Manager — Marcus Rivera**
 
----
+### 1. Dashboard — first impression
+- Open `/dashboard` — all 4 KPI cards visible with live-looking data
+- Point out the **semantic badge colors**: amber on "Total Spend" (cost rising), red on "vs Last Month" (overspending), amber on "Forecast" (83% budget consumed)
+- Scroll down to **Active Intelligence** — alerts, savings, and budget health side by side
 
-> All data is mocked — no real cloud credentials are needed.
+### 2. Role switching — Team Lead
+- Click the **floating pill** (bottom-right) → Role Switcher modal opens with 6 persona cards
+- Select **James Kim — Team Lead**
+- Sidebar instantly hides the **Accounts** link
+- Navigate to **Teams** — only James's team ("Frontend") is visible; all other teams are gone
+
+### 3. Page-level guard — 403
+- Type `/accounts` directly in the address bar
+- **Access Denied** screen appears with James's role badge and a "Switch Role" shortcut button
+- No blank page, no error — clean UX even for blocked routes
+
+### 4. Read-Only — action buttons vanish
+- Switch to **External Auditor — Read-Only**
+- Go to `/anomalies` — Acknowledge / Resolve / Create Ticket buttons are all hidden; only "Open Console" remains
+- Go to `/optimizer` — Apply / Terminate / Schedule toggles replaced with "View only" text
+- Everything readable, nothing actionable
+
+### 5. Cloud Engineer — scoped Settings
+- Switch to **Priya Patel — Cloud Engineer**
+- Open `/settings` — only **Profile** and **Notifications** tabs are visible
+- Integrations, Billing, Team Members, API Keys tabs are completely absent (not disabled — hidden)
+
+### 6. Super Admin — full access
+- Switch to **Sarah Chen — Super Admin**
+- All sidebar links back · all Settings tabs visible · all action buttons active
+
+### 7. Persistence across refresh
+- With any role selected, **refresh the browser**
+- Role, name, and avatar all persist — stored in `localStorage` key `cloudspire_demo_role`
+
+### 8. Onboarding wizard
+- Navigate to `/onboarding`
+- Click **Test Connection** on AWS, GCP, and Azure steps — each shows a simulated success state
+- Click **Start Sync** — progress bar auto-advances through 5 stages, then redirects to Dashboard
+
+### 9. Optimizer — bulk actions
+- Go to `/optimizer` → **Idle Instances** tab (as FinOps Manager or Super Admin)
+- Select 2–3 rows using checkboxes → **Terminate Selected** bulk action bar slides up from the bottom
+- Switch to **Right-Sizing** tab → each row shows current type → recommended type → monthly savings
+
+### 10. Cost Explorer — drill-down
+- Go to `/cost-explorer`
+- Change **Group By** to Region → chart redraws
+- Toggle between **Bar** and **Area** chart modes
+- Scroll down to the billing records table — sortable by any column
+
 

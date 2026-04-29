@@ -310,7 +310,11 @@ export default function Landing() {
       </header>
 
       {/* HERO */}
-      <section className="overflow-hidden" style={{ background: '#ffffff' }}>
+      <section className="overflow-hidden relative" style={{ background: '#ffffff' }}>
+        <div className="hidden sm:block absolute top-20 right-20 w-4 h-4 bg-yellow-400 rounded-full" />
+        <div className="hidden sm:block absolute top-32 right-32 w-3 h-3 bg-purple-400 rounded-sm transform rotate-45" />
+        <div className="hidden sm:block absolute top-40 right-16 w-2 h-8 bg-purple-500" />
+        <div className="hidden sm:block absolute top-48 right-24 w-6 h-2 bg-yellow-400" />
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <motion.div
@@ -358,6 +362,7 @@ export default function Landing() {
               </div>
             </motion.div>
             <motion.div
+              className="relative"
               initial={{ opacity: 0, x: 32 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
               <div className="rounded-xl overflow-hidden border"
@@ -372,6 +377,14 @@ export default function Landing() {
                 </div>
                 <img src={dashboardImg} alt="CloudSpire Dashboard" className="w-full block" loading="eager" />
               </div>
+              {/* Floating corner accents */}
+              <div className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 w-6 h-6 sm:w-8 sm:h-8 bg-purple-400 rounded-lg transform rotate-45" />
+              <div className="absolute -bottom-3 -right-3 sm:-bottom-4 sm:-right-4 w-4 h-4 sm:w-6 sm:h-6 bg-yellow-400 rounded-full" />
+              <div className="hidden sm:block absolute top-1/2 -right-6 w-3 h-10 bg-purple-500 -translate-y-1/2" />
+              {/* Scattered pixel accents */}
+              <div className="hidden sm:block absolute top-8 -right-8 w-2 h-2 bg-purple-400" />
+              <div className="hidden sm:block absolute bottom-10 left-6 w-3 h-3 bg-yellow-400 rounded-full" />
+              <div className="hidden sm:block absolute top-14 left-10 w-2 h-6 bg-blue-500" />
             </motion.div>
           </div>
         </div>

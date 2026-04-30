@@ -1,13 +1,16 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-  FileText, Download, Clock, Mail, Calendar, Plus, Play, Settings,
-  BarChart3, Users2, ShieldAlert, Layers, TrendingUp, SlidersHorizontal
-} from 'lucide-react'
-import PageHeader from '../components/layout/PageHeader'
-import { useToast } from '../context/ToastContext'
-import { usePermissions } from '../hooks/usePermissions'
-import { PERMISSIONS } from '../data/mockRoles'
+  FileText, Download, Clock, Calendar, Plus, Play, Settings,
+  BarChart3, Users2, ShieldAlert, Layers, TrendingUp, SlidersHorizontal, Database, FileJson, CalendarDays, Globe
+} from 'lucide-react';
+import PageHeader from '../components/layout/PageHeader';
+import { useToast } from '../context/ToastContext';
+import { usePermissions } from '../hooks/usePermissions';
+import { PERMISSIONS } from '../data/mockRoles';
+import { CloudProviderIcon } from '../components/ui/CloudProviderIcon';
+import { getBrandSurfaceStyles } from '../constants/brandAssets';
+import DateRangePickerSaaS from '../components/ui/DateRangePickerSaaS';
 
 const reportTemplates = [
   { id: 1, title: 'Monthly Cost Digest', description: 'PDF summary of all providers with trend analysis and top cost drivers.', icon: BarChart3, color: 'var(--accent-primary)' },
@@ -28,7 +31,8 @@ const scheduledReports = [
 export default function Reports() {
   const [exportFormat, setExportFormat] = useState('CSV')
   const [exportGranularity, setExportGranularity] = useState('Daily')
-  const [exportProvider, setExportProvider] = useState('All Providers')
+  const [exportProvider, setExportProvider] = useState('all')
+  const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
   const { addToast } = useToast()
   const { can } = usePermissions()
 
@@ -38,8 +42,7 @@ export default function Reports() {
         {can(PERMISSIONS.SCHEDULE_REPORTS) && (
           <button
             onClick={() => addToast('New report schedule created', 'success')}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-blue)', color: '#fff' }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90"
           >
             <Plus size={14} /> Schedule Report
           </button>
@@ -55,13 +58,13 @@ export default function Reports() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
-            className="rounded-xl border p-5"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}
+            className="rounded-xl border p-5 shadow-depth-card"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
           >
             <div className="flex items-start justify-between mb-4">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: `${r.color}18` }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-depth-inset"
+                style={{ background: `color-mix(in srgb, ${r.color} 10%, var(--bg-base))` }}
               >
                 <r.icon size={20} style={{ color: r.color }} strokeWidth={1.75} />
               </div>
@@ -72,16 +75,16 @@ export default function Reports() {
             <div className="flex gap-2">
               <button
                 onClick={() => addToast(`Generating "${r.title}"...`, 'info')}
-                className="flex-1 py-1.5 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 transition-opacity hover:opacity-90"
-                style={{ background: r.color, color: '#fff' }}
+                className="flex-1 py-1.5 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 shadow-depth-1 transition-opacity hover:opacity-90"
+                style={{ background: r.color, color: '#fff', border: '1px solid transparent', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.15)' }}
               >
-                <Play size={11} /> Generate Now
+                <Play size={11} fill="currentColor" /> Generate Now
               </button>
               {can(PERMISSIONS.SCHEDULE_REPORTS) && (
                 <button
                   onClick={() => addToast(`"${r.title}" scheduled`, 'success')}
-                  className="flex-1 py-1.5 text-xs font-medium rounded-xl border transition-colors hover:bg-white/10 flex items-center justify-center gap-1"
-                  style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+                  className="flex-1 py-1.5 text-xs font-medium rounded-xl border shadow-depth-1 transition-colors flex items-center justify-center gap-1 hover:bg-[--bg-hover]"
+                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
                 >
                   <Clock size={11} /> Schedule
                 </button>
@@ -94,7 +97,7 @@ export default function Reports() {
       {/* Scheduled Reports */}
       <div className="mb-8">
         <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Scheduled Reports</h2>
-        <div className="overflow-x-auto scrollbar-hide rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border shadow-depth-inset" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
           <table className="w-full text-xs min-w-[560px]">
             <thead>
               <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -128,13 +131,13 @@ export default function Reports() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1.5">
                       <button onClick={() => addToast(`Running "${r.name}" now...`, 'info')}
-                        className="px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors hover:bg-white/10"
-                        style={{ color: 'var(--accent-blue)' }}>
+                        className="px-2 py-1 rounded-lg text-[10px] border shadow-depth-1 font-semibold transition-colors hover:bg-[--bg-hover]"
+                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--accent-blue)' }}>
                         Run Now
                       </button>
                       {can(PERMISSIONS.SCHEDULE_REPORTS) && (
                         <button onClick={() => addToast('Report schedule updated', 'success')}
-                          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                          className="p-1.5 rounded-lg hover:bg-[--bg-hover] bg-[--bg-surface] border shadow-depth-1 transition-colors" style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)' }}>
                           <Settings size={12} />
                         </button>
                       )}
@@ -147,82 +150,140 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Export Data */}
-      <div className="rounded-xl border p-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
-        <h2 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-          <Download size={14} /> Export Raw Data
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-5">
-          <div>
-            <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>Date Range</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="date" defaultValue="2025-04-01"
-                className="px-3 py-2 text-xs rounded-xl border outline-none"
-                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }} />
-              <input type="date" defaultValue="2025-04-28"
-                className="px-3 py-2 text-xs rounded-xl border outline-none"
-                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }} />
-            </div>
+      {/* Export Raw Data */}
+      <div className="rounded-xl border mb-10" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', boxShadow: '0 4px 6px -1px rgba(15,23,42,0.06), 0 2px 4px -2px rgba(15,23,42,0.04)' }}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--accent-primary-subtle)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)' }}>
+            <Download size={18} style={{ color: 'var(--accent-primary)' }} />
           </div>
           <div>
-            <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>Provider</label>
-            <div className="flex gap-1">
-              {['All Providers', 'AWS', 'GCP', 'Azure'].map(p => (
-                <button key={p} onClick={() => setExportProvider(p)}
-                  className="flex-1 py-2 text-[10px] font-medium rounded-xl border transition-all"
-                  style={{
-                    background: exportProvider === p ? 'var(--accent-blue)' : 'var(--bg-elevated)',
-                    color: exportProvider === p ? '#fff' : 'var(--text-secondary)',
-                    borderColor: exportProvider === p ? 'var(--accent-blue)' : 'var(--border-default)',
-                  }}>
-                  {p === 'All Providers' ? 'All' : p}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>Format</label>
-            <div className="flex gap-1">
-              {['CSV', 'JSON', 'Parquet'].map(f => (
-                <button key={f} onClick={() => setExportFormat(f)}
-                  className="flex-1 py-2 text-xs font-medium rounded-xl border transition-all"
-                  style={{
-                    background: exportFormat === f ? 'var(--accent-violet)' : 'var(--bg-elevated)',
-                    color: exportFormat === f ? '#fff' : 'var(--text-secondary)',
-                    borderColor: exportFormat === f ? 'var(--accent-violet)' : 'var(--border-default)',
-                  }}>
-                  {f}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Export Raw Data</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Download billing data for custom analysis</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div>
-            <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>Granularity</label>
-            <div className="flex gap-1">
-              {['Daily', 'Monthly'].map(g => (
-                <button key={g} onClick={() => setExportGranularity(g)}
-                  className="px-4 py-2 text-xs font-medium rounded-xl border transition-all"
-                  style={{
-                    background: exportGranularity === g ? 'var(--accent-cyan)' : 'var(--bg-elevated)',
-                    color: exportGranularity === g ? '#fff' : 'var(--text-secondary)',
-                    borderColor: exportGranularity === g ? 'var(--accent-cyan)' : 'var(--border-default)',
-                  }}>
-                  {g}
-                </button>
-              ))}
+
+        {/* Filters row */}
+        <div className="flex flex-wrap items-end gap-x-0 gap-y-5 px-6 py-5">
+
+          {/* Date Range */}
+          <div className="pr-6">
+            <p className="text-[10px] font-semibold tracking-wide mb-1.5 uppercase" style={{ color: 'var(--text-muted)' }}>Date Range</p>
+            <DateRangePickerSaaS value={dateRange} onChange={setDateRange} />
+          </div>
+
+          <div className="w-px self-stretch mx-0.5" style={{ background: 'var(--border-subtle)' }} />
+
+          {/* Provider */}
+          <div className="px-6">
+            <p className="text-[10px] font-semibold tracking-wide mb-1.5 uppercase" style={{ color: 'var(--text-muted)' }}>Provider</p>
+            <div className="flex gap-1.5">
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'aws', label: 'AWS' },
+                { key: 'gcp', label: 'GCP' },
+                { key: 'azure', label: 'Azure' },
+              ].map(p => {
+                const isSelected = exportProvider === p.key;
+                const brandStyle = p.key !== 'all' ? getBrandSurfaceStyles(p.key, 0.1) : null;
+                return (
+                  <button
+                    key={p.key}
+                    onClick={() => setExportProvider(p.key)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
+                    style={{
+                      background: isSelected
+                        ? p.key === 'all' ? 'var(--accent-primary)' : brandStyle?.background
+                        : 'var(--bg-elevated)',
+                      color: isSelected
+                        ? p.key === 'all' ? '#fff' : brandStyle?.color
+                        : 'var(--text-secondary)',
+                      border: `1px solid ${isSelected
+                        ? p.key === 'all' ? 'var(--accent-primary)' : brandStyle?.borderColor
+                        : 'var(--border-default)'}`,
+                    }}
+                  >
+                    {p.key === 'all'
+                      ? <Globe size={13} />
+                      : <CloudProviderIcon provider={p.key} className="h-3.5 w-3.5" />
+                    }
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          {can(PERMISSIONS.EXPORT_DATA) && (
+
+          <div className="w-px self-stretch mx-0.5" style={{ background: 'var(--border-subtle)' }} />
+
+          {/* Format */}
+          <div className="px-6">
+            <p className="text-[10px] font-semibold tracking-wide mb-1.5 uppercase" style={{ color: 'var(--text-muted)' }}>Format</p>
+            <div className="flex gap-1.5">
+              {[
+                { key: 'CSV', Icon: FileText },
+                { key: 'JSON', Icon: FileJson },
+                { key: 'Parquet', Icon: Database },
+              ].map(({ key, Icon }) => {
+                const isSelected = exportFormat === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setExportFormat(key)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
+                    style={{
+                      background: isSelected ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                      color: isSelected ? '#fff' : 'var(--text-secondary)',
+                      border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-default)'}`,
+                    }}
+                  >
+                    <Icon size={12} /> {key}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="w-px self-stretch mx-0.5" style={{ background: 'var(--border-subtle)' }} />
+
+          {/* Granularity */}
+          <div className="px-6">
+            <p className="text-[10px] font-semibold tracking-wide mb-1.5 uppercase" style={{ color: 'var(--text-muted)' }}>Granularity</p>
+            <div className="flex gap-1.5">
+              {[
+                { key: 'Daily', Icon: CalendarDays },
+                { key: 'Monthly', Icon: Calendar },
+              ].map(({ key, Icon }) => {
+                const isSelected = exportGranularity === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setExportGranularity(key)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
+                    style={{
+                      background: isSelected ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+                      boxShadow: isSelected ? 'inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-default)'}`,
+                    }}
+                  >
+                    <Icon size={12} /> {key}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Download — pushed to end */}
+          <div className="ml-auto pl-4">
             <button
               onClick={() => addToast('Export ready, downloading...', 'success')}
-              className="mt-4 flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-              style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}
+              disabled={!can(PERMISSIONS.EXPORT_DATA)}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              <Download size={14} /> Download Export
+              <Download size={15} /> Download Export
             </button>
-          )}
+          </div>
         </div>
       </div>
     </motion.div>

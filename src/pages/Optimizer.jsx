@@ -56,12 +56,12 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action }) 
         </p>
         <div className="flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-2.5 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
-            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+            className="flex-1 py-2.5 text-sm font-medium shadow-depth-1 rounded-xl border transition-colors hover:bg-[--bg-hover]"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
             Cancel
           </button>
           <button onClick={onConfirm}
-            className="flex-1 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+            className="flex-1 py-2.5 text-sm font-semibold shadow-depth-1 rounded-xl transition-opacity hover:opacity-90"
             style={{ background: 'var(--accent-rose)', color: '#fff' }}>
             {action}
           </button>
@@ -166,8 +166,8 @@ export default function Optimizer() {
         {can(PERMISSIONS.APPLY_OPTIMIZATIONS) && (
           <button
             onClick={() => addToast('Review scheduled with FinOps team', 'success')}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-[--bg-hover]"
-            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border shadow-depth-1 transition-colors hover:bg-[--bg-hover]"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
           >
             Schedule Review
           </button>
@@ -180,7 +180,7 @@ export default function Optimizer() {
               action: 'Implement All',
               savingsMsg: `${fmt.format(optimizationSummary.totalPotentialSavings)}/month saved`,
             })}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl shadow-depth-1 transition-opacity hover:opacity-90"
             style={{ background: 'var(--accent-emerald)', color: '#fff' }}
           >
             <Zap size={14} /> Implement All ({fmt.format(optimizationSummary.totalPotentialSavings)}/mo)
@@ -197,8 +197,8 @@ export default function Optimizer() {
           { label: 'Reserved Instances', amount: optimizationSummary.savingsBreakdown.reservedInstances, color: 'var(--accent-primary)' },
           { label: 'Scheduled Shutdowns', amount: optimizationSummary.savingsBreakdown.scheduledShutdowns, color: 'var(--accent-emerald)' },
         ].map(s => (
-          <div key={s.label} className="rounded-xl border p-3 text-center"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div key={s.label} className="rounded-xl border shadow-depth-card p-3 text-center"
+            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
             <p className="text-lg font-bold font-mono" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>
               {fmt.format(s.amount)}
             </p>
@@ -208,8 +208,8 @@ export default function Optimizer() {
       </div>
 
       {/* Progress */}
-      <div className="rounded-xl border p-4 mb-6 flex items-center gap-4"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+      <div className="rounded-xl border shadow-depth-card p-4 mb-6 flex items-center gap-4"
+        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
         <div className="flex-1">
           <div className="flex justify-between mb-1.5">
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Implemented this month</span>
@@ -217,7 +217,7 @@ export default function Optimizer() {
               {fmt.format(optimizationSummary.implementedThisMonth)} ({optimizationSummary.savingsImplementedPercent}%)
             </span>
           </div>
-          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+          <div className="w-full h-2 rounded-full overflow-hidden shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
             <div className="h-full rounded-full" style={{ width: `${optimizationSummary.savingsImplementedPercent}%`, background: 'var(--accent-emerald)' }} />
           </div>
         </div>
@@ -255,13 +255,13 @@ export default function Optimizer() {
                   action: 'Terminate',
                   savingsMsg: `${fmt.format(idleInstances.filter(i => selectedRows.includes(i.id)).reduce((s, i) => s + i.savings, 0))}/month saved`,
                 })}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg"
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg shadow-[0_2px_4px_rgba(244,63,94,0.3)] transition-opacity hover:opacity-90"
                 style={{ background: 'var(--accent-rose)', color: '#fff' }}>
                 <Trash2 size={12} className="inline mr-1" /> Terminate Selected
               </button>
             </div>
           )}
-          <div className="overflow-x-auto scrollbar-hide rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="overflow-x-auto scrollbar-hide rounded-xl border shadow-depth-inset" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
             <table className="w-full text-xs min-w-[700px]">
               <thead>
                 <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -336,8 +336,8 @@ export default function Optimizer() {
             {orphaned.map(r => {
               const Icon = resourceTypeIcon(r.type)
               return (
-                <div key={r.resourceId} className="rounded-xl border p-4"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+                <div key={r.resourceId} className="rounded-xl border shadow-depth-card p-4"
+                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(244,63,94,0.1)' }}>
                       <Icon size={16} style={{ color: 'var(--accent-rose)' }} />
@@ -387,7 +387,7 @@ export default function Optimizer() {
 
       {/* Tab: Right-Sizing */}
       {activeTab === 'Right-Sizing' && (
-        <div className="overflow-x-auto scrollbar-hide rounded-xl border" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="overflow-x-auto scrollbar-hide rounded-xl border shadow-depth-inset" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
           <table className="w-full text-xs min-w-[700px]">
             <thead>
               <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -456,8 +456,8 @@ export default function Optimizer() {
       {activeTab === 'Reserved Instances' && (
         <div className="grid grid-cols-3 gap-4">
           {reservedInstanceOpportunities.map(ri => (
-            <div key={ri.id} className="rounded-xl border p-5"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+            <div key={ri.id} className="rounded-xl border shadow-depth-card p-5"
+              style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
               <div className="flex items-center justify-between mb-3">
                 <ProviderBadge provider={ri.provider} />
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
@@ -515,8 +515,8 @@ export default function Optimizer() {
       {activeTab === 'Scheduled Shutdowns' && (
         <div className="space-y-4">
           {schedules.map(s => (
-            <div key={s.id} className="rounded-xl border p-5 flex items-start gap-4"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+            <div key={s.id} className="rounded-xl border shadow-depth-card p-5 flex items-start gap-4"
+              style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
               {can(PERMISSIONS.SCHEDULE_SHUTDOWNS) ? (
                 <button
                   onClick={() => toggleSchedule(s.id)}

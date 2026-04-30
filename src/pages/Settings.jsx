@@ -119,19 +119,22 @@ export default function Settings() {
       <PageHeader title="Settings" subtitle="Manage your account, notifications, and integrations" />
 
       {/* Tab bar */}
-      <div className="overflow-x-auto scrollbar-hide mb-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="overflow-x-auto scrollbar-hide mb-6 border-b" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-base)', padding: '8px 8px 0 8px', borderRadius: '8px 8px 0 0' }}>
         <div className="flex gap-1 min-w-max">
         {visibleTabs.map(tab => {
           const icons = { Profile: User, Notifications: Bell, Integrations: Link2, Billing: CreditCard, 'Team Members': Users, 'API Keys': Key }
           const Icon = icons[tab]
           return (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+              className="px-4 py-2.5 text-sm font-medium transition-all rounded-t-lg -mb-px flex items-center gap-1.5 shrink-0 whitespace-nowrap"
               style={{
-                borderBottomColor: activeTab === tab ? 'var(--accent-primary)' : 'transparent',
-                color: activeTab === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
+                background: activeTab === tab ? 'var(--bg-surface)' : 'transparent',
+                boxShadow: activeTab === tab ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 -2px 4px rgba(0,0,0,0.03)' : 'none',
+                border: activeTab === tab ? '1px solid var(--border-default)' : '1px solid transparent',
+                borderBottomColor: activeTab === tab ? 'var(--bg-surface)' : 'transparent',
+                color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
               }}>
-              <Icon size={13} /> {tab}
+              <Icon size={14} className={activeTab === tab ? 'text-[var(--accent-primary)]' : ''} /> {tab}
             </button>
           )
         })}
@@ -141,7 +144,7 @@ export default function Settings() {
       {/* Profile */}
       {activeTab === 'Profile' && (
         <div className="max-w-lg space-y-5">
-          <div className="flex items-center gap-4 p-5 rounded-xl border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div className="flex items-center gap-4 p-5 rounded-xl border shadow-depth-card" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
             <UserAvatar user={CURRENT_USER} size="xl" rounded="xl" />
             <div>
               <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{CURRENT_USER.name}</p>
@@ -164,8 +167,8 @@ export default function Settings() {
               <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
               <input
                 defaultValue={f.value}
-                className="w-full px-3 py-2.5 text-sm rounded-xl border outline-none"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                className="w-full px-3 py-2.5 text-sm rounded-xl border outline-none shadow-depth-1"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                 onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }}
               />
@@ -173,8 +176,7 @@ export default function Settings() {
           ))}
           <button
             onClick={() => addToast('Profile saved', 'success')}
-            className="px-6 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+            className="px-6 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
             Save Changes
           </button>
         </div>
@@ -190,8 +192,8 @@ export default function Settings() {
             { key: 'budgetAlerts', label: 'Budget threshold alerts', sub: 'Alert when budget usage exceeds threshold' },
             { key: 'dailySummary', label: 'Daily summary email', sub: 'Daily spend summary at 8am' },
           ].map(item => (
-            <div key={item.key} className="flex items-center justify-between p-4 rounded-xl border"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+            <div key={item.key} className="flex items-center justify-between p-4 rounded-xl border shadow-depth-card"
+              style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{item.label}</p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
@@ -208,7 +210,7 @@ export default function Settings() {
             </div>
           ))}
 
-          <div className="p-4 rounded-xl border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div className="p-4 rounded-xl border shadow-depth-card" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Budget Alert Threshold</p>
               <span className="text-sm font-mono font-semibold" style={{ color: 'var(--accent-cyan)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -220,8 +222,7 @@ export default function Settings() {
           </div>
 
           <button onClick={() => addToast('Notification settings saved', 'success')}
-            className="px-6 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+            className="px-6 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
             Save Preferences
           </button>
         </div>
@@ -231,11 +232,11 @@ export default function Settings() {
       {activeTab === 'Integrations' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {integrations.map(ig => (
-            <div key={ig.name} className="rounded-xl border p-5"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+            <div key={ig.name} className="rounded-xl border p-5 shadow-depth-card"
+              style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
               <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-xl border flex items-center justify-center"
-                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)' }}>
+                <div className="w-11 h-11 rounded-xl border flex items-center justify-center shadow-depth-inset"
+                  style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                   <BrandLogo brandKey={ig.key} size={22} />
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold`}
@@ -257,8 +258,9 @@ export default function Settings() {
                   })
                   : addToast(`Connecting to ${ig.name}...`, 'success')
                 }
-                className="w-full py-2 text-xs font-semibold rounded-xl border transition-colors hover:bg-[--bg-hover]"
+                className="w-full py-2 text-xs font-semibold rounded-xl border transition-colors shadow-depth-1"
                 style={{
+                  background: ig.connected ? 'var(--bg-elevated)' : 'var(--bg-surface)',
                   borderColor: ig.connected ? 'var(--accent-rose)' : 'var(--accent-primary)',
                   color: ig.connected ? 'var(--accent-rose)' : 'var(--accent-primary)',
                 }}>
@@ -272,7 +274,7 @@ export default function Settings() {
       {/* Billing */}
       {activeTab === 'Billing' && (
         <div className="max-w-lg space-y-4">
-          <div className="rounded-xl border p-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div className="rounded-xl border p-6 shadow-depth-card" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Current Plan</p>
@@ -289,12 +291,11 @@ export default function Settings() {
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>You're tracking $149,400 of cloud spend. Your Growth plan limit is $50,000/month.</p>
             </div>
             <button onClick={() => addToast('Redirecting to upgrade page...', 'info')}
-              className="w-full py-3 font-semibold text-sm rounded-xl transition-opacity hover:opacity-90"
-              style={{ background: 'var(--accent-primary)', color: 'var(--bg-base)' }}>
+              className="w-full py-3 font-semibold text-sm rounded-xl shiny-primary transition-opacity hover:opacity-90">
               Upgrade to Enterprise
             </button>
           </div>
-          <div className="rounded-xl border p-4" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div className="rounded-xl border p-4 shadow-depth-card" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
             <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Next Invoice</p>
             <div className="flex justify-between text-sm">
               <span style={{ color: 'var(--text-secondary)' }}>May 1, 2025</span>
@@ -307,7 +308,7 @@ export default function Settings() {
       {/* Team Members */}
       {activeTab === 'Team Members' && (
         <div className="max-w-2xl">
-          <div className="rounded-xl border overflow-hidden mb-4" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="rounded-xl border overflow-hidden mb-4 shadow-depth-inset" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-base)' }}>
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -357,13 +358,13 @@ export default function Settings() {
             <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Add Member</p>
             <div className="flex gap-3">
               <input type="email" placeholder="colleague@company.com"
-                className="flex-1 px-3 py-2 text-sm rounded-xl border outline-none"
-                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                className="flex-1 px-3 py-2 text-sm rounded-xl border outline-none shadow-depth-1"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                 onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
               <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="h-[38px] min-w-[100px] rounded-xl border text-sm"
-                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                <SelectTrigger className="h-[38px] min-w-[100px] rounded-xl border text-sm shadow-depth-1"
+                  style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -373,8 +374,7 @@ export default function Settings() {
                 </SelectContent>
               </Select>
               <button onClick={() => addToast('Invitation sent', 'success')}
-                className="px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90 flex items-center gap-1.5"
-                style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+                className="px-4 py-2 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90 flex items-center gap-1.5">
                 <Plus size={13} /> Invite
               </button>
             </div>
@@ -385,7 +385,7 @@ export default function Settings() {
       {/* API Keys */}
       {activeTab === 'API Keys' && (
         <div className="max-w-2xl">
-          <div className="rounded-xl border overflow-hidden mb-4" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="rounded-xl border overflow-hidden mb-4 shadow-depth-inset" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-base)' }}>
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -434,8 +434,7 @@ export default function Settings() {
             </table>
           </div>
           <button onClick={() => addToast('New API key generated and copied to clipboard', 'success')}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
             <Plus size={14} /> Generate New API Key
           </button>
         </div>

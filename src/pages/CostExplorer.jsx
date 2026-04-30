@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Filter, ChevronUp, ChevronDown, BarChart3, AreaChart as AreaChartIcon } from 'lucide-react'
+import { Download, Filter, ChevronUp, ChevronDown, BarChart3, AreaChart as AreaChartIcon, Box, Folder, Users } from 'lucide-react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -26,6 +26,8 @@ import { useToast } from '../context/ToastContext'
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
 const DATE_PRESETS = ['This Month', 'Last Month', 'Last 30d', 'Last 90d', 'Last 12m', 'Custom']
+import { CloudProviderIcon } from '../components/ui/CloudProviderIcon'
+
 const PROVIDERS = ['AWS', 'GCP', 'Azure']
 const GROUP_BY = ['Service', 'Region', 'Account', 'Team', 'Resource Type']
 const CHART_MODE = ['Bar', 'Area']
@@ -338,17 +340,22 @@ export default function CostExplorer() {
         <div>
           <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Provider</p>
           <div className="flex gap-1">
-            {PROVIDERS.map(p => (
-              <button key={p} onClick={() => toggleProvider(p)}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
-                style={{
-                  background: selectedProviders.includes(p.toLowerCase()) ? 'var(--accent-blue)' : 'var(--bg-elevated)',
-                  color: selectedProviders.includes(p.toLowerCase()) ? '#fff' : 'var(--text-secondary)',
-                  border: `1px solid ${selectedProviders.includes(p.toLowerCase()) ? 'var(--accent-blue)' : 'var(--border-default)'}`,
-                }}>
-                {p}
-              </button>
-            ))}
+            {PROVIDERS.map(p => {
+              const isSelected = selectedProviders.includes(p.toLowerCase());
+              return (
+                <button key={p} onClick={() => toggleProvider(p)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
+                  style={{
+                    background: isSelected ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+                    boxShadow: isSelected ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-default)'}`,
+                  }}>
+                  <CloudProviderIcon provider={p} className={isSelected ? 'opacity-100' : 'opacity-60'} />
+                  {p}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -358,17 +365,23 @@ export default function CostExplorer() {
         <div>
           <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Group By</p>
           <div className="flex gap-1">
-            {GROUP_BY.map(g => (
-              <button key={g} onClick={() => { setGroupBy(g); setPage(0) }}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
-                style={{
-                  background: groupBy === g ? 'var(--accent-cyan)' : 'var(--bg-elevated)',
-                  color: groupBy === g ? '#fff' : 'var(--text-secondary)',
-                  border: `1px solid ${groupBy === g ? 'var(--accent-cyan)' : 'var(--border-default)'}`,
-                }}>
-                {g}
-              </button>
-            ))}
+            {GROUP_BY.map(g => {
+              const isSelected = groupBy === g;
+              const Icon = g === 'Service' ? Box : g === 'Account' ? Folder : Users;
+              return (
+                <button key={g} onClick={() => { setGroupBy(g); setPage(0) }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
+                  style={{
+                    background: isSelected ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+                    boxShadow: isSelected ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-default)'}`,
+                  }}>
+                  <Icon size={12} className={isSelected ? "text-[var(--accent-cyan)]" : "text-current opacity-60"} />
+                  {g}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -377,18 +390,22 @@ export default function CostExplorer() {
         <div>
           <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Chart</p>
           <div className="flex gap-1">
-            {CHART_MODE.map(mode => (
-              <button key={mode} onClick={() => setChartMode(mode)}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1"
-                style={{
-                  background: chartMode === mode ? 'var(--accent-violet)' : 'var(--bg-elevated)',
-                  color: chartMode === mode ? '#fff' : 'var(--text-secondary)',
-                  border: `1px solid ${chartMode === mode ? 'var(--accent-violet)' : 'var(--border-default)'}`,
-                }}>
-                {mode === 'Bar' ? <BarChart3 size={12} /> : <AreaChartIcon size={12} />}
-                {mode}
-              </button>
-            ))}
+            {CHART_MODE.map(mode => {
+              const isSelected = chartMode === mode;
+              return (
+                <button key={mode} onClick={() => setChartMode(mode)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5"
+                  style={{
+                    background: isSelected ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+                    boxShadow: isSelected ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-default)'}`,
+                  }}>
+                  {mode === 'Bar' ? <BarChart3 size={12} className={isSelected ? "text-[var(--accent-violet)]" : "opacity-60"} /> : <AreaChartIcon size={12} className={isSelected ? "text-[var(--accent-violet)]" : "opacity-60"} />}
+                  {mode}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

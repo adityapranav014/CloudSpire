@@ -66,7 +66,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 lg:left-56 h-14 flex items-center justify-between px-4 sm:px-6 z-20 border-b gap-3"
+      className="fixed top-0 left-0 right-0 lg:left-56 h-14 flex items-center justify-between px-4 sm:px-6 z-20 border-b gap-3 shadow-depth-1"
       style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
     >
       {/* Search */}
@@ -84,7 +84,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
         <input
           type="text"
           placeholder="Search pages, accounts, services... (⌘K)"
-          className="pl-9 pr-4 py-1.5 text-sm rounded-lg w-full outline-none border transition-colors cursor-pointer"
+          className="pl-9 pr-4 py-1.5 text-sm rounded-lg w-full outline-none border transition-colors cursor-pointer shadow-depth-inset"
           style={{
             background: 'var(--bg-elevated)',
             borderColor: 'var(--border-default)',
@@ -127,8 +127,8 @@ export default function TopBar({ onOpenMenu = () => {} }) {
 
           {userMenuOpen && (
             <div
-              className="absolute right-0 top-full mt-2 w-52 rounded-xl border shadow-2xl py-1 z-50"
-              style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}
+              className="absolute right-0 top-full mt-2 w-52 rounded-xl border shadow-depth-3 py-1 z-50 bg-surface"
+              style={{ borderColor: 'var(--border-default)' }}
             >
               <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center gap-2.5 mb-1.5">

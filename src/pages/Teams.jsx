@@ -48,7 +48,7 @@ function TeamDetailModal({ team, onClose }) {
   ]
   const details = getTeamDetails(team)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         className="rounded-2xl border p-6 w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-y-auto"
@@ -74,7 +74,7 @@ function TeamDetailModal({ team, onClose }) {
             { label: '60d Spend', value: fmt.format(team.spend60d), color: 'var(--text-secondary)' },
             { label: '90d Spend', value: fmt.format(team.spend90d), color: 'var(--text-muted)' },
           ].map(s => (
-            <div key={s.label} className="p-3 rounded-xl text-center" style={{ background: 'var(--bg-card)' }}>
+            <div key={s.label} className="p-3 rounded-xl border shadow-depth-inset text-center" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
               <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
               <p className="font-mono font-bold text-sm" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{s.value}</p>
             </div>
@@ -109,7 +109,7 @@ function TeamDetailModal({ team, onClose }) {
             <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Members</p>
             <div className="space-y-2">
               {details.members.map((member) => (
-                <div key={member.name} className="flex items-center justify-between p-2.5 rounded-xl" style={{ background: 'var(--bg-card)' }}>
+                <div key={member.name} className="flex items-center justify-between p-2.5 shadow-depth-inset rounded-xl border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                   <div className="flex items-center gap-2.5">
                     <UserAvatar user={member} size="md" />
                     <div>
@@ -183,8 +183,7 @@ export default function Teams() {
         {can(PERMISSIONS.MANAGE_TEAMS) && !isRole(ROLES.TEAM_LEAD) && (
           <button
             onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-blue)', color: '#fff' }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90"
           >
             <Plus size={14} /> Add Team
           </button>
@@ -199,8 +198,8 @@ export default function Teams() {
           { label: 'Budget Utilization', value: `${Math.round(totalSpend / totalBudget * 100)}%`, color: 'var(--accent-amber)' },
           { label: 'Over-Budget Teams', value: overBudgetTeams.length, color: 'var(--accent-rose)' },
         ].map(s => (
-          <div key={s.label} className="rounded-xl border p-4"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div key={s.label} className="rounded-xl border shadow-depth-card p-4"
+            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
             <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
             <p className="text-xl font-bold font-mono" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{s.value}</p>
           </div>
@@ -220,9 +219,9 @@ export default function Teams() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.06 }}
-              className="rounded-xl border p-5"
+              className="rounded-xl border shadow-depth-card p-5"
               style={{
-                background: 'var(--bg-card)',
+                background: 'var(--bg-elevated)',
                 borderColor: team.overBudget ? 'color-mix(in srgb, var(--accent-rose) 40%, transparent)' : 'var(--border-default)',
               }}
             >
@@ -257,7 +256,7 @@ export default function Teams() {
 
               {/* Budget bar */}
               <div className="mb-1">
-                <div className="w-full h-2 rounded-full overflow-hidden mb-1" style={{ background: 'var(--bg-elevated)' }}>
+                <div className="w-full h-2 rounded-full overflow-hidden mb-1 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(pct, 100)}%`, background: barColor }}
@@ -281,8 +280,8 @@ export default function Teams() {
               </div>
 
               {/* Top service */}
-              <div className="flex items-center justify-between text-xs mb-4 p-2 rounded-lg"
-                style={{ background: 'var(--bg-elevated)' }}>
+              <div className="flex items-center justify-between text-xs mb-4 p-2.5 rounded-xl border shadow-depth-inset"
+                style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Top service</span>
                 <span style={{ color: 'var(--text-secondary)' }}>{team.topService}</span>
                 <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -294,15 +293,15 @@ export default function Teams() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedTeam(team)}
-                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-[--bg-hover]"
-                  style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                  className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors shadow-depth-1 hover:bg-[--bg-hover]"
+                  style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                   <BarChart2 size={12} /> View Details
                 </button>
                 {can(PERMISSIONS.MANAGE_TEAMS) && (
                   <button
                     onClick={() => addToast(`Budget updated for ${team.name}`, 'success')}
-                    className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors hover:bg-[--bg-hover]"
-                    style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
+                    className="flex-1 py-2 text-xs font-semibold rounded-xl border flex items-center justify-center gap-1.5 transition-colors shadow-depth-1 hover:bg-[--bg-hover]"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
                     <Edit3 size={12} /> Edit Budget
                   </button>
                 )}

@@ -112,15 +112,14 @@ export default function Accounts() {
       <PageHeader title="Cloud Accounts" subtitle="Manage connected cloud accounts and view per-account data">
         {can(PERMISSIONS.SYNC_ACCOUNTS) && (
           <button onClick={handleSync}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors hover:bg-white/10"
-            style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border transition-colors shadow-depth-1 hover:bg-[--bg-hover]"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
             <RefreshCw size={14} /> Sync All
           </button>
         )}
         {can(PERMISSIONS.CONNECT_ACCOUNTS) && (
           <button onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
             <Plus size={14} /> Connect Account
           </button>
         )}
@@ -133,8 +132,8 @@ export default function Accounts() {
           { provider: 'gcp', label: 'Google Cloud', accounts: gcpProjects.length, spend: gcpProjects.reduce((s, p) => s + p.spend, 0) },
           { provider: 'azure', label: 'Microsoft Azure', accounts: azureSubscriptions.length, spend: azureSubscriptions.reduce((s, a) => s + a.spend, 0) },
         ].map(p => (
-          <div key={p.provider} className="rounded-xl border p-4 flex items-center gap-4"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div key={p.provider} className="rounded-xl border p-4 flex items-center gap-4 shadow-depth-card"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
             <ProviderBadge provider={p.provider} size="lg" />
             <div>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.label}</p>
@@ -150,21 +149,25 @@ export default function Accounts() {
 
       {/* Tab filter */}
       <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-hide">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all"
-            style={{
-              background: tab === t ? 'var(--accent-blue)' : 'var(--bg-elevated)',
-              color: tab === t ? '#fff' : 'var(--text-secondary)',
-              borderColor: tab === t ? 'var(--accent-blue)' : 'var(--border-default)',
-            }}>
-            {t}
-          </button>
-        ))}
+        {TABS.map(t => {
+          const isSelected = tab === t;
+          return (
+            <button key={t} onClick={() => setTab(t)}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all"
+              style={{
+                background: isSelected ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+                boxShadow: isSelected ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderColor: isSelected ? 'var(--border-strong)' : 'var(--border-default)',
+              }}>
+              {t}
+            </button>
+          )
+        })}
       </div>
 
       {/* Accounts table */}
-      <div className="rounded-xl border overflow-x-auto scrollbar-hide" style={{ borderColor: 'var(--border-default)' }}>
+      <div className="rounded-xl border overflow-x-auto scrollbar-hide shadow-depth-inset" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
         <table className="w-full text-xs">
           <thead>
             <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -175,7 +178,7 @@ export default function Accounts() {
           </thead>
           <tbody>
             {filtered.map((acct, i) => (
-              <tr key={acct.id} className="border-b cursor-pointer hover:bg-white/[0.03] transition-colors"
+              <tr key={acct.id} className="border-b cursor-pointer hover:bg-[--bg-hover] transition-colors"
                 style={{ borderColor: 'var(--border-subtle)' }}
                 onClick={(e) => {
                   if (e.target.closest('button')) return; // Ignore button clicks
@@ -208,13 +211,13 @@ export default function Accounts() {
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5">
                     {can(PERMISSIONS.SYNC_ACCOUNTS) && (
-                      <button onClick={() => addToast(`Syncing ${acct.name}...`, 'info')}
-                        className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--text-muted)' }} title="Sync now">
+                      <button onClick={(e) => { e.stopPropagation(); addToast(`Syncing ${acct.name}...`, 'info'); }}
+                        className="p-1.5 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }} title="Sync now">
                         <RefreshCw size={12} />
                       </button>
                     )}
-                    <button onClick={() => addToast('Opening in cloud console', 'info')}
-                      className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--text-muted)' }} title="Open in console">
+                    <button onClick={(e) => { e.stopPropagation(); addToast('Opening in cloud console', 'info'); }}
+                      className="p-1.5 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }} title="Open in console">
                       <ExternalLink size={12} />
                     </button>
                   </div>
@@ -227,7 +230,7 @@ export default function Accounts() {
 
       {/* Connect modal */}
       {connectOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
             className="rounded-2xl border p-6 w-full max-w-lg shadow-2xl"
@@ -242,17 +245,20 @@ export default function Accounts() {
 
             {/* Provider tabs */}
             <div className="flex gap-2 mb-5">
-              {['aws', 'gcp', 'azure'].map(p => (
-                <button key={p} onClick={() => setConnectTab(p)}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
-                  style={{
-                    background: connectTab === p ? 'var(--bg-card)' : 'var(--bg-surface)',
-                    border: `1px solid ${connectTab === p ? 'var(--accent-blue)' : 'var(--border-subtle)'}`,
-                    color: connectTab === p ? 'var(--text-primary)' : 'var(--text-muted)',
-                  }}>
-                  <ProviderBadge provider={p} size="sm" />
-                </button>
-              ))}
+              {['aws', 'gcp', 'azure'].map(p => {
+                const isSelected = connectTab === p;
+                return (
+                  <button key={p} onClick={() => setConnectTab(p)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${isSelected ? 'shadow-depth-1' : ''}`}
+                    style={{
+                      background: isSelected ? 'var(--bg-surface)' : 'var(--bg-base)',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                      border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
+                    }}>
+                    <ProviderBadge provider={p} size="sm" />
+                  </button>
+                )
+              })}
             </div>
 
             {connectTab === 'aws' && (
@@ -265,8 +271,8 @@ export default function Accounts() {
                   <div key={f.label}>
                     <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
                     <input type={f.label.includes('Secret') ? 'password' : 'text'} placeholder={f.placeholder}
-                      className="w-full px-3 py-2 text-sm rounded-xl border outline-none"
-                      style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                      className="w-full px-3 py-2 text-sm rounded-xl border outline-none shadow-depth-1"
+                      style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                       onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
                       onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
                   </div>
@@ -276,8 +282,8 @@ export default function Accounts() {
             {connectTab === 'gcp' && (
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>Upload Service Account JSON</label>
-                <div className="border-2 border-dashed rounded-xl p-8 text-center transition-colors"
-                  style={{ borderColor: 'var(--border-default)' }}>
+                <div className="border-2 border-dashed rounded-xl p-8 text-center transition-colors shadow-depth-inset cursor-pointer hover:bg-[--bg-hover]"
+                  style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
                   <Link2 size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Drag & drop service-account.json here</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>or click to browse</p>
@@ -291,8 +297,8 @@ export default function Accounts() {
                     <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>{f}</label>
                     <input type={f === 'Client Secret' ? 'password' : 'text'}
                       placeholder={f === 'Tenant ID' ? 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' : f}
-                      className="w-full px-3 py-2 text-sm rounded-xl border outline-none"
-                      style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                      className="w-full px-3 py-2 text-sm rounded-xl border outline-none shadow-depth-1"
+                      style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                       onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
                       onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
                   </div>
@@ -302,18 +308,17 @@ export default function Accounts() {
 
             <div className="flex gap-3 mt-5">
               <button onClick={() => setConnectOpen(false)}
-                className="flex-1 py-2.5 text-sm rounded-xl border hover:bg-white/5 transition-colors"
-                style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                className="flex-1 py-2.5 text-sm rounded-xl border hover:bg-[--bg-hover] shadow-depth-1 transition-colors"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                 Cancel
               </button>
               <button onClick={() => addToast('Testing connection...', 'info')}
-                className="px-4 py-2.5 text-sm rounded-xl border transition-colors hover:bg-white/5"
-                style={{ borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}>
+                className="px-4 py-2.5 text-sm rounded-xl border transition-colors shadow-depth-1 hover:bg-[--bg-hover]"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}>
                 Test Connection
               </button>
               <button onClick={handleConnect}
-                className="flex-1 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90"
-                style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+                className="flex-1 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
                 Connect
               </button>
             </div>
@@ -373,7 +378,7 @@ export default function Accounts() {
                   {/* Account health */}
                   <div>
                     <p className="text-[10px] font-semibold tracking-widest mb-2.5" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>ACCOUNT HEALTH</p>
-                    <div className="rounded-xl border overflow-hidden divide-y" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                    <div className="rounded-xl border overflow-hidden divide-y shadow-depth-inset" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-base)' }}>
                       <div className="flex items-center justify-between px-4 py-2.5">
                         <div className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
                           <Shield size={13} style={{ color: '#10B981' }} />
@@ -431,7 +436,7 @@ export default function Accounts() {
                   {/* Top Spend by Service */}
                   <div>
                     <p className="text-[10px] font-semibold tracking-widest mb-2.5" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>TOP SERVICES</p>
-                    <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                    <div className="rounded-xl border overflow-hidden shadow-depth-inset" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-base)' }}>
                       {selectedServices.map((svc, i) => {
                         const max = selectedServices[0]?.spend ?? 1
                         const pct = Math.round((svc.spend / max) * 100)
@@ -452,7 +457,7 @@ export default function Accounts() {
                   {/* Top Resources */}
                   <div>
                     <p className="text-[10px] font-semibold tracking-widest mb-2.5" style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}>TOP RESOURCES</p>
-                    <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                    <div className="rounded-xl border overflow-hidden shadow-depth-inset" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-base)' }}>
                       {selectedResources.map((resource) => (
                         <div key={resource.name} className="flex items-center gap-3 px-4 py-2.5 border-b last:border-0" style={{ borderColor: 'var(--border-subtle)' }}>
                           <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: 'var(--bg-elevated)' }}>
@@ -471,12 +476,12 @@ export default function Accounts() {
                   {/* Actions */}
                   <div className="flex gap-2 pt-1 pb-2">
                     <button onClick={() => addToast(`Syncing ${selectedAccount.name}...`, 'info')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium rounded-xl border transition-colors hover:bg-black/[0.04]"
-                      style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border shadow-depth-1 rounded-xl transition-colors hover:bg-[--bg-hover]"
+                      style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                       <RefreshCw size={12} /> Sync Now
                     </button>
                     <button onClick={() => addToast('Opening in cloud console', 'info')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold rounded-xl transition-opacity hover:opacity-90"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold rounded-xl shadow-depth-1 transition-opacity hover:opacity-90"
                       style={{ background: accentColor, color: '#fff' }}>
                       <ExternalLink size={12} /> Open Console
                     </button>

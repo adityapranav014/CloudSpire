@@ -8,9 +8,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-depth-primary outline-none focus-visible:-outline-offset-1 focus-visible:outline-4 focus-visible:outline-primary/20",
+        default: "shiny-primary outline-none focus-visible:-outline-offset-1 focus-visible:outline-4 focus-visible:outline-primary/20",
         outline:
-          "border-border bg-gradient-to-b from-white to-bg-base hover:bg-gradient-to-b hover:from-white hover:to-bg-hover text-foreground shadow-depth-1 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border bg-gradient-to-b from-white to-base hover:bg-gradient-to-b hover:from-white hover:to-hover text-foreground shadow-depth-1 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground shadow-depth-1 hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

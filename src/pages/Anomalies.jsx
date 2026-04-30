@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle, CheckCircle, Clock, DollarSign,
-  ExternalLink, X, ChevronDown, ChevronUp, Settings, Bell
+  ExternalLink, X, ChevronDown, ChevronUp, Settings, Bell,
+  Layers, AlertCircle, CheckCircle2
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import PageHeader from '../components/layout/PageHeader'
@@ -73,8 +74,8 @@ export default function Anomalies() {
         ].map(s => {
           const Icon = s.icon
           return (
-            <div key={s.label} className="rounded-xl border p-4"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+            <div key={s.label} className="rounded-xl border shadow-depth-card p-4"
+              style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
               <div className="flex items-center justify-between mb-2">
                 <Icon size={15} style={{ color: s.color }} />
                 <span className="text-2xl font-bold font-mono" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -88,29 +89,32 @@ export default function Anomalies() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2 mb-5">
+      <div className="flex flex-wrap gap-1 mb-5 p-1 rounded-xl shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)', display: 'inline-flex' }}>
         {[
-          { key: 'all', label: `All (${localAnomalies.length})` },
-          { key: 'open', label: `Open (${counts.open})` },
-          { key: 'acknowledged', label: `Acknowledged (${counts.acknowledged})` },
-          { key: 'resolved', label: `Resolved (${counts.resolved})` },
-        ].map(tab => (
+          { key: 'all', label: `All (${localAnomalies.length})`, icon: Layers },
+          { key: 'open', label: `Open (${counts.open})`, icon: AlertCircle },
+          { key: 'acknowledged', label: `Acknowledged (${counts.acknowledged})`, icon: Clock },
+          { key: 'resolved', label: `Resolved (${counts.resolved})`, icon: CheckCircle2 },
+        ].map(tab => {
+          const Icon = tab.icon;
+          return (
           <button key={tab.key} onClick={() => setFilter(tab.key)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filter === tab.key ? 'shadow-depth-1 border' : 'border border-transparent'}`}
             style={{
-              background: filter === tab.key ? 'var(--accent-blue)' : 'var(--bg-elevated)',
-              color: filter === tab.key ? '#fff' : 'var(--text-secondary)',
-              borderColor: filter === tab.key ? 'var(--accent-blue)' : 'var(--border-default)',
+              background: filter === tab.key ? 'var(--bg-surface)' : 'transparent',
+              color: filter === tab.key ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderColor: filter === tab.key ? 'var(--border-default)' : 'transparent',
             }}>
+            <Icon size={14} style={{ color: filter === tab.key ? 'var(--accent-blue)' : 'inherit' }} />
             {tab.label}
           </button>
-        ))}
+        )})}
       </div>
 
       {/* Anomaly feed */}
       <div className="space-y-4 mb-6">
         {filtered.length === 0 && (
-          <div className="rounded-xl border p-10 text-center" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+          <div className="rounded-xl border shadow-depth-card p-10 text-center" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
             <CheckCircle size={36} className="mx-auto mb-3" style={{ color: 'var(--accent-emerald)' }} />
             <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>No anomalies in this category</p>
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>All clear — spend patterns look normal.</p>
@@ -129,9 +133,9 @@ export default function Anomalies() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: isResolved ? 0.6 : 1, y: 0 }}
               transition={{ duration: 0.2 }}
-              className="rounded-xl border overflow-hidden"
+              className="rounded-xl border shadow-depth-card overflow-hidden"
               style={{
-                background: 'var(--bg-card)',
+                background: 'var(--bg-elevated)',
                 borderColor: 'var(--border-default)',
                 borderLeft: `3px solid ${accent}`,
               }}
@@ -176,19 +180,19 @@ export default function Anomalies() {
 
                 {/* Metrics grid — 2 cols on mobile, 4 cols on sm+ */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
-                  <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                     <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Spend Today</p>
                     <p className="text-base font-bold font-mono leading-none" style={{ color: '#F43F5E', fontFamily: "'JetBrains Mono', monospace" }}>
                       {fmt.format(a.spendToday)}
                     </p>
                   </div>
-                  <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                     <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Expected</p>
                     <p className="text-base font-bold font-mono leading-none" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
                       {fmt.format(a.expectedSpend)}
                     </p>
                   </div>
-                  <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                     <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Deviation</p>
                     <p className="text-base font-bold font-mono leading-none" style={{ color: deviationColor, fontFamily: "'JetBrains Mono', monospace" }}>
                       +{a.deviationPercent}%
@@ -197,7 +201,7 @@ export default function Anomalies() {
                       +{fmt.format(a.deviationAmount)}
                     </p>
                   </div>
-                  <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                     <p className="text-[10px] font-medium tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Detected</p>
                     <p className="text-sm font-semibold leading-none" style={{ color: 'var(--text-secondary)' }}>
                       {fmtDate(a.detectedAt)}
@@ -219,13 +223,13 @@ export default function Anomalies() {
                     >
                       <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-3"
                         style={{ borderColor: 'var(--border-subtle)' }}>
-                        <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                        <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                           <p className="text-[10px] font-semibold tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
                             Possible Cause
                           </p>
                           <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>{a.possibleCause}</p>
                         </div>
-                        <div className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                        <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                           <p className="text-[10px] font-semibold tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
                             Affected Resource
                           </p>
@@ -257,8 +261,12 @@ export default function Anomalies() {
                   {a.status === 'open' && can(PERMISSIONS.ACKNOWLEDGE_ANOMALIES) && (
                     <button
                       onClick={() => acknowledge(a.id)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all hover:opacity-80"
-                      style={{ borderColor: '#F59E0B', color: '#F59E0B', background: 'rgba(245,158,11,0.08)' }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-90 shadow-depth-primary border"
+                      style={{ 
+                        borderColor: '#D97706', 
+                        color: '#fff', 
+                        background: 'linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%)' 
+                      }}
                     >
                       Acknowledge
                     </button>
@@ -266,8 +274,12 @@ export default function Anomalies() {
                   {a.status !== 'resolved' && can(PERMISSIONS.MANAGE_ANOMALIES) && (
                     <button
                       onClick={() => resolve(a.id)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all hover:opacity-80"
-                      style={{ borderColor: 'var(--accent-emerald)', color: 'var(--accent-emerald)', background: 'rgba(16,185,129,0.08)' }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-90 shadow-depth-primary border"
+                      style={{ 
+                        borderColor: '#059669', 
+                        color: '#fff', 
+                        background: 'linear-gradient(180deg, #34D399 0%, #10B981 100%)' 
+                      }}
                     >
                       Resolve
                     </button>
@@ -296,26 +308,28 @@ export default function Anomalies() {
       </div>
 
       {/* Alert history chart */}
-      <div className="rounded-xl border p-5 mb-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+      <div className="rounded-xl border shadow-depth-card p-5 mb-6" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
         <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Anomaly History — Last 30 Days</h3>
-        <ResponsiveContainer width="100%" height={120}>
-          <AreaChart data={anomalyHistory} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
-            <XAxis dataKey="date" tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} interval={4}
-              tickFormatter={d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-            <YAxis tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-            <Tooltip
-              contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 12 }}
-              labelStyle={{ color: 'var(--text-muted)', fontSize: 11 }}
-              itemStyle={{ color: 'var(--text-primary)' }}
-            />
-            <Area type="monotone" dataKey="count" fillOpacity={0.2} strokeWidth={2} stroke="var(--accent-rose)" fill="var(--accent-rose)" />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="rounded-lg p-4 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={anomalyHistory} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} interval={4}
+                tickFormatter={d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
+              <YAxis tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 12, boxShadow: 'var(--shadow-depth-2)' }}
+                labelStyle={{ color: 'var(--text-muted)', fontSize: 11 }}
+                itemStyle={{ color: 'var(--text-primary)' }}
+              />
+              <Area type="monotone" dataKey="count" fillOpacity={0.2} strokeWidth={2} stroke="var(--accent-rose)" fill="var(--accent-rose)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Configure alerts */}
-      <div className="rounded-xl border overflow-hidden" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+      <div className="rounded-xl border shadow-depth-card overflow-hidden" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
         <button
           className="w-full flex items-center justify-between p-5 text-sm font-semibold transition-colors hover:bg-white/10"
           style={{ color: 'var(--text-primary)' }}

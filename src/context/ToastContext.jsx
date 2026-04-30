@@ -30,9 +30,9 @@ export function ToastProvider({ children }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-sm min-w-[280px]"
+              className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-depth-3 text-sm min-w-[280px]"
               style={{
-                background: 'var(--bg-elevated)',
+                background: 'var(--bg-surface)',
                 borderColor: toast.type === 'success' ? '#10B981' : toast.type === 'error' ? '#F43F5E' : '#3B82F6',
                 color: 'var(--text-primary)',
               }}

@@ -141,3 +141,61 @@
 .recharts-tooltip-wrapper {
   outline: none;
 }
+
+/* ── React Grid Layout overrides ──────────────────────────── */
+
+/* Drag placeholder */
+.react-grid-item.react-grid-placeholder {
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent) !important;
+  border: 2px dashed var(--accent-primary) !important;
+  border-radius: 12px !important;
+  opacity: 1 !important;
+}
+
+/* Resize handles — only visible in edit mode */
+.react-resizable-handle {
+  width: 16px !important;
+  height: 16px !important;
+  opacity: 0 !important;
+  transition: opacity 0.15s !important;
+  pointer-events: none !important;
+  background-image: none !important;
+}
+
+.react-resizable-handle::after {
+  display: none !important;
+}
+
+.dashboard-edit-mode .react-grid-item:hover .react-resizable-handle {
+  opacity: 0.6 !important;
+  pointer-events: auto !important;
+}
+
+.dashboard-edit-mode .react-grid-item:hover .react-resizable-handle::after {
+  display: block !important;
+  border-color: var(--accent-primary) !important;
+  width: 8px !important;
+  height: 8px !important;
+  right: 3px !important;
+  bottom: 3px !important;
+}
+
+/* Active dragging item */
+.react-grid-item.react-draggable-dragging {
+  z-index: 100;
+  opacity: 0.92;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18) !important;
+  transition: none !important;
+}
+
+/* Smooth layout transitions (non-drag) */
+.react-grid-item:not(.react-draggable-dragging):not(.resizing) {
+  transition: left 0.2s ease, top 0.2s ease, width 0.2s ease, height 0.2s ease !important;
+}
+
+/* Drop target external indicator */
+.react-grid-item.dropping {
+  border: 2px dashed var(--accent-primary) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent) !important;
+}

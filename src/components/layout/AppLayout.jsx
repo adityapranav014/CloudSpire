@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
-import DemoRoleSwitcher from '../ui/DemoRoleSwitcher'
 
 /** Main shell — sidebar + topbar + scrollable content area */
 export default function AppLayout() {
@@ -17,7 +16,6 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
-      <DemoRoleSwitcher />
     </div>
   )
 }

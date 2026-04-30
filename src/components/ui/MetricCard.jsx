@@ -4,7 +4,7 @@ import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', isCurrency = false, upIsGood = false }) {
+export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', isCurrency = false, upIsGood = false, className = '' }) {
   const displayValue = isCurrency && typeof value === 'number' ? fmt.format(value) : value
   const trendColor =
     trend === 'neutral' ? 'var(--text-muted)' :
@@ -17,18 +17,12 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="relative rounded-2xl overflow-hidden flex flex-col group"
+      className={`relative rounded-2xl overflow-hidden flex flex-col group ${className}`}
       style={{
         background: 'var(--bg-elevated)',
         border: `1px solid var(--border-default)`,
       }}
     >
-      {/* Top accent bar — solid 2px line, no glow */}
-      <div
-        className="absolute top-0 left-0 right-0 h-0.5"
-        style={{ background: accentColor }}
-      />
-
       {/* Card body */}
       <div className="px-5 pt-5 pb-3 flex flex-col gap-3 flex-1">
         {/* Header row */}
@@ -80,7 +74,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
       {/* Sparkline flush to bottom */}
       {sparklineData.length > 0 && (
         <div className="h-14 w-full -mb-px" style={{ minHeight: 56 }}>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={56} minWidth={0}>
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id={`sg-${sparklineKey}-${title.replace(/\s/g,'')}`} x1="0" y1="0" x2="0" y2="1">

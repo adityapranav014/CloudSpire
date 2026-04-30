@@ -20,7 +20,7 @@ import {
 
 export function DataTable({ columns, data }) {
   return (
-    <div className="overflow-x-auto rounded-md border bg-card text-card-foreground shadow-sm">
+    <div className="overflow-x-auto rounded-md border border-border-subtle bg-base text-card-foreground shadow-depth-inset">
       <Table>
         <TableHeader>
           <TableRow>

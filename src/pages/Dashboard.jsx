@@ -566,10 +566,9 @@ export default function Dashboard() {
       />
 
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.25 }}
-        className="px-4 sm:px-6 lg:px-8 pb-10"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
       >
         {/* -- Header ------------------------------------ */}
         <div
@@ -707,7 +706,7 @@ export default function Dashboard() {
             onLayoutChange={handleLayoutChange}
             compactType="vertical"
             preventCollision={false}
-            resizeHandles={['se', 'sw']}
+            resizeHandles={['se']}
           >
             {renderedIds.map(id => (
               <div key={id} style={{ cursor: editMode ? 'grab' : 'default', height: '100%' }}>

@@ -59,6 +59,15 @@ export default {
         sans: ['Geist', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
+      boxShadow: {
+        'depth-1': 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0,0,0,0.06)',
+        'depth-2': 'inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 8px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)',
+        'depth-3': 'inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 12px 20px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04)',
+        'depth-card': 'inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 5px rgba(0,0,0,0.04)',
+        'depth-primary': 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.1)',
+        'depth-focus': '0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary))',
+        'depth-inset': 'inset 0 2px 4px rgba(0,0,0,0.04), inset 0 1px 2px rgba(0,0,0,0.02)',
+      },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fadeIn 0.3s ease-out',

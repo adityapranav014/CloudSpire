@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, LayoutGrid, GripVertical, RotateCcw, X } from 'lucide-react'
 import { WIDGET_REGISTRY, WIDGET_CATEGORIES } from './WidgetRegistry'
@@ -26,7 +26,7 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
         className="w-[420px] sm:w-[500px] p-0 border-l flex flex-col gap-0"
         style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}
       >
-        {/* ── Header */}
+        {/* -- Header */}
         <div
           className="shrink-0 h-14 px-5 flex items-center justify-between border-b"
           style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
@@ -64,7 +64,7 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
           </TooltipProvider>
         </div>
 
-        {/* ── Category chips */}
+        {/* -- Category chips */}
         <div
           className="shrink-0 py-3 border-b"
           style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
@@ -97,7 +97,7 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
           </div>
         </div>
 
-        {/* ── Widget list */}
+        {/* -- Widget list */}
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
           {filtered.map(widget => {
             const isActive = activeWidgetIds.has(widget.id)
@@ -106,9 +106,7 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
               <motion.div
                 key={widget.id}
                 layout
-                draggable={!isActive}
-                onDragStart={() => !isActive && onDragStart(widget)}
-                className="flex items-center gap-3 p-3 rounded-xl select-none transition-colors"
+                className={`flex items-center gap-3 p-3 rounded-xl select-none transition-colors ${!isActive ? "layer-raised" : ""}`}
                 style={{
                   background: isActive
                     ? `color-mix(in srgb, ${widget.color} 6%, var(--bg-elevated))`
@@ -119,13 +117,10 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
                   boxShadow: isActive 
                     ? 'inset 0 1px 3px rgba(0,0,0,0.02)' 
                     : '0 2px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)',
-                  cursor: isActive ? 'default' : 'grab',
                 }}
                 whileHover={!isActive ? { y: -1 } : {}}
                 whileTap={!isActive ? { scale: 0.98 } : {}}
               >
-                <GripVertical size={13} className="shrink-0" style={{ color: 'var(--text-muted)' }} />
-
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{
@@ -153,13 +148,10 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
                         <button
                           onMouseDown={e => e.stopPropagation()}
                           onClick={() => onRemove(widget.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-                          style={{ 
-                            background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent-rose) 6%, white), color-mix(in srgb, var(--accent-rose) 12%, transparent))', 
-                            color: 'var(--accent-rose)',
-                            border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.7)'
-                          }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[color-mix(in_srgb,var(--accent-rose)_10%,transparent)]"
+                          style={{ color: 'var(--text-muted)' }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-rose)'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                         >
                           <X size={12} />
                         </button>
@@ -193,7 +185,7 @@ export default function WidgetGalleryPanel({ open, onClose, activeWidgetIds, onA
           })}
         </div>
 
-        {/* ── Footer */}
+        {/* -- Footer */}
         <div
           className="shrink-0 border-t px-5 py-4 space-y-3"
           style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}

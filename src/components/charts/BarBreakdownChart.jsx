@@ -52,7 +52,7 @@ export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWi
   const providers = [...new Set(data.map(d => d.provider).filter(Boolean))]
 
   return (
-    <div className="rounded-xl border p-5 h-full flex flex-col" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+    <div className="rounded-xl flex flex-col group layer-raised p-5 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{title}</h3>
@@ -71,9 +71,10 @@ export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWi
         )}
       </div>
 
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} layout="vertical" margin={{ top: 2, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" horizontal={false} />
+      <div className="flex-1 layer-recessed rounded-xl p-4">
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={data} layout="vertical" margin={{ top: 2, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" horizontal={false} />
           <XAxis
             type="number"
             tickFormatter={fmt}
@@ -98,6 +99,7 @@ export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWi
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </div>
   )
 }

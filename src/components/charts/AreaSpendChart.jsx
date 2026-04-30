@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Check } from 'lucide-react'
 import {
   ResponsiveContainer, ComposedChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend
@@ -56,7 +57,7 @@ export default function AreaSpendChart() {
   }))
 
   return (
-    <div className="rounded-xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+    <div className="rounded-xl flex flex-col group layer-raised p-5">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Spend Over Time</h3>
@@ -67,22 +68,24 @@ export default function AreaSpendChart() {
             <button
               key={r.label}
               onClick={() => setRange(r.label)}
-              className="px-3 py-1 text-xs font-medium rounded-lg transition-all"
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${range === r.label ? 'shiny-primary' : 'layer-raised'}`}
               style={{
-                background: range === r.label ? 'var(--accent-blue)' : 'var(--bg-elevated)',
                 color: range === r.label ? '#fff' : 'var(--text-secondary)',
-                border: `1px solid ${range === r.label ? 'var(--accent-blue)' : 'var(--border-default)'}`,
               }}
             >
-              {r.label}
+              <div className="flex items-center gap-1.5">
+                {range === r.label && <Check size={12} className="opacity-80" />}
+                <span>{r.label}</span>
+              </div>
             </button>
           ))}
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
-        <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-          <defs>
+      <div className="flex-1 layer-recessed rounded-xl p-4 mt-2">
+        <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+          <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+            <defs>
             <linearGradient id="awsGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#FF9900" stopOpacity={0.18} />
               <stop offset="95%" stopColor="#FF9900" stopOpacity={0} />
@@ -132,7 +135,8 @@ export default function AreaSpendChart() {
           <Area type="monotone" dataKey="gcp" stroke="#4285F4" strokeWidth={2} fill="url(#gcpGrad)" dot={false} />
           <Area type="monotone" dataKey="azure" stroke="#0078D4" strokeWidth={2} fill="url(#azureGrad)" dot={false} />
         </ComposedChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }

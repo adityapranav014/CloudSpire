@@ -28,14 +28,14 @@ import { azureServiceBreakdown } from '../data/mockAzure'
 import { anomalies, budgetAlerts } from '../data/mockAlerts'
 import { rightsizingRecommendations, optimizationSummary } from '../data/mockOptimizations'
 
-// ─── Grid config ────────────────────────────────────────────
+// --- Grid config --------------------------------------------
 const BREAKPOINTS = { lg: 1024, md: 768, sm: 480, xs: 0 }
 const COLS        = { lg: 12,   md: 8,   sm: 4,   xs: 2 }
 const ROW_HEIGHT  = 80
 const MARGIN      = [12, 12]
 const STORAGE_KEY = 'cloudspire-dashboard-v4'
 
-// ─── Static data ─────────────────────────────────────────────
+// --- Static data ---------------------------------------------
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtAge = (iso) => {
   const h = Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000)
@@ -75,7 +75,7 @@ const sparkData = dailySpend.slice(-14).map(d => ({
   budgetLine: d.total * 1.1  - Math.random() * 200,
 }))
 
-// ─── Default layouts per breakpoint ─────────────────────────
+// --- Default layouts per breakpoint -------------------------
 // lg = 12 cols, md = 8 cols, sm = 4 cols, xs = 2 cols
 const DEFAULT_LAYOUTS = {
   lg: [
@@ -140,7 +140,7 @@ const DEFAULT_LAYOUTS = {
   ],
 }
 
-// ─── Storage helpers ─────────────────────────────────────────
+// --- Storage helpers -----------------------------------------
 function loadLayouts() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -157,7 +157,7 @@ function getActiveIds(layouts) {
   return new Set(bp.map(l => l.i))
 }
 
-// ─── Widget Shell ────────────────────────────────────────────
+// --- Widget Shell --------------------------------------------
 function WidgetShell({ id, isEditMode, onRemove, children }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -232,13 +232,12 @@ function WidgetShell({ id, isEditMode, onRemove, children }) {
   )
 }
 
-// ─── Widget content renders ───────────────────────────────────
+// --- Widget content renders -----------------------------------
 function ProviderCard({ provider: p }) {
   const pct = ((p.spend / TOTAL_SPEND) * 100).toFixed(0)
   return (
     <div
-      className="h-full rounded-xl border p-4 flex flex-col"
-      style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}
+      className="h-full rounded-xl layer-raised p-4 flex flex-col"
     >
       <div className="flex items-start justify-between mb-2">
         <ProviderBadge provider={p.provider} size="md" />
@@ -271,7 +270,7 @@ function ProviderCard({ provider: p }) {
 function AlertsWidget() {
   const openAlerts = anomalies.filter(a => a.status === 'open')
   return (
-    <div className="h-full rounded-xl border p-4 flex flex-col" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+    <div className="h-full rounded-xl layer-raised p-4 flex flex-col">
       <div className="flex items-center gap-2.5 mb-3">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(244,63,94,0.1)' }}>
           <AlertTriangle size={13} style={{ color: 'var(--accent-rose)' }} />
@@ -306,7 +305,7 @@ function AlertsWidget() {
 
 function SavingsWidget() {
   return (
-    <div className="h-full rounded-xl border p-4 flex flex-col" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+    <div className="h-full rounded-xl layer-raised p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(16,185,129,0.1)' }}>
@@ -343,7 +342,7 @@ function SavingsWidget() {
 function BudgetWidget() {
   const criticalCount = budgetAlerts.filter(b => b.status === 'critical').length
   return (
-    <div className="h-full rounded-xl border p-4 flex flex-col" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+    <div className="h-full rounded-xl layer-raised p-4 flex flex-col">
       <div className="flex items-center gap-2.5 mb-3">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(6,182,212,0.1)' }}>
           <Calendar size={13} style={{ color: 'var(--accent-cyan)' }} />
@@ -362,7 +361,7 @@ function BudgetWidget() {
             : b.status === 'warning' ? 'var(--accent-amber)'
             : 'var(--accent-emerald)'
           return (
-            <div key={b.id}>
+            <div key={b.id} className="p-2.5 rounded-lg layer-recessed border border-transparent" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium truncate flex-1" style={{ color: 'var(--text-secondary)' }}>{b.name}</span>
                 <span className="text-xs font-bold ml-2 shrink-0 tabular-nums" style={{ color, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -388,7 +387,7 @@ function BudgetWidget() {
   )
 }
 
-// ─── Dashboard ───────────────────────────────────────────────
+// --- Dashboard -----------------------------------------------
 export default function Dashboard() {
   const [layouts, setLayouts] = useState(() => loadLayouts() || DEFAULT_LAYOUTS)
   const [editMode, setEditMode] = useState(false)
@@ -572,7 +571,7 @@ export default function Dashboard() {
         transition={{ duration: 0.25 }}
         className="px-4 sm:px-6 lg:px-8 pb-10"
       >
-        {/* ── Header ──────────────────────────────────── */}
+        {/* -- Header ------------------------------------ */}
         <div
           className="relative mb-6 rounded-2xl overflow-hidden"
           style={{
@@ -586,9 +585,7 @@ export default function Dashboard() {
             {/* Live pill */}
             <div className="flex items-center gap-2 mb-3">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Live · Last synced 2 min ago</span>
-              <span className="hidden sm:inline w-1 h-1 rounded-full mx-0.5" style={{ background: 'var(--border-default)' }} />
-              <span className="hidden sm:inline text-xs" style={{ color: 'var(--text-muted)' }}>{dayLabel}</span>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Live &bull; Last synced 2 min ago</span>
             </div>
 
             {/* Title + actions row */}
@@ -598,7 +595,7 @@ export default function Dashboard() {
                   Cost Overview
                 </h1>
                 <p className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {PROVIDERS.length} providers · {monthLabel}
+                  {PROVIDERS.length} providers &bull; {monthLabel}
                 </p>
               </div>
 
@@ -622,8 +619,8 @@ export default function Dashboard() {
                     </button>
                     <button
                       onClick={() => { setEditMode(false); setPanelOpen(false) }}
-                      className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
-                      style={{ background: 'var(--accent-emerald)', color: '#fff' }}
+                      className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 shiny-emerald"
+                      style={{ color: '#fff' }}
                     >
                       <Check size={12} />
                       <span className="hidden sm:inline">Done</span>
@@ -647,8 +644,8 @@ export default function Dashboard() {
                     </Link>
                     <button
                       onClick={() => { setEditMode(true); setPanelOpen(true) }}
-                      className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
-                      style={{ background: 'var(--accent-primary)', color: '#fff' }}
+                        className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 shiny-primary"
+                        style={{ color: '#fff' }}
                     >
                       <Settings2 size={12} />
                       <span>Customize</span>
@@ -685,7 +682,7 @@ export default function Dashboard() {
                     className="hidden sm:flex sm:ml-auto items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium col-span-2"
                     style={{ background: 'color-mix(in srgb, var(--accent-primary) 10%, transparent)', color: 'var(--accent-primary)' }}
                   >
-                    <GripVertical size={12} /> Drag to rearrange · Resize from corners
+                    <GripVertical size={12} /> Drag to rearrange � Resize from corners
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -693,7 +690,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Responsive Grid ──────────────────────────── */}
+        {/* -- Responsive Grid ---------------------------- */}
         <div ref={containerRef} className={editMode ? 'dashboard-edit-mode' : ''}>
           <ResponsiveGridLayout
             layouts={computedLayouts}
@@ -726,7 +723,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed text-center"
+            className="flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed text-center layer-raised"
             style={{ borderColor: 'var(--border-default)' }}
           >
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'var(--accent-primary-subtle)' }}>
@@ -736,8 +733,8 @@ export default function Dashboard() {
             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Open the widget library to add charts and metrics</p>
             <button
               onClick={() => { setEditMode(true); setPanelOpen(true) }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-              style={{ background: 'var(--accent-primary)', color: '#fff' }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold shiny-primary"
+              style={{ color: '#fff' }}
             >
               <LayoutGrid size={14} /> Open Widget Library
             </button>
@@ -747,3 +744,4 @@ export default function Dashboard() {
     </>
   )
 }
+

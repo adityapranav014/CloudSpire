@@ -60,7 +60,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 /** Area + forecast line chart for Cost Explorer page */
 export default function ForecastChart() {
   return (
-    <div className="rounded-xl border p-5" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-default)' }}>
+    <div className="rounded-xl flex flex-col group layer-raised p-5">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Spend & Forecast</h3>

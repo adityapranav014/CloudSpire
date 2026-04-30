@@ -17,11 +17,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className={`relative rounded-2xl overflow-hidden flex flex-col group ${className}`}
-      style={{
-        background: 'var(--bg-elevated)',
-        border: `1px solid var(--border-default)`,
-      }}
+      className={`relative rounded-2xl flex flex-col group layer-raised overflow-hidden ${className}`}
     >
       {/* Card body */}
       <div className="px-5 pt-5 pb-3 flex flex-col gap-3 flex-1">

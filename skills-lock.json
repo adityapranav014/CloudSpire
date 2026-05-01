@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "mongodb-connection": {
+      "source": "mongodb/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mongodb-connection/SKILL.md",
+      "computedHash": "97999f10fadf90168d8175cc5228c36e6c25c80d3e0981e8c2c5e6f0527eaafb"
+    },
+    "mongodb-schema-design": {
+      "source": "mongodb/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mongodb-schema-design/SKILL.md",
+      "computedHash": "8ee5178f2a8086235c38cbbd2ddb93bdced35af80102abd2deedcc0cc56bc964"
+    }
+  }
+}

@@ -11,7 +11,7 @@
  *   3. The exported `teams` shape stays the same — nothing else changes.
  */
 
-import { getUserById, getUsersByTeam } from './mockUsers'
+import { getUserById, getUsersByTeam } from './mockUsers.js'
 
 // Raw team config — shape mirrors GET /api/teams API response
 const TEAM_CONFIGS = [

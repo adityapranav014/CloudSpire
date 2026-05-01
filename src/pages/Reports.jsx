@@ -1,3 +1,4 @@
+import { useMigrationData } from '../hooks/useMigrationData';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -7,7 +8,7 @@ import {
 import PageHeader from '../components/layout/PageHeader';
 import { useToast } from '../context/ToastContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { PERMISSIONS } from '../data/mockRoles';
+
 import { CloudProviderIcon } from '../components/ui/CloudProviderIcon';
 import { getBrandSurfaceStyles } from '../constants/brandAssets';
 import DateRangePickerSaaS from '../components/ui/DateRangePickerSaaS';
@@ -29,6 +30,12 @@ const scheduledReports = [
 
 /** Reports page — scheduled reports, export billing data */
 export default function Reports() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/roles');
+  const { PERMISSIONS } = d0 || {};
+
+  const isLoading = l0;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+
   const [exportFormat, setExportFormat] = useState('CSV')
   const [exportGranularity, setExportGranularity] = useState('Daily')
   const [exportProvider, setExportProvider] = useState('all')

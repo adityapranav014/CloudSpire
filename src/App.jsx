@@ -12,6 +12,8 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Onboarding from './pages/Onboarding'
 import Landing from './pages/Landing'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 
 /** Root app — sets up routing and global providers */
 export default function App() {
@@ -20,6 +22,8 @@ export default function App() {
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard"     element={<ProtectedRoute page="/dashboard"><Dashboard /></ProtectedRoute>} />

@@ -1,10 +1,12 @@
+
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Check, ChevronUp, X } from 'lucide-react'
-import { DEMO_PERSONAS, ROLE_META } from '../../data/mockRoles'
+
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import UserAvatar from './UserAvatar'
+import { useMigrationData } from '../../hooks/useMigrationData'
 
 /**
  * DemoRoleSwitcher — floating bottom-right widget.
@@ -15,10 +17,14 @@ import UserAvatar from './UserAvatar'
  * (dispatched by the AccessDenied page's "Switch Role" button).
  */
 export default function DemoRoleSwitcher() {
+  const { data: d0 } = useMigrationData('/roles');
+  const DEMO_PERSONAS = d0?.DEMO_PERSONAS || [];
+  const ROLE_META = d0?.ROLE_META || {};
+
   const [open, setOpen] = useState(false)
   const { persona, switchRole } = useAuth()
   const { addToast } = useToast()
-  const meta = ROLE_META[persona.role]
+  const meta = ROLE_META[persona?.role] || {}
 
   // Allow AccessDenied page to open the switcher programmatically
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { useMigrationData } from '../hooks/useMigrationData';
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, RefreshCw, CheckCircle, Link2, ExternalLink, Shield, Server, Box } from 'lucide-react'
@@ -13,30 +14,18 @@ import {
   SheetClose,
 } from "../components/ui/sheet"
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { awsAccounts, awsServiceBreakdown } from '../data/mockAWS'
-import { gcpProjects, gcpServiceBreakdown } from '../data/mockGCP'
-import { azureSubscriptions, azureServiceBreakdown } from '../data/mockAzure'
-import { dailySpend } from '../data/mockUnified'
+
+
+
+
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
-import { PERMISSIONS } from '../data/mockRoles'
+
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtShort = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 1, notation: 'compact' })
 
 const TABS = ['All Accounts', 'AWS', 'GCP', 'Azure']
-
-const allAccounts = [
-  ...awsAccounts.map(a => ({ ...a, provider: 'aws', lastSync: '2 min ago', status: 'connected', region: 'us-east-1' })),
-  ...gcpProjects.map(p => ({ id: p.id, name: p.name, spend: p.spend, resources: p.resources, env: p.env, provider: 'gcp', lastSync: '3 min ago', status: 'connected', region: 'us-central1' })),
-  ...azureSubscriptions.map(s => ({ id: s.id, name: s.name, spend: s.spend, resources: s.resources, env: s.env, provider: 'azure', lastSync: '4 min ago', status: 'connected', region: 'eastus' })),
-]
-
-const providerServiceBreakdowns = {
-  aws: awsServiceBreakdown,
-  gcp: gcpServiceBreakdown,
-  azure: azureServiceBreakdown,
-}
 
 const providerResourceTemplates = {
   aws: [
@@ -59,32 +48,59 @@ const providerResourceTemplates = {
   ],
 }
 
-function buildAccountTrend(account) {
-  const providerKey = account.provider === 'azure' ? 'azure' : account.provider
-  const providerTotal = allAccounts
-    .filter(item => item.provider === account.provider)
-    .reduce((sum, item) => sum + item.spend, 0)
-  const accountShare = providerTotal > 0 ? account.spend / providerTotal : 0
-
-  return dailySpend.slice(-90).map((day) => {
-    const dailyProviderSpend = day[providerKey] ?? 0
-    return {
-      date: day.date,
-      spend: +(dailyProviderSpend * accountShare).toFixed(2),
-    }
-  })
-}
-
-function buildAccountResources(account) {
-  return providerResourceTemplates[account.provider].map((resource, index) => ({
-    ...resource,
-    monthlyCost: account.spend / (8 + index * 2),
-    region: account.region,
-  }))
-}
-
 /** Accounts page — connected cloud accounts and per-account data */
 export default function Accounts() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/cloud/aws');
+  const { awsAccounts = [], awsServiceBreakdown = [] } = d0 || {};
+  const { data: d1, isLoading: l1 } = useMigrationData('/cloud/gcp');
+  const { gcpProjects = [], gcpServiceBreakdown = [] } = d1 || {};
+  const { data: d2, isLoading: l2 } = useMigrationData('/cloud/azure');
+  const { azureSubscriptions = [], azureServiceBreakdown = [] } = d2 || {};
+  const { data: d3, isLoading: l3 } = useMigrationData('/unified');
+  const { dailySpend = [] } = d3 || {};
+  const { data: d4, isLoading: l4 } = useMigrationData('/roles');
+  const { PERMISSIONS = {} } = d4 || {};
+
+  const isLoading = l0 || l1 || l2 || l3 || l4;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!d0 || !d1 || !d2 || !d3 || !d4) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load accounts data. Please make sure the backend is running.</p></div>;
+
+  const allAccounts = [
+    ...awsAccounts.map(a => ({ ...a, provider: 'aws', lastSync: '2 min ago', status: 'connected', region: 'us-east-1' })),
+    ...gcpProjects.map(p => ({ id: p.id, name: p.name, spend: p.spend, resources: p.resources, env: p.env, provider: 'gcp', lastSync: '3 min ago', status: 'connected', region: 'us-central1' })),
+    ...azureSubscriptions.map(s => ({ id: s.id, name: s.name, spend: s.spend, resources: s.resources, env: s.env, provider: 'azure', lastSync: '4 min ago', status: 'connected', region: 'eastus' })),
+  ]
+
+  const providerServiceBreakdowns = {
+    aws: awsServiceBreakdown,
+    gcp: gcpServiceBreakdown,
+    azure: azureServiceBreakdown,
+  }
+
+  function buildAccountTrend(account) {
+    const providerKey = account.provider === 'azure' ? 'azure' : account.provider
+    const providerTotal = allAccounts
+      .filter(item => item.provider === account.provider)
+      .reduce((sum, item) => sum + item.spend, 0)
+    const accountShare = providerTotal > 0 ? account.spend / providerTotal : 0
+
+    return dailySpend.slice(-90).map((day) => {
+      const dailyProviderSpend = day[providerKey] ?? 0
+      return {
+        date: day.date,
+        spend: +(dailyProviderSpend * accountShare).toFixed(2),
+      }
+    })
+  }
+
+  function buildAccountResources(account) {
+    return providerResourceTemplates[account.provider].map((resource, index) => ({
+      ...resource,
+      monthlyCost: account.spend / (8 + index * 2),
+      region: account.region,
+    }))
+  }
+
   const [tab, setTab] = useState('All Accounts')
   const [connectOpen, setConnectOpen] = useState(false)
   const [connectTab, setConnectTab] = useState('aws')
@@ -332,7 +348,7 @@ export default function Accounts() {
           {selectedAccount && (() => {
             const accentColor =
               selectedAccount.provider === 'aws' ? '#F79009' :
-              selectedAccount.provider === 'gcp' ? '#3B82F6' : '#0078D4'
+                selectedAccount.provider === 'gcp' ? '#3B82F6' : '#0078D4'
             return (
               <>
                 {/* Header band */}
@@ -353,7 +369,7 @@ export default function Accounts() {
                       </div>
                     </div>
                     <SheetClose className="shrink-0 p-1.5 rounded-lg hover:bg-black/[0.06] transition-colors" style={{ color: 'var(--text-muted)' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                     </SheetClose>
                   </div>
 
@@ -421,7 +437,7 @@ export default function Accounts() {
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                             <XAxis dataKey="date" hide />
-                            <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}k`} width={36} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} />
+                            <YAxis tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} width={36} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} />
                             <Tooltip
                               contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '11px' }}
                               formatter={v => [fmt.format(v), 'Spend']}

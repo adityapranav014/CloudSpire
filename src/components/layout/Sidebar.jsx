@@ -1,48 +1,52 @@
+
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Search, AlertTriangle, Zap, Users,
   Link2, FileText, Settings, TrendingUp
 } from 'lucide-react'
-import { anomalies } from '../../data/mockAlerts'
+
 import { usePermissions } from '../../hooks/usePermissions'
 import { Sheet, SheetContent } from '../ui/sheet'
-
-const openAnomalies = anomalies.filter(a => a.status === 'open').length
-
-const navSections = [
-  {
-    label: 'Overview',
-    items: [
-      { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
-      { label: 'Cost Explorer', icon: Search, to: '/cost-explorer' },
-    ],
-  },
-  {
-    label: 'Management',
-    items: [
-      { label: 'Anomalies', icon: AlertTriangle, to: '/anomalies', badge: openAnomalies },
-      { label: 'Optimizer', icon: Zap, to: '/optimizer' },
-      { label: 'Teams', icon: Users, to: '/teams' },
-      { label: 'Accounts', icon: Link2, to: '/accounts' },
-    ],
-  },
-  {
-    label: 'Reporting',
-    items: [
-      { label: 'Reports', icon: FileText, to: '/reports' },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { label: 'Settings', icon: Settings, to: '/settings' },
-    ],
-  },
-]
+import { useMigrationData } from '../../hooks/useMigrationData'
 
 /** Main sidebar navigation */
-export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () => {} }) {
+export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () => { } }) {
+  const { data: d0 } = useMigrationData('/alerts');
+  const anomalies = d0?.anomalies || [];
+  const openAnomalies = anomalies.filter(a => a.status === 'open').length
+
+  const navSections = [
+    {
+      label: 'Overview',
+      items: [
+        { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+        { label: 'Cost Explorer', icon: Search, to: '/cost-explorer' },
+      ],
+    },
+    {
+      label: 'Management',
+      items: [
+        { label: 'Anomalies', icon: AlertTriangle, to: '/anomalies', badge: openAnomalies },
+        { label: 'Optimizer', icon: Zap, to: '/optimizer' },
+        { label: 'Teams', icon: Users, to: '/teams' },
+        { label: 'Accounts', icon: Link2, to: '/accounts' },
+      ],
+    },
+    {
+      label: 'Reporting',
+      items: [
+        { label: 'Reports', icon: FileText, to: '/reports' },
+      ],
+    },
+    {
+      label: 'System',
+      items: [
+        { label: 'Settings', icon: Settings, to: '/settings' },
+      ],
+    },
+  ]
+
   const location = useLocation()
   const { canAccessPage } = usePermissions()
 

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMigrationData } from '../hooks/useMigrationData';
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Filter, ChevronUp, ChevronDown, BarChart3, AreaChart as AreaChartIcon, Box, Folder, Users } from 'lucide-react'
 import {
@@ -17,10 +18,10 @@ import PageHeader from '../components/layout/PageHeader'
 import { BrandLogo, getBrandAsset } from '../constants/brandAssets'
 import ProviderBadge from '../components/ui/ProviderBadge'
 import TrendBadge from '../components/ui/TrendBadge'
-import { dailySpend, tagBreakdown } from '../data/mockUnified'
-import { awsAccounts, awsRegionBreakdown, awsServiceBreakdown } from '../data/mockAWS'
-import { gcpProjects, gcpRegionBreakdown, gcpServiceBreakdown } from '../data/mockGCP'
-import { azureRegionBreakdown, azureServiceBreakdown, azureSubscriptions } from '../data/mockAzure'
+
+
+
+
 import { useToast } from '../context/ToastContext'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -134,37 +135,6 @@ const granularityMap = {
   Monthly: 90,
 }
 
-// Build flat table rows from all services
-const tableRows = [
-  ...awsServiceBreakdown.map(s => ({
-    date: 'Apr 2025', provider: 'aws', account: 'Production - Main',
-    service: s.service, region: s.region || 'us-east-1',
-    usage: '744', unit: 'Hrs', cost: s.cost, change: s.change,
-  })),
-  ...gcpServiceBreakdown.map(s => ({
-    date: 'Apr 2025', provider: 'gcp', account: 'Production Platform',
-    service: s.service, region: s.region || 'us-central1',
-    usage: '730', unit: 'Hrs', cost: s.cost, change: s.change,
-  })),
-  ...azureServiceBreakdown.map(s => ({
-    date: 'Apr 2025', provider: 'azure', account: 'Production Workloads',
-    service: s.service, region: s.resourceGroup || 'eastus',
-    usage: '744', unit: 'Hrs', cost: s.cost, change: s.change,
-  })),
-]
-
-const accountRows = [
-  ...awsAccounts.map(account => ({ label: account.name, provider: 'aws', cost: account.spend })),
-  ...gcpProjects.map(account => ({ label: account.name, provider: 'gcp', cost: account.spend })),
-  ...azureSubscriptions.map(account => ({ label: account.name, provider: 'azure', cost: account.spend })),
-]
-
-const regionRows = [
-  ...awsRegionBreakdown.map(region => ({ label: region.region, provider: 'aws', cost: region.cost })),
-  ...gcpRegionBreakdown.map(region => ({ label: region.region, provider: 'gcp', cost: region.cost })),
-  ...azureRegionBreakdown.map(region => ({ label: region.region, provider: 'azure', cost: region.cost })),
-]
-
 const PAGE_SIZE = 25
 
 function normalizeDateRows(granularity) {
@@ -216,6 +186,18 @@ function buildCsv(rows) {
 
 /** Cost Explorer — deep-dive spend analysis with filters and comparison */
 export default function CostExplorer() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/unified');
+  const { dailySpend, tagBreakdown } = d0 || {};
+  const { data: d1, isLoading: l1 } = useMigrationData('/cloud/aws');
+  const { awsAccounts, awsRegionBreakdown, awsServiceBreakdown } = d1 || {};
+  const { data: d2, isLoading: l2 } = useMigrationData('/cloud/gcp');
+  const { gcpProjects, gcpRegionBreakdown, gcpServiceBreakdown } = d2 || {};
+  const { data: d3, isLoading: l3 } = useMigrationData('/cloud/azure');
+  const { azureRegionBreakdown, azureServiceBreakdown, azureSubscriptions } = d3 || {};
+
+  const isLoading = l0 || l1 || l2 || l3;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+
   const [datePreset, setDatePreset] = useState('This Month')
   const [selectedProviders, setSelectedProviders] = useState(['aws', 'gcp', 'azure'])
   const [groupBy, setGroupBy] = useState('Service')
@@ -224,6 +206,45 @@ export default function CostExplorer() {
   const [sortKey, setSortKey] = useState('cost')
   const [sortDir, setSortDir] = useState('desc')
   const [page, setPage] = useState(0)
+
+  const tableRows = React.useMemo(() => {
+    if (!awsServiceBreakdown || !gcpServiceBreakdown || !azureServiceBreakdown) return [];
+    return [
+      ...awsServiceBreakdown.map(s => ({
+        date: 'Apr 2025', provider: 'aws', account: 'Production - Main',
+        service: s.service, region: s.region || 'us-east-1',
+        usage: '744', unit: 'Hrs', cost: s.cost, change: s.change,
+      })),
+      ...gcpServiceBreakdown.map(s => ({
+        date: 'Apr 2025', provider: 'gcp', account: 'Production Platform',
+        service: s.service, region: s.region || 'us-central1',
+        usage: '730', unit: 'Hrs', cost: s.cost, change: s.change,
+      })),
+      ...azureServiceBreakdown.map(s => ({
+        date: 'Apr 2025', provider: 'azure', account: 'Production Workloads',
+        service: s.service, region: s.resourceGroup || 'eastus',
+        usage: '744', unit: 'Hrs', cost: s.cost, change: s.change,
+      }))
+    ];
+  }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown]);
+
+  const accountRows = React.useMemo(() => {
+    if (!awsAccounts || !gcpProjects || !azureSubscriptions) return [];
+    return [
+      ...awsAccounts.map(account => ({ label: account.name, provider: 'aws', cost: account.spend })),
+      ...gcpProjects.map(account => ({ label: account.name, provider: 'gcp', cost: account.spend })),
+      ...azureSubscriptions.map(account => ({ label: account.name, provider: 'azure', cost: account.spend })),
+    ]
+  }, [awsAccounts, gcpProjects, azureSubscriptions]);
+
+  const regionRows = React.useMemo(() => {
+    if (!awsRegionBreakdown || !gcpRegionBreakdown || !azureRegionBreakdown) return [];
+    return [
+      ...awsRegionBreakdown.map(region => ({ label: region.region, provider: 'aws', cost: region.cost })),
+      ...gcpRegionBreakdown.map(region => ({ label: region.region, provider: 'gcp', cost: region.cost })),
+      ...azureRegionBreakdown.map(region => ({ label: region.region, provider: 'azure', cost: region.cost })),
+    ]
+  }, [awsRegionBreakdown, gcpRegionBreakdown, azureRegionBreakdown]);
   const [tagKey, setTagKey] = useState('Environment')
   const { addToast } = useToast()
 
@@ -493,46 +514,46 @@ export default function CostExplorer() {
           <Filter size={14} style={{ color: 'var(--text-muted)' }} />
         </div>
         <div className="overflow-x-auto scrollbar-hide">
-        <table className="w-full text-xs min-w-[640px]">
-          <thead>
-            <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
-              {['Date', 'Provider', 'Account', 'Service', 'Region', 'Usage', 'Unit', 'Cost ($)', 'vs Last (%)'].map(col => {
-                const key = col.toLowerCase().replace(' ($)', '').replace(' (%)', '').replace(' ', '_')
-                return (
-                  <th
-                    key={col}
-                    onClick={() => handleSort(key === 'vs_last' ? 'change' : key === 'cost_' ? 'cost' : key)}
-                    className="text-left px-4 py-3 font-semibold cursor-pointer select-none hover:text-cyan-400 transition-colors"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    <span className="flex items-center gap-1">{col} <SortIcon col={key} /></span>
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {paged.map((row, i) => (
-              <tr
-                key={i}
-                className="border-b cursor-pointer transition-colors hover:bg-white/[0.03]"
-                style={{ borderColor: 'var(--border-subtle)' }}
-              >
-                <td className="px-4 py-2.5" style={{ color: 'var(--text-muted)' }}>{row.date}</td>
-                <td className="px-4 py-2.5"><ProviderBadge provider={row.provider} size="sm" /></td>
-                <td className="px-4 py-2.5 truncate max-w-[120px]" style={{ color: 'var(--text-secondary)' }}>{row.account}</td>
-                <td className="px-4 py-2.5" style={{ color: 'var(--text-primary)' }}>{row.service}</td>
-                <td className="px-4 py-2.5 font-mono text-[11px]" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>{row.region}</td>
-                <td className="px-4 py-2.5 font-mono text-[11px]" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>{row.usage}</td>
-                <td className="px-4 py-2.5" style={{ color: 'var(--text-muted)' }}>{row.unit}</td>
-                <td className="px-4 py-2.5 font-mono font-semibold" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {fmt.format(row.cost)}
-                </td>
-                <td className="px-4 py-2.5"><TrendBadge value={row.change} invertColors /></td>
+          <table className="w-full text-xs min-w-[640px]">
+            <thead>
+              <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
+                {['Date', 'Provider', 'Account', 'Service', 'Region', 'Usage', 'Unit', 'Cost ($)', 'vs Last (%)'].map(col => {
+                  const key = col.toLowerCase().replace(' ($)', '').replace(' (%)', '').replace(' ', '_')
+                  return (
+                    <th
+                      key={col}
+                      onClick={() => handleSort(key === 'vs_last' ? 'change' : key === 'cost_' ? 'cost' : key)}
+                      className="text-left px-4 py-3 font-semibold cursor-pointer select-none hover:text-cyan-400 transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      <span className="flex items-center gap-1">{col} <SortIcon col={key} /></span>
+                    </th>
+                  )
+                })}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paged.map((row, i) => (
+                <tr
+                  key={i}
+                  className="border-b cursor-pointer transition-colors hover:bg-white/[0.03]"
+                  style={{ borderColor: 'var(--border-subtle)' }}
+                >
+                  <td className="px-4 py-2.5" style={{ color: 'var(--text-muted)' }}>{row.date}</td>
+                  <td className="px-4 py-2.5"><ProviderBadge provider={row.provider} size="sm" /></td>
+                  <td className="px-4 py-2.5 truncate max-w-[120px]" style={{ color: 'var(--text-secondary)' }}>{row.account}</td>
+                  <td className="px-4 py-2.5" style={{ color: 'var(--text-primary)' }}>{row.service}</td>
+                  <td className="px-4 py-2.5 font-mono text-[11px]" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>{row.region}</td>
+                  <td className="px-4 py-2.5 font-mono text-[11px]" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>{row.usage}</td>
+                  <td className="px-4 py-2.5" style={{ color: 'var(--text-muted)' }}>{row.unit}</td>
+                  <td className="px-4 py-2.5 font-mono font-semibold" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {fmt.format(row.cost)}
+                  </td>
+                  <td className="px-4 py-2.5"><TrendBadge value={row.change} invertColors /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <div className="flex items-center justify-between px-5 py-3"
           style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)' }}>

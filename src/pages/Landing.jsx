@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -264,12 +264,12 @@ export default function Landing() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-2">
-            <button onClick={() => navigate('/dashboard')}
+            <button onClick={() => navigate('/login')}
               className="text-sm px-4 py-2 rounded-lg transition-colors hover:bg-slate-50"
               style={{ color: '#64748b' }}>
               Sign in
             </button>
-            <button onClick={() => navigate('/onboarding')}
+            <button onClick={() => navigate('/signup')}
               className="text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all"
               style={{ background: '#0f172a', color: '#fff' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#1e293b' }}
@@ -294,11 +294,11 @@ export default function Landing() {
                   </a>
                 ))}
                 <div className="pt-3 space-y-2 border-t mt-2" style={{ borderColor: '#e2e8f0' }}>
-                  <button onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false) }}
+                  <button onClick={() => { navigate('/login'); setMobileMenuOpen(false) }}
                     className="w-full text-sm py-2.5 rounded-lg border text-center" style={{ borderColor: '#e2e8f0', color: '#475569' }}>
                     Sign in
                   </button>
-                  <button onClick={() => { navigate('/onboarding'); setMobileMenuOpen(false) }}
+                  <button onClick={() => { navigate('/signup'); setMobileMenuOpen(false) }}
                     className="w-full text-sm font-semibold py-2.5 rounded-lg text-center" style={{ background: '#0f172a', color: '#fff' }}>
                     Get started free
                   </button>

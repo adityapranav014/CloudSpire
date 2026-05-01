@@ -1,3 +1,4 @@
+import { useMigrationData } from '../hooks/useMigrationData';
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, TrendingUp, TrendingDown, Plus, X, Edit3, BarChart2 } from 'lucide-react'
@@ -7,10 +8,10 @@ import DonutAllocationChart from '../components/charts/DonutAllocationChart'
 import ProviderBadge from '../components/ui/ProviderBadge'
 import TrendBadge from '../components/ui/TrendBadge'
 import UserAvatar from '../components/ui/UserAvatar'
-import { teams } from '../data/mockTeams'
+
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
-import { PERMISSIONS, ROLES } from '../data/mockRoles'
+
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -85,14 +86,14 @@ function TeamDetailModal({ team, onClose }) {
           <div>
             <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Spend Trend</p>
             <ResponsiveContainer width="100%" height={120}>
-            <LineChart data={sparkData}>
-              <Line type="monotone" dataKey="value" stroke={team.color} strokeWidth={2} dot={{ fill: team.color }} />
-              <XAxis dataKey="label" tick={{ fill: '#4A5568', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: 12 }}
-                formatter={v => [fmt.format(v), 'Spend']}
-              />
-            </LineChart>
+              <LineChart data={sparkData}>
+                <Line type="monotone" dataKey="value" stroke={team.color} strokeWidth={2} dot={{ fill: team.color }} />
+                <XAxis dataKey="label" tick={{ fill: '#4A5568', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: 12 }}
+                  formatter={v => [fmt.format(v), 'Spend']}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
 
@@ -161,6 +162,15 @@ function TeamDetailModal({ team, onClose }) {
 
 /** Teams page — cost allocation by team with budget management */
 export default function Teams() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/teams');
+  const { teams } = d0 || {};
+  const { data: d1, isLoading: l1 } = useMigrationData('/roles');
+  const { PERMISSIONS, ROLES } = d1 || {};
+
+  const isLoading = l0 || l1;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!teams || !PERMISSIONS) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load teams data.</p></div>;
+
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const { addToast } = useToast()

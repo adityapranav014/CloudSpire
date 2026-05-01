@@ -1,21 +1,24 @@
+
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer, ReferenceArea
 } from 'recharts'
-import { dailySpend, monthlySpend } from '../../data/mockUnified'
+import { useMigrationData } from '../../hooks/useMigrationData'
+
 
 const fmt = (v) => `$${(v / 1000).toFixed(1)}k`
 
-// Build 90-day historical + 14-day forecast
-const buildData = () => {
-  const hist = dailySpend.slice(-60).map(d => ({
+// Build 60-day historical + 10-day forecast
+const buildData = (daily) => {
+  if (!daily || !daily.length) return { hist: [], today: '' }
+  const hist = daily.slice(-60).map(d => ({
     date: d.date,
     label: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     actual: d.total,
     forecast: undefined,
   }))
-  const last = dailySpend[dailySpend.length - 1]
-  const avg = dailySpend.slice(-7).reduce((s, d) => s + d.total, 0) / 7
+  const last = daily[daily.length - 1]
+  const avg = daily.slice(-7).reduce((s, d) => s + d.total, 0) / 7
   for (let i = 1; i <= 10; i++) {
     const d = new Date(last.date + 'T00:00:00')
     d.setDate(d.getDate() + i)
@@ -26,11 +29,8 @@ const buildData = () => {
       forecast: +(avg * (1 + (i % 3 - 1) * 0.04)).toFixed(0),
     })
   }
-  return hist
+  return { hist, today: last.date }
 }
-
-const data = buildData()
-const TODAY = dailySpend[dailySpend.length - 1].date
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -59,6 +59,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 /** Area + forecast line chart for Cost Explorer page */
 export default function ForecastChart() {
+  const { data: d0 } = useMigrationData('/unified');
+  const dailySpend = d0?.dailySpend || [];
+  const { hist: data, today: TODAY } = buildData(dailySpend);
+
   return (
     <div className="rounded-xl flex flex-col group layer-raised p-5">
       <div className="flex items-center justify-between mb-5">

@@ -1,3 +1,4 @@
+import { useMigrationData } from '../hooks/useMigrationData';
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -6,15 +7,12 @@ import {
 } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import ProviderBadge from '../components/ui/ProviderBadge'
-import { awsEC2Instances, awsOrphanedResources } from '../data/mockAWS'
-import { azureVMs } from '../data/mockAzure'
-import {
-  optimizationSummary, rightsizingRecommendations,
-  reservedInstanceOpportunities, scheduledShutdowns
-} from '../data/mockOptimizations'
+
+
+
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
-import { PERMISSIONS } from '../data/mockRoles'
+
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtDec = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -73,6 +71,18 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action }) 
 
 /** Optimizer — savings recommendations across all providers */
 export default function Optimizer() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/cloud/aws');
+  const { awsEC2Instances, awsOrphanedResources } = d0 || {};
+  const { data: d1, isLoading: l1 } = useMigrationData('/cloud/azure');
+  const { azureVMs } = d1 || {};
+  const { data: d2, isLoading: l2 } = useMigrationData('/optimizations');
+  const { optimizationSummary, rightsizingRecommendations, reservedInstanceOpportunities, scheduledShutdowns } = d2 || {};
+  const { data: d3, isLoading: l3 } = useMigrationData('/roles');
+  const { PERMISSIONS } = d3 || {};
+
+  const isLoading = l0 || l1 || l2 || l3;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+
   const [activeTab, setActiveTab] = useState('Idle Instances')
   const [modal, setModal] = useState(null)
   const [selectedRows, setSelectedRows] = useState([])

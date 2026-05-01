@@ -1,3 +1,4 @@
+import { useMigrationData } from '../hooks/useMigrationData';
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Bell, Link2, CreditCard, Users, Key, Plus, Trash2, Eye, EyeOff, Copy, AlertCircle } from 'lucide-react'
@@ -5,20 +6,15 @@ import PageHeader from '../components/layout/PageHeader'
 import { BrandLogo, getBrandAsset } from '../constants/brandAssets'
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
-import { PERMISSIONS } from '../data/mockRoles'
-import { CURRENT_USER, getOrgMembers } from '../data/mockUsers'
+
+
 import UserAvatar from '../components/ui/UserAvatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
 const TABS = ['Profile', 'Notifications', 'Integrations', 'Billing', 'Team Members', 'API Keys']
 
 // Maps each restricted tab to the permission required to see it
-const TAB_PERMISSIONS = {
-  Integrations: PERMISSIONS.MANAGE_INTEGRATIONS,
-  Billing: PERMISSIONS.VIEW_BILLING,
-  'Team Members': PERMISSIONS.MANAGE_TEAM_MEMBERS,
-  'API Keys': PERMISSIONS.MANAGE_API_KEYS,
-}
+// defined inside Settings because PERMISSIONS is fetched dynamically
 
 /** ConfirmModal — generic destructive action confirmation */
 function ConfirmModal({ open, onClose, onConfirm, title, description, action, danger = true }) {
@@ -68,8 +64,6 @@ const integrations = [
   { key: 'githubActions', name: 'GitHub Actions', connected: false, description: 'Trigger cost reports in CI/CD pipelines.' },
 ]
 
-const teamMembers = getOrgMembers()
-
 const apiKeys = [
   { name: 'Production API Key', key: 'csp_live_xxxxxxxxxxxxxxxxxxxx', created: 'Jan 10, 2025', lastUsed: '2 hours ago' },
   { name: 'CI/CD Integration', key: 'csp_live_yyyyyyyyyyyyyyyyyyyy', created: 'Mar 1, 2025', lastUsed: '3 days ago' },
@@ -77,6 +71,24 @@ const apiKeys = [
 
 /** Settings page — profile, notifications, integrations, billing, team, API keys */
 export default function Settings() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/roles');
+  const { PERMISSIONS } = d0 || {};
+  const { data: d1, isLoading: l1 } = useMigrationData('/users');
+  const { CURRENT_USER, getOrgMembers } = d1 || {};
+
+  const isLoading = l0 || l1;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!d0 || !d1) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load settings data.</p></div>;
+
+  const teamMembers = getOrgMembers ? getOrgMembers() : [];
+
+  const TAB_PERMISSIONS = {
+    Integrations: PERMISSIONS?.MANAGE_INTEGRATIONS,
+    Billing: PERMISSIONS?.VIEW_BILLING,
+    'Team Members': PERMISSIONS?.MANAGE_TEAM_MEMBERS,
+    'API Keys': PERMISSIONS?.MANAGE_API_KEYS,
+  }
+
   const [activeTab, setActiveTab] = useState('Profile')
   const [showKey, setShowKey] = useState({})
   const [confirmModal, setConfirmModal] = useState(null)
@@ -121,23 +133,23 @@ export default function Settings() {
       {/* Tab bar */}
       <div className="overflow-x-auto scrollbar-hide mb-6 border-b" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-base)', padding: '8px 8px 0 8px', borderRadius: '8px 8px 0 0' }}>
         <div className="flex gap-1 min-w-max">
-        {visibleTabs.map(tab => {
-          const icons = { Profile: User, Notifications: Bell, Integrations: Link2, Billing: CreditCard, 'Team Members': Users, 'API Keys': Key }
-          const Icon = icons[tab]
-          return (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className="px-4 py-2.5 text-sm font-medium transition-all rounded-t-lg -mb-px flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-              style={{
-                background: activeTab === tab ? 'var(--bg-surface)' : 'transparent',
-                boxShadow: activeTab === tab ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 -2px 4px rgba(0,0,0,0.03)' : 'none',
-                border: activeTab === tab ? '1px solid var(--border-default)' : '1px solid transparent',
-                borderBottomColor: activeTab === tab ? 'var(--bg-surface)' : 'transparent',
-                color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-              }}>
-              <Icon size={14} className={activeTab === tab ? 'text-[var(--accent-primary)]' : ''} /> {tab}
-            </button>
-          )
-        })}
+          {visibleTabs.map(tab => {
+            const icons = { Profile: User, Notifications: Bell, Integrations: Link2, Billing: CreditCard, 'Team Members': Users, 'API Keys': Key }
+            const Icon = icons[tab]
+            return (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                className="px-4 py-2.5 text-sm font-medium transition-all rounded-t-lg -mb-px flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                style={{
+                  background: activeTab === tab ? 'var(--bg-surface)' : 'transparent',
+                  boxShadow: activeTab === tab ? 'inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 -2px 4px rgba(0,0,0,0.03)' : 'none',
+                  border: activeTab === tab ? '1px solid var(--border-default)' : '1px solid transparent',
+                  borderBottomColor: activeTab === tab ? 'var(--bg-surface)' : 'transparent',
+                  color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
+                }}>
+                <Icon size={14} className={activeTab === tab ? 'text-[var(--accent-primary)]' : ''} /> {tab}
+              </button>
+            )
+          })}
         </div>
       </div>
 

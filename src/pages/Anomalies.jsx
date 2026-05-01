@@ -1,3 +1,4 @@
+import { useMigrationData } from '../hooks/useMigrationData';
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -9,10 +10,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import PageHeader from '../components/layout/PageHeader'
 import SeverityBadge from '../components/ui/SeverityBadge'
 import ProviderBadge from '../components/ui/ProviderBadge'
-import { anomalies, budgetAlerts, anomalyHistory } from '../data/mockAlerts'
+
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
-import { PERMISSIONS } from '../data/mockRoles'
+
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtDate = (iso) => {
@@ -26,6 +27,15 @@ const statusColor = { open: '#F43F5E', acknowledged: '#F59E0B', resolved: '#10B9
 
 /** Anomaly detection page — AI-powered spend deviation alerts */
 export default function Anomalies() {
+  const { data: d0, isLoading: l0 } = useMigrationData('/alerts');
+  const { anomalies, budgetAlerts, anomalyHistory } = d0 || {};
+  const { data: d1, isLoading: l1 } = useMigrationData('/roles');
+  const { PERMISSIONS } = d1 || {};
+
+  const isLoading = l0 || l1;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!d0 || !d1) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load anomalies data. Please make sure the backend is running.</p></div>;
+
   const [filter, setFilter] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
   const [localAnomalies, setLocalAnomalies] = useState(anomalies)
@@ -98,17 +108,18 @@ export default function Anomalies() {
         ].map(tab => {
           const Icon = tab.icon;
           return (
-          <button key={tab.key} onClick={() => setFilter(tab.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filter === tab.key ? 'shadow-depth-1 border' : 'border border-transparent'}`}
-            style={{
-              background: filter === tab.key ? 'var(--bg-surface)' : 'transparent',
-              color: filter === tab.key ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderColor: filter === tab.key ? 'var(--border-default)' : 'transparent',
-            }}>
-            <Icon size={14} style={{ color: filter === tab.key ? 'var(--accent-blue)' : 'inherit' }} />
-            {tab.label}
-          </button>
-        )})}
+            <button key={tab.key} onClick={() => setFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filter === tab.key ? 'shadow-depth-1 border' : 'border border-transparent'}`}
+              style={{
+                background: filter === tab.key ? 'var(--bg-surface)' : 'transparent',
+                color: filter === tab.key ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderColor: filter === tab.key ? 'var(--border-default)' : 'transparent',
+              }}>
+              <Icon size={14} style={{ color: filter === tab.key ? 'var(--accent-blue)' : 'inherit' }} />
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Anomaly feed */}
@@ -262,10 +273,10 @@ export default function Anomalies() {
                     <button
                       onClick={() => acknowledge(a.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-90 shadow-depth-primary border"
-                      style={{ 
-                        borderColor: '#D97706', 
-                        color: '#fff', 
-                        background: 'linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%)' 
+                      style={{
+                        borderColor: '#D97706',
+                        color: '#fff',
+                        background: 'linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%)'
                       }}
                     >
                       Acknowledge
@@ -275,10 +286,10 @@ export default function Anomalies() {
                     <button
                       onClick={() => resolve(a.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-90 shadow-depth-primary border"
-                      style={{ 
-                        borderColor: '#059669', 
-                        color: '#fff', 
-                        background: 'linear-gradient(180deg, #34D399 0%, #10B981 100%)' 
+                      style={{
+                        borderColor: '#059669',
+                        color: '#fff',
+                        background: 'linear-gradient(180deg, #34D399 0%, #10B981 100%)'
                       }}
                     >
                       Resolve

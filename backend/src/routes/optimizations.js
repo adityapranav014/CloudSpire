@@ -1,0 +1,7 @@
+import express from 'express';
+import * as optimizationsController from '../controllers/optimizations.js';
+
+const router = express.Router();
+router.get('/', optimizationsController.getIndex);
+
+export default router;

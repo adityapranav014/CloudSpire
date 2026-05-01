@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLeftOpen } from 'lucide-react'
-import { anomalies } from '../../data/mockAlerts'
-import { awsAccounts } from '../../data/mockAWS'
+
+
 import { usePermissions } from '../../hooks/usePermissions'
-import { ROLE_META } from '../../data/mockRoles'
+
 import UserAvatar from '../ui/UserAvatar'
+import { authClient } from '../../lib/auth-client'
+import { useMigrationData } from '../../hooks/useMigrationData'
 import {
   CommandDialog,
   CommandEmpty,
@@ -15,36 +18,59 @@ import {
   CommandList,
 } from "../ui/command"
 
-const openCount = anomalies.filter(a => a.status === 'open').length
 const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:4000' : '')).replace(/\/$/, '')
 const backendHealthUrl = `${backendBaseUrl}/health`
-const commandItems = {
-  pages: [
-    { label: 'Dashboard', action: '/dashboard' },
-    { label: 'Cost Explorer', action: '/cost-explorer' },
-    { label: 'Optimizer', action: '/optimizer' },
-    { label: 'Anomalies', action: '/anomalies' },
-    { label: 'Accounts', action: '/accounts' },
-    { label: 'Teams & Budgets', action: '/teams' },
-    { label: 'Reports', action: '/reports' },
-  ],
-  recent: [
-    { label: 'AWS Production Account', action: '/accounts' },
-    { label: 'Lambda Anomaly', action: '/anomalies' },
-    { label: 'Monthly Cost Digest', action: '/reports' },
-  ],
-  accounts: awsAccounts.slice(0, 3).map((account) => ({ label: account.name, action: '/accounts' })),
-}
 
 /** Top application bar with search, notifications, and user menu */
 export default function TopBar({ onOpenMenu = () => { } }) {
+  const { data: d0 } = useMigrationData('/alerts');
+  const anomalies = d0?.anomalies || [];
+  const { data: d1 } = useMigrationData('/cloud/aws');
+  const awsAccounts = d1?.awsAccounts || [];
+  const { data: d2 } = useMigrationData('/roles');
+  const ROLE_META = d2?.ROLE_META || {};
+
+  const openCount = anomalies.filter(a => a.status === 'open').length
+
+  const commandItems = useMemo(() => ({
+    pages: [
+      { label: 'Dashboard', action: '/dashboard' },
+      { label: 'Cost Explorer', action: '/cost-explorer' },
+      { label: 'Optimizer', action: '/optimizer' },
+      { label: 'Anomalies', action: '/anomalies' },
+      { label: 'Accounts', action: '/accounts' },
+      { label: 'Teams & Budgets', action: '/teams' },
+      { label: 'Reports', action: '/reports' },
+    ],
+    recent: [
+      { label: 'AWS Production Account', action: '/accounts' },
+      { label: 'Lambda Anomaly', action: '/anomalies' },
+      { label: 'Monthly Cost Digest', action: '/reports' },
+    ],
+    accounts: awsAccounts.slice(0, 3).map((account) => ({ label: account.name, action: '/accounts' })),
+  }), [awsAccounts]);
+
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [backendStatus, setBackendStatus] = useState('checking')
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
-  const { persona } = usePermissions()
-  const meta = ROLE_META[persona.role]
+  const { persona: mockPersona } = usePermissions()
+  const { data: session } = authClient.useSession()
+
+  // Use session user if available, fallback to mock persona for demo purposes
+  const user = session?.user || mockPersona
+  const meta = ROLE_META[user.role || 'FinOps Manager']
+
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          navigate('/login')
+        }
+      }
+    })
+  }
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -125,7 +151,7 @@ export default function TopBar({ onOpenMenu = () => { } }) {
           <input
             type="text"
             placeholder="Search pages, accounts, services... (⌘K)"
-            className="pl-9 pr-4 py-1.5 text-sm rounded-lg w-full outline-none border transition-colors cursor-pointer shadow-depth-inset"
+            className="pl-9 pr-4 py-1.5 text-sm rounded-lg w-full outline-none border transition-colors cursor-pointer"
             style={{
               background: 'var(--bg-elevated)',
               borderColor: 'var(--border-default)',
@@ -193,9 +219,9 @@ export default function TopBar({ onOpenMenu = () => { } }) {
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-[--bg-hover]"
             onClick={() => setUserMenuOpen(v => !v)}
           >
-            <UserAvatar user={persona} size="sm" />
+            <UserAvatar user={user} size="sm" />
             <span className="hidden sm:block text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {persona.name.split(' ')[0]} {persona.name.split(' ')[1]?.[0]}.
+              {user.name.split(' ')[0]} {user.name.split(' ')[1]?.[0]}.
             </span>
             <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} />
           </button>
@@ -207,17 +233,17 @@ export default function TopBar({ onOpenMenu = () => { } }) {
             >
               <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center gap-2.5 mb-1.5">
-                  <UserAvatar user={persona} size="md" />
+                  <UserAvatar user={user} size="md" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{persona.name}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{persona.email}</p>
+                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
                   </div>
                 </div>
                 <span
                   className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
-                  style={{ background: meta.bg, color: meta.color }}
+                  style={{ background: meta?.bg || '#eee', color: meta?.color || '#000' }}
                 >
-                  {meta.label}
+                  {meta?.label || user.role}
                 </span>
               </div>
               {[
@@ -239,13 +265,10 @@ export default function TopBar({ onOpenMenu = () => { } }) {
                 <button
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
                   style={{ color: 'var(--accent-rose)' }}
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('cloudspire:open-role-switcher'))
-                    setUserMenuOpen(false)
-                  }}
+                  onClick={handleSignOut}
                 >
                   <LogOut size={14} />
-                  Switch Role / Sign out
+                  Sign out
                 </button>
               </div>
             </div>

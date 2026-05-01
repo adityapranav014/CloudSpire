@@ -1,14 +1,17 @@
+
 import { useNavigate } from 'react-router-dom'
 import { ShieldOff, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { usePermissions } from '../../hooks/usePermissions'
-import { ROLE_META } from '../../data/mockRoles'
+import { useMigrationData } from '../../hooks/useMigrationData'
 
 /** Rendered when a role tries to access a page they don't have permission for */
 export default function AccessDenied({ page }) {
+  const { data: d0 } = useMigrationData('/roles');
+  const ROLE_META = d0?.ROLE_META || {};
   const navigate = useNavigate()
   const { persona } = usePermissions()
-  const meta = ROLE_META[persona.role]
+  const meta = ROLE_META[persona.role] || {}
 
   return (
     <motion.div

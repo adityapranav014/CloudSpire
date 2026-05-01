@@ -20,19 +20,13 @@ import TrendBadge from '../components/ui/TrendBadge'
 import SeverityBadge from '../components/ui/SeverityBadge'
 import WidgetGalleryPanel from '../components/dashboard/WidgetGalleryPanel'
 import { WIDGET_REGISTRY } from '../components/dashboard/WidgetRegistry'
-
-import { currentMonthStats, dailySpend } from '../data/mockUnified'
-import { awsServiceBreakdown } from '../data/mockAWS'
-import { gcpServiceBreakdown } from '../data/mockGCP'
-import { azureServiceBreakdown } from '../data/mockAzure'
-import { anomalies, budgetAlerts } from '../data/mockAlerts'
-import { rightsizingRecommendations, optimizationSummary } from '../data/mockOptimizations'
+import { useMigrationData } from '../hooks/useMigrationData'
 
 // --- Grid config --------------------------------------------
 const BREAKPOINTS = { lg: 1024, md: 768, sm: 480, xs: 0 }
-const COLS        = { lg: 12,   md: 8,   sm: 4,   xs: 2 }
-const ROW_HEIGHT  = 80
-const MARGIN      = [12, 12]
+const COLS = { lg: 12, md: 8, sm: 4, xs: 2 }
+const ROW_HEIGHT = 80
+const MARGIN = [12, 12]
 const STORAGE_KEY = 'cloudspire-dashboard-v4'
 
 // --- Static data ---------------------------------------------
@@ -47,96 +41,82 @@ const monthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' 
 const dayLabel = `${now.toLocaleString('en-US', { month: 'short' })} 1\u2013${now.getDate()}, ${now.getFullYear()}`
 
 const PROVIDERS = [
-  { provider: 'aws',   name: 'Amazon Web Services', spend: 82400, change: 8.2,  accounts: 4, unit: 'accounts',     color: '#FF9900' },
-  { provider: 'gcp',   name: 'Google Cloud',         spend: 39100, change: 12.4, accounts: 4, unit: 'projects',      color: '#4285F4' },
-  { provider: 'azure', name: 'Microsoft Azure',      spend: 27900, change: 6.8,  accounts: 3, unit: 'subscriptions', color: '#0078D4' },
+  { provider: 'aws', name: 'Amazon Web Services', spend: 82400, change: 8.2, accounts: 4, unit: 'accounts', color: '#FF9900' },
+  { provider: 'gcp', name: 'Google Cloud', spend: 39100, change: 12.4, accounts: 4, unit: 'projects', color: '#4285F4' },
+  { provider: 'azure', name: 'Microsoft Azure', spend: 27900, change: 6.8, accounts: 3, unit: 'subscriptions', color: '#0078D4' },
 ]
 const TOTAL_SPEND = PROVIDERS.reduce((s, p) => s + p.spend, 0)
 
-const topServices = [
-  ...awsServiceBreakdown.slice(0, 4),
-  ...gcpServiceBreakdown.slice(0, 3),
-  ...azureServiceBreakdown.slice(0, 3),
-].sort((a, b) => b.cost - a.cost)
-  .slice(0, 8)
-  .map(s => ({ service: s.service, cost: s.cost, percent: +(s.cost / 149400 * 100).toFixed(1) }))
-
 const topRegions = [
   { label: 'N. Virginia', cost: 41200, provider: 'aws' },
-  { label: 'Iowa (GCP)',  cost: 22800, provider: 'gcp' },
-  { label: 'US West',     cost: 18600, provider: 'aws' },
-  { label: 'East US',     cost: 16800, provider: 'azure' },
-  { label: 'EU Ireland',  cost: 11400, provider: 'aws' },
+  { label: 'Iowa (GCP)', cost: 22800, provider: 'gcp' },
+  { label: 'US West', cost: 18600, provider: 'aws' },
+  { label: 'East US', cost: 16800, provider: 'azure' },
+  { label: 'EU Ireland', cost: 11400, provider: 'aws' },
 ]
-
-const sparkData = dailySpend.slice(-14).map(d => ({
-  ...d,
-  savings:    d.total * 0.05 + Math.random() * 500,
-  budgetLine: d.total * 1.1  - Math.random() * 200,
-}))
 
 // --- Default layouts per breakpoint -------------------------
 // lg = 12 cols, md = 8 cols, sm = 4 cols, xs = 2 cols
 const DEFAULT_LAYOUTS = {
   lg: [
-    { i: 'kpi-total-spend',   x: 0,  y: 0,  w: 3,  h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-vs-last-month', x: 3,  y: 0,  w: 3,  h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-forecast',      x: 6,  y: 0,  w: 3,  h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-savings',       x: 9,  y: 0,  w: 3,  h: 3, minW: 2, minH: 3 },
-    { i: 'provider-aws',      x: 0,  y: 3,  w: 4,  h: 3, minW: 3, minH: 3 },
-    { i: 'provider-gcp',      x: 4,  y: 3,  w: 4,  h: 3, minW: 3, minH: 3 },
-    { i: 'provider-azure',    x: 8,  y: 3,  w: 4,  h: 3, minW: 3, minH: 3 },
-    { i: 'chart-area-spend',  x: 0,  y: 6,  w: 12, h: 5, minW: 6, minH: 4 },
-    { i: 'chart-donut',       x: 0,  y: 11, w: 6,  h: 5, minW: 4, minH: 4 },
-    { i: 'chart-bar-regions', x: 6,  y: 11, w: 6,  h: 5, minW: 4, minH: 4 },
-    { i: 'intel-alerts',      x: 0,  y: 16, w: 4,  h: 6, minW: 3, minH: 4 },
-    { i: 'intel-savings',     x: 4,  y: 16, w: 4,  h: 6, minW: 3, minH: 4 },
-    { i: 'intel-budget',      x: 8,  y: 16, w: 4,  h: 6, minW: 3, minH: 4 },
+    { i: 'kpi-total-spend', x: 0, y: 0, w: 3, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-vs-last-month', x: 3, y: 0, w: 3, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-forecast', x: 6, y: 0, w: 3, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-savings', x: 9, y: 0, w: 3, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-aws', x: 0, y: 3, w: 4, h: 3, minW: 3, minH: 3 },
+    { i: 'provider-gcp', x: 4, y: 3, w: 4, h: 3, minW: 3, minH: 3 },
+    { i: 'provider-azure', x: 8, y: 3, w: 4, h: 3, minW: 3, minH: 3 },
+    { i: 'chart-area-spend', x: 0, y: 6, w: 12, h: 5, minW: 6, minH: 4 },
+    { i: 'chart-donut', x: 0, y: 11, w: 6, h: 5, minW: 4, minH: 4 },
+    { i: 'chart-bar-regions', x: 6, y: 11, w: 6, h: 5, minW: 4, minH: 4 },
+    { i: 'intel-alerts', x: 0, y: 16, w: 4, h: 6, minW: 3, minH: 4 },
+    { i: 'intel-savings', x: 4, y: 16, w: 4, h: 6, minW: 3, minH: 4 },
+    { i: 'intel-budget', x: 8, y: 16, w: 4, h: 6, minW: 3, minH: 4 },
   ],
   md: [
-    { i: 'kpi-total-spend',   x: 0, y: 0,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-vs-last-month', x: 4, y: 0,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-forecast',      x: 0, y: 3,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-savings',       x: 4, y: 3,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-aws',      x: 0, y: 6,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-gcp',      x: 4, y: 6,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-azure',    x: 0, y: 9,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'chart-area-spend',  x: 0, y: 12, w: 8, h: 5, minW: 4, minH: 4 },
-    { i: 'chart-donut',       x: 0, y: 17, w: 4, h: 5, minW: 2, minH: 4 },
+    { i: 'kpi-total-spend', x: 0, y: 0, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-vs-last-month', x: 4, y: 0, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-forecast', x: 0, y: 3, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-savings', x: 4, y: 3, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-aws', x: 0, y: 6, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-gcp', x: 4, y: 6, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-azure', x: 0, y: 9, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'chart-area-spend', x: 0, y: 12, w: 8, h: 5, minW: 4, minH: 4 },
+    { i: 'chart-donut', x: 0, y: 17, w: 4, h: 5, minW: 2, minH: 4 },
     { i: 'chart-bar-regions', x: 4, y: 17, w: 4, h: 5, minW: 2, minH: 4 },
-    { i: 'intel-alerts',      x: 0, y: 22, w: 4, h: 6, minW: 2, minH: 4 },
-    { i: 'intel-savings',     x: 4, y: 22, w: 4, h: 6, minW: 2, minH: 4 },
-    { i: 'intel-budget',      x: 0, y: 28, w: 8, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-alerts', x: 0, y: 22, w: 4, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-savings', x: 4, y: 22, w: 4, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-budget', x: 0, y: 28, w: 8, h: 6, minW: 2, minH: 4 },
   ],
   sm: [
-    { i: 'kpi-total-spend',   x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-vs-last-month', x: 2, y: 0,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-forecast',      x: 0, y: 3,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-savings',       x: 2, y: 3,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-aws',      x: 0, y: 6,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-gcp',      x: 0, y: 9,  w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-azure',    x: 0, y: 12, w: 4, h: 3, minW: 2, minH: 3 },
-    { i: 'chart-area-spend',  x: 0, y: 15, w: 4, h: 5, minW: 2, minH: 4 },
-    { i: 'chart-donut',       x: 0, y: 20, w: 4, h: 5, minW: 2, minH: 4 },
+    { i: 'kpi-total-spend', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-vs-last-month', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-forecast', x: 0, y: 3, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-savings', x: 2, y: 3, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-aws', x: 0, y: 6, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-gcp', x: 0, y: 9, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-azure', x: 0, y: 12, w: 4, h: 3, minW: 2, minH: 3 },
+    { i: 'chart-area-spend', x: 0, y: 15, w: 4, h: 5, minW: 2, minH: 4 },
+    { i: 'chart-donut', x: 0, y: 20, w: 4, h: 5, minW: 2, minH: 4 },
     { i: 'chart-bar-regions', x: 0, y: 25, w: 4, h: 5, minW: 2, minH: 4 },
-    { i: 'intel-alerts',      x: 0, y: 30, w: 4, h: 6, minW: 2, minH: 4 },
-    { i: 'intel-savings',     x: 0, y: 36, w: 4, h: 6, minW: 2, minH: 4 },
-    { i: 'intel-budget',      x: 0, y: 42, w: 4, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-alerts', x: 0, y: 30, w: 4, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-savings', x: 0, y: 36, w: 4, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-budget', x: 0, y: 42, w: 4, h: 6, minW: 2, minH: 4 },
   ],
   xs: [
-    { i: 'kpi-total-spend',   x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-vs-last-month', x: 0, y: 3,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-forecast',      x: 0, y: 6,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'kpi-savings',       x: 0, y: 9,  w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-aws',      x: 0, y: 12, w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-gcp',      x: 0, y: 15, w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'provider-azure',    x: 0, y: 18, w: 2, h: 3, minW: 2, minH: 3 },
-    { i: 'chart-area-spend',  x: 0, y: 21, w: 2, h: 5, minW: 2, minH: 4 },
-    { i: 'chart-donut',       x: 0, y: 22, w: 2, h: 5, minW: 2, minH: 4 },
+    { i: 'kpi-total-spend', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-vs-last-month', x: 0, y: 3, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-forecast', x: 0, y: 6, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'kpi-savings', x: 0, y: 9, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-aws', x: 0, y: 12, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-gcp', x: 0, y: 15, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'provider-azure', x: 0, y: 18, w: 2, h: 3, minW: 2, minH: 3 },
+    { i: 'chart-area-spend', x: 0, y: 21, w: 2, h: 5, minW: 2, minH: 4 },
+    { i: 'chart-donut', x: 0, y: 22, w: 2, h: 5, minW: 2, minH: 4 },
     { i: 'chart-bar-regions', x: 0, y: 27, w: 2, h: 5, minW: 2, minH: 4 },
-    { i: 'intel-alerts',      x: 0, y: 32, w: 2, h: 6, minW: 2, minH: 4 },
-    { i: 'intel-savings',     x: 0, y: 38, w: 2, h: 6, minW: 2, minH: 4 },
-    { i: 'intel-budget',      x: 0, y: 44, w: 2, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-alerts', x: 0, y: 32, w: 2, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-savings', x: 0, y: 38, w: 2, h: 6, minW: 2, minH: 4 },
+    { i: 'intel-budget', x: 0, y: 44, w: 2, h: 6, minW: 2, minH: 4 },
   ],
 }
 
@@ -148,7 +128,7 @@ function loadLayouts() {
   } catch { return null }
 }
 function saveLayouts(layouts) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts)) } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts)) } catch { }
 }
 
 // Derive the set of active widget IDs from any breakpoint layout
@@ -188,16 +168,16 @@ function WidgetShell({ id, isEditMode, onRemove, children }) {
                 animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : -4 }}
                 transition={{ duration: 0.15 }}
                 className="absolute top-2.5 right-2.5 flex items-center gap-0.5 p-1 rounded-lg shadow-sm border pointer-events-auto backdrop-blur-md"
-                style={{ 
-                  background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)', 
+                style={{
+                  background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)',
                   borderColor: 'var(--border-subtle)',
                   zIndex: 30
                 }}
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div 
-                      className="w-6 h-6 flex items-center justify-center rounded cursor-grab active:cursor-grabbing transition-colors hover:bg-[--bg-hover]" 
+                    <div
+                      className="w-6 h-6 flex items-center justify-center rounded cursor-grab active:cursor-grabbing transition-colors hover:bg-[--bg-hover]"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       <GripVertical size={13} />
@@ -205,9 +185,9 @@ function WidgetShell({ id, isEditMode, onRemove, children }) {
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Drag to move</TooltipContent>
                 </Tooltip>
-                
+
                 <div className="w-[1px] h-3 mx-0.5" style={{ background: 'var(--border-default)' }} />
-                
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -234,7 +214,8 @@ function WidgetShell({ id, isEditMode, onRemove, children }) {
 
 // --- Widget content renders -----------------------------------
 function ProviderCard({ provider: p }) {
-  const pct = ((p.spend / TOTAL_SPEND) * 100).toFixed(0)
+  // .. left untouched, does not use external globals directly ..
+  const pct = ((p.spend / 149400) * 100).toFixed(0) // Note: using hardcoded TOTAL_SPEND for simplicity
   return (
     <div
       className="h-full rounded-xl layer-raised p-4 flex flex-col"
@@ -245,7 +226,7 @@ function ProviderCard({ provider: p }) {
       </div>
       <p className="text-[11px] font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{p.name}</p>
       <p className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-        {fmt.format(p.spend)}
+        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(p.spend)}
       </p>
       <div className="w-full h-1.5 rounded-full mb-2" style={{ background: 'var(--bg-elevated)' }}>
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: p.color, opacity: 0.75 }} />
@@ -267,8 +248,8 @@ function ProviderCard({ provider: p }) {
   )
 }
 
-function AlertsWidget() {
-  const openAlerts = anomalies.filter(a => a.status === 'open')
+function AlertsWidget({ anomalies }) {
+  const openAlerts = (anomalies || []).filter(a => a.status === 'open')
   return (
     <div className="h-full rounded-xl layer-raised p-4 flex flex-col">
       <div className="flex items-center gap-2.5 mb-3">
@@ -296,14 +277,14 @@ function AlertsWidget() {
         ))}
       </div>
       <Link to="/anomalies" className="mt-3 pt-3 border-t flex items-center justify-between text-xs font-medium group" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
-        <span>View all {anomalies.length} alerts</span>
+        <span>View all {(anomalies || []).length} alerts</span>
         <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" style={{ color: 'var(--accent-cyan)' }} />
       </Link>
     </div>
   )
 }
 
-function SavingsWidget() {
+function SavingsWidget({ optimizationSummary, rightsizingRecommendations }) {
   return (
     <div className="h-full rounded-xl layer-raised p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3">
@@ -314,11 +295,11 @@ function SavingsWidget() {
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Top Savings</span>
         </div>
         <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--accent-emerald)', fontFamily: "'JetBrains Mono', monospace" }}>
-          {fmt.format(optimizationSummary.totalPotentialSavings)}/mo
+          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(optimizationSummary?.totalPotentialSavings || 0)}/mo
         </span>
       </div>
       <div className="space-y-2 flex-1 overflow-y-auto no-scrollbar">
-        {rightsizingRecommendations.slice(0, 5).map(r => (
+        {(rightsizingRecommendations || []).slice(0, 5).map(r => (
           <div key={r.id} className="flex items-center gap-2.5 p-2.5 rounded-lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
             <ProviderBadge provider={r.provider} size="sm" />
             <div className="flex-1 min-w-0">
@@ -326,7 +307,7 @@ function SavingsWidget() {
               <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{r.currentType} to {r.recommendedType}</p>
             </div>
             <span className="text-xs font-bold shrink-0 tabular-nums" style={{ color: 'var(--accent-emerald)', fontFamily: "'JetBrains Mono', monospace" }}>
-              -{fmt.format(r.monthlySavings)}/mo
+              -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(r.monthlySavings)}/mo
             </span>
           </div>
         ))}
@@ -339,8 +320,8 @@ function SavingsWidget() {
   )
 }
 
-function BudgetWidget() {
-  const criticalCount = budgetAlerts.filter(b => b.status === 'critical').length
+function BudgetWidget({ budgetAlerts }) {
+  const criticalCount = (budgetAlerts || []).filter(b => b.status === 'critical').length
   return (
     <div className="h-full rounded-xl layer-raised p-4 flex flex-col">
       <div className="flex items-center gap-2.5 mb-3">
@@ -355,11 +336,11 @@ function BudgetWidget() {
         )}
       </div>
       <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar">
-        {budgetAlerts.map(b => {
+        {(budgetAlerts || []).map(b => {
           const color =
             b.status === 'critical' ? 'var(--accent-rose)'
-            : b.status === 'warning' ? 'var(--accent-amber)'
-            : 'var(--accent-emerald)'
+              : b.status === 'warning' ? 'var(--accent-amber)'
+                : 'var(--accent-emerald)'
           return (
             <div key={b.id} className="p-2.5 rounded-lg layer-recessed border border-transparent" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="flex items-center justify-between mb-1">
@@ -372,8 +353,8 @@ function BudgetWidget() {
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(b.percent, 100)}%`, background: color }} />
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-muted)' }}>{fmt.format(b.current)}</span>
-                <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-muted)' }}>of {fmt.format(b.limit)}</span>
+                <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-muted)' }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(b.current)}</span>
+                <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-muted)' }}>of {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(b.limit)}</span>
               </div>
             </div>
           )
@@ -389,6 +370,42 @@ function BudgetWidget() {
 
 // --- Dashboard -----------------------------------------------
 export default function Dashboard() {
+  const { data: unified, isLoading: ls1 } = useMigrationData('/unified')
+  const { data: aws, isLoading: ls2 } = useMigrationData('/cloud/aws')
+  const { data: gcp, isLoading: ls3 } = useMigrationData('/cloud/gcp')
+  const { data: azure, isLoading: ls4 } = useMigrationData('/cloud/azure')
+  const { data: alerts, isLoading: ls5 } = useMigrationData('/alerts')
+  const { data: optimizations, isLoading: ls6 } = useMigrationData('/optimizations')
+
+  const isLoading = ls1 || ls2 || ls3 || ls4 || ls5 || ls6;
+
+  const { currentMonthStats, dailySpend } = unified || {};
+  const { awsServiceBreakdown } = aws || {};
+  const { gcpServiceBreakdown } = gcp || {};
+  const { azureServiceBreakdown } = azure || {};
+  const { anomalies, budgetAlerts } = alerts || {};
+  const { rightsizingRecommendations, optimizationSummary } = optimizations || {};
+
+  const topServices = useMemo(() => {
+    if (!awsServiceBreakdown || !gcpServiceBreakdown || !azureServiceBreakdown) return [];
+    return [
+      ...awsServiceBreakdown.slice(0, 4),
+      ...gcpServiceBreakdown.slice(0, 3),
+      ...azureServiceBreakdown.slice(0, 3),
+    ].sort((a, b) => b.cost - a.cost)
+      .slice(0, 8)
+      .map(s => ({ service: s.service, cost: s.cost, percent: +(s.cost / 149400 * 100).toFixed(1) }))
+  }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown])
+
+  const sparkData = useMemo(() => {
+    if (!dailySpend) return [];
+    return dailySpend.slice(-14).map(d => ({
+      ...d,
+      savings: d.total * 0.05 + Math.random() * 500,
+      budgetLine: d.total * 1.1 - Math.random() * 200,
+    }))
+  }, [dailySpend])
+
   const [layouts, setLayouts] = useState(() => loadLayouts() || DEFAULT_LAYOUTS)
   const [editMode, setEditMode] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
@@ -396,7 +413,10 @@ export default function Dashboard() {
   const { width: containerWidth, containerRef } = useContainerWidth({ initialWidth: 1200 })
 
   const activeWidgetIds = useMemo(() => getActiveIds(layouts), [layouts])
-  const openAlerts = anomalies.filter(a => a.status === 'open')
+  const openAlerts = (anomalies || []).filter(a => a.status === 'open')
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!unified || !aws || !gcp || !azure || !alerts || !optimizations) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load dashboard data. Please make sure the backend is running.</p></div>;
 
   const computedLayouts = useMemo(() => {
     const result = {}
@@ -537,11 +557,11 @@ export default function Dashboard() {
       case 'chart-bar-regions':
         return <BarBreakdownChart data={topRegions} title="Top Regions by Spend" />
       case 'intel-alerts':
-        return <AlertsWidget />
+        return <AlertsWidget anomalies={anomalies} />
       case 'intel-savings':
-        return <SavingsWidget />
+        return <SavingsWidget optimizationSummary={optimizationSummary} rightsizingRecommendations={rightsizingRecommendations} />
       case 'intel-budget':
-        return <BudgetWidget />
+        return <BudgetWidget budgetAlerts={budgetAlerts} />
       default:
         return null
     }
@@ -643,8 +663,8 @@ export default function Dashboard() {
                     </Link>
                     <button
                       onClick={() => { setEditMode(true); setPanelOpen(true) }}
-                        className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 shiny-primary"
-                        style={{ color: '#fff' }}
+                      className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 shiny-primary"
+                      style={{ color: '#fff' }}
                     >
                       <Settings2 size={12} />
                       <span>Customize</span>
@@ -657,9 +677,9 @@ export default function Dashboard() {
             {/* Stats bar */}
             <div className="mt-4 pt-4 border-t grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-0" style={{ borderColor: 'var(--border-subtle)' }}>
               {[
-                { label: 'MTD Spend',      value: fmt.format(TOTAL_SPEND),                                      color: 'var(--text-primary)' },
-                { label: 'Providers',      value: String(PROVIDERS.length),                                     color: 'var(--text-primary)' },
-                { label: 'Open Alerts',    value: String(openAlerts.length),                                     color: openAlerts.length > 0 ? 'var(--accent-rose)' : 'var(--accent-emerald)' },
+                { label: 'MTD Spend', value: fmt.format(TOTAL_SPEND), color: 'var(--text-primary)' },
+                { label: 'Providers', value: String(PROVIDERS.length), color: 'var(--text-primary)' },
+                { label: 'Open Alerts', value: String(openAlerts.length), color: openAlerts.length > 0 ? 'var(--accent-rose)' : 'var(--accent-emerald)' },
                 { label: 'Savings Avail.', value: `${fmt.format(optimizationSummary.totalPotentialSavings)}/mo`, color: 'var(--accent-emerald)' },
               ].map((stat, i) => (
                 <div key={i} className="flex items-center">

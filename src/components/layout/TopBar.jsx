@@ -16,6 +16,8 @@ import {
 } from "../ui/command"
 
 const openCount = anomalies.filter(a => a.status === 'open').length
+const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:4000' : '')).replace(/\/$/, '')
+const backendHealthUrl = `${backendBaseUrl}/health`
 const commandItems = {
   pages: [
     { label: 'Dashboard', action: '/dashboard' },
@@ -35,9 +37,10 @@ const commandItems = {
 }
 
 /** Top application bar with search, notifications, and user menu */
-export default function TopBar({ onOpenMenu = () => {} }) {
+export default function TopBar({ onOpenMenu = () => { } }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [backendStatus, setBackendStatus] = useState('checking')
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
   const { persona } = usePermissions()
@@ -64,6 +67,44 @@ export default function TopBar({ onOpenMenu = () => {} }) {
     return () => document.removeEventListener("keydown", down)
   }, [])
 
+  useEffect(() => {
+    let isMounted = true
+
+    const checkBackendHealth = async () => {
+      const controller = new AbortController()
+      const timeoutId = window.setTimeout(() => controller.abort(), 4000)
+
+      try {
+        const response = await fetch(backendHealthUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        })
+
+        if (!isMounted) return
+
+        setBackendStatus(response.ok ? 'connected' : 'disconnected')
+      } catch {
+        if (isMounted) {
+          setBackendStatus('disconnected')
+        }
+      } finally {
+        window.clearTimeout(timeoutId)
+      }
+    }
+
+    checkBackendHealth()
+    const intervalId = window.setInterval(checkBackendHealth, 30000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  const isBackendConnected = backendStatus === 'connected'
+  const isBackendChecking = backendStatus === 'checking'
+  const backendPillLabel = isBackendConnected ? 'Backend online' : backendStatus === 'checking' ? 'Checking backend' : 'Backend offline'
+
   return (
     <header
       className="fixed top-0 left-0 right-0 lg:left-56 h-14 flex items-center justify-between px-4 sm:px-6 z-20 border-b gap-3 shadow-depth-1"
@@ -80,20 +121,54 @@ export default function TopBar({ onOpenMenu = () => {} }) {
         </button>
 
         <div className="relative min-w-0 flex-1 max-w-xl">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-        <input
-          type="text"
-          placeholder="Search pages, accounts, services... (⌘K)"
-          className="pl-9 pr-4 py-1.5 text-sm rounded-lg w-full outline-none border transition-colors cursor-pointer shadow-depth-inset"
-          style={{
-            background: 'var(--bg-elevated)',
-            borderColor: 'var(--border-default)',
-            color: 'var(--text-secondary)',
-          }}
-          onClick={() => setSearchOpen(true)}
-          readOnly
-        />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            placeholder="Search pages, accounts, services... (⌘K)"
+            className="pl-9 pr-4 py-1.5 text-sm rounded-lg w-full outline-none border transition-colors cursor-pointer shadow-depth-inset"
+            style={{
+              background: 'var(--bg-elevated)',
+              borderColor: 'var(--border-default)',
+              color: 'var(--text-secondary)',
+            }}
+            onClick={() => setSearchOpen(true)}
+            readOnly
+          />
+        </div>
       </div>
+
+      <div className="flex items-center shrink-0">
+        <div
+          className="flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap"
+          style={{
+            background: isBackendConnected
+              ? 'rgba(34, 197, 94, 0.12)'
+              : isBackendChecking
+                ? 'rgba(245, 158, 11, 0.12)'
+                : 'rgba(239, 68, 68, 0.12)',
+            borderColor: isBackendConnected
+              ? 'rgba(34, 197, 94, 0.3)'
+              : isBackendChecking
+                ? 'rgba(245, 158, 11, 0.3)'
+                : 'rgba(239, 68, 68, 0.3)',
+            color: isBackendConnected ? '#15803d' : isBackendChecking ? '#b45309' : '#b91c1c',
+          }}
+          title={backendHealthUrl}
+        >
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{
+              background: isBackendConnected ? '#22c55e' : backendStatus === 'checking' ? '#f59e0b' : '#ef4444',
+              boxShadow: isBackendConnected
+                ? '0 0 0 4px rgba(34, 197, 94, 0.12)'
+                : isBackendChecking
+                  ? '0 0 0 4px rgba(245, 158, 11, 0.12)'
+                  : '0 0 0 4px rgba(239, 68, 68, 0.12)',
+            }}
+          />
+          <span className="hidden md:inline">{backendPillLabel}</span>
+          <span className="md:hidden">API</span>
+        </div>
       </div>
 
       {/* Right actions */}
@@ -177,7 +252,7 @@ export default function TopBar({ onOpenMenu = () => {} }) {
           )}
         </div>
       </div>
-      
+
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>

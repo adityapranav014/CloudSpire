@@ -6,6 +6,7 @@ import { connectToDatabase, disconnectFromDatabase } from './config/database.js'
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { analyzeAnomalies } from './jobs/anomalyDetector.js';
+import { initSocket } from './services/socketService.js';
 
 const server = http.createServer(app);
 
@@ -23,6 +24,9 @@ const startServer = async () => {
         logger.info('Cron: triggering anomaly detection job');
         analyzeAnomalies().catch(err => logger.error({ err }, 'Anomaly detection job error'));
     });
+
+    // Initialize Socket.io
+    initSocket(server);
 
     server.listen(env.port, () => {
         logger.info({ port: env.port }, 'CloudSpire backend listening');

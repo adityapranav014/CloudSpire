@@ -4,6 +4,7 @@ import Team from '../models/Team.js';
 import Integration from '../models/Integration.js';
 import { sendAnomalyAlertEmail } from '../services/emailService.js';
 import { notifySlack } from '../services/integrationService.js';
+import { emitToTeam } from '../services/socketService.js';
 import { logger } from '../utils/logger.js';
 import mongoose from 'mongoose';
 
@@ -91,6 +92,9 @@ export const analyzeAnomalies = async () => {
                     expectedSpend: stat.avgCost,
                     actualSpend: latest.latestCost,
                 });
+
+                // Emit real-time socket event
+                emitToTeam(team._id, 'alert:new', newAlert);
 
                 if (slackIntegration?.config?.webhookUrl) {
                     await notifySlack(slackIntegration.config.webhookUrl, `CloudSpire Anomaly: ${newAlert.title}`, {

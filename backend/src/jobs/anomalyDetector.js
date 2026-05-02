@@ -1,9 +1,8 @@
 import cron from 'node-cron';
-import CostRecord from '../models/CostRecord.js';
-import Alert from '../models/Alert.js';
-import Team from '../models/Team.js';
-import Integration from '../models/Integration.js';
->>>>>>> origin/main
+import CostRecord from '../models/CostRecord.model.js';
+import Alert from '../models/Alert.model.js';
+import Team from '../models/Team.model.js';
+import Integration from '../models/Integration.model.js';
 import { sendAnomalyAlertEmail } from '../services/emailService.js';
 import { notifySlack } from '../services/integrationService.js';
 

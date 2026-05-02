@@ -27,12 +27,12 @@ export const createTeam = catchAsync(async (req, res, next) => {
         return next(new AppError('Team name is required.', 400, 'MISSING_FIELDS'));
     }
 
-    // Mock owner for phase 1 until Auth is ready
+    // Use the authenticated user as the owner
     const newTeam = await Team.create({
         name,
         budget,
         currency,
-        ownerId: '000000000000000000000000'
+        ownerId: req.user.id
     });
     res.status(201).json({ success: true, data: { team: newTeam } });
 });

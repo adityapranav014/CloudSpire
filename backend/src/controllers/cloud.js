@@ -1,4 +1,5 @@
 import CloudAccount from '../models/CloudAccount.js';
+import CostRecord from '../models/CostRecord.js';
 import { fetchAwsCostAndUsage, fetchAwsInstances } from '../services/awsService.js';
 import { fetchAzureCostAndUsage, fetchAzureVMs } from '../services/azureService.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
@@ -11,6 +12,60 @@ import { awsAccounts, awsServiceBreakdown, awsEC2Instances, awsOrphanedResources
 import { azureSubscriptions, azureServiceBreakdown, azureVMs, azureRegionBreakdown, azureOrphanedResources } from '../data/mockAzure.js';
 import { gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources } from '../data/mockGCP.js';
 
+/**
+ * Persist cost records from a cloud billing response into MongoDB.
+ * Silently skips on any error so the main response is never blocked.
+ */
+async function persistCostRecords(teamId, cloudAccountId, provider, resultsByTime = []) {
+    try {
+        const ops = [];
+        for (const day of resultsByTime) {
+            const date = new Date(day.TimePeriod?.Start || day.date || Date.now());
+            const groups = day.Groups || [];
+
+            // When there are no groups, the total comes from Total.UnblendedCost
+            if (groups.length === 0 && day.Total?.UnblendedCost) {
+                ops.push({
+                    updateOne: {
+                        filter: { teamId, cloudAccountId, provider, date, service: 'Total', region: 'global' },
+                        update: {
+                            $set: {
+                                cost: parseFloat(day.Total.UnblendedCost.Amount || 0),
+                                currency: day.Total.UnblendedCost.Unit || 'USD',
+                            },
+                        },
+                        upsert: true,
+                    },
+                });
+            }
+
+            for (const group of groups) {
+                const service = group.Keys?.[0] || 'Unknown';
+                const amount = parseFloat(group.Metrics?.UnblendedCost?.Amount || 0);
+                ops.push({
+                    updateOne: {
+                        filter: { teamId, cloudAccountId, provider, date, service, region: 'global' },
+                        update: {
+                            $set: {
+                                cost: amount,
+                                currency: group.Metrics?.UnblendedCost?.Unit || 'USD',
+                            },
+                        },
+                        upsert: true,
+                    },
+                });
+            }
+        }
+
+        if (ops.length > 0) {
+            await CostRecord.bulkWrite(ops, { ordered: false });
+            logger.info({ teamId, provider, count: ops.length }, 'Cost records persisted');
+        }
+    } catch (err) {
+        logger.error({ err, teamId, provider }, 'Failed to persist cost records — continuing without save');
+    }
+}
+
 export const getAws = catchAsync(async (req, res, next) => {
     const teamId = req.user.teamId;
     const accounts = await CloudAccount.find({ teamId, provider: 'aws' });
@@ -22,6 +77,9 @@ export const getAws = catchAsync(async (req, res, next) => {
 
             const liveCostData = await fetchAwsCostAndUsage(accounts[0].credentials, start, end);
             const liveInstances = await fetchAwsInstances(accounts[0].credentials);
+
+            // Persist to DB (non-blocking)
+            persistCostRecords(teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
 
             return res.status(200).json({
                 success: true,
@@ -58,6 +116,13 @@ export const getAzure = catchAsync(async (req, res, next) => {
             const liveCostData = await fetchAzureCostAndUsage(accounts[0].credentials, start, end);
             const liveVMs = await fetchAzureVMs(accounts[0].credentials);
 
+            // Persist to DB — Azure returns an array of rows, wrap for persistCostRecords compatibility
+            const normalised = (liveCostData || []).map(row => ({
+                TimePeriod: { Start: row[1] || new Date().toISOString().split('T')[0] },
+                Groups: [{ Keys: [row[2] || 'Unknown'], Metrics: { UnblendedCost: { Amount: row[0] || 0, Unit: 'USD' } } }],
+            }));
+            persistCostRecords(teamId, accounts[0]._id, 'azure', normalised);
+
             return res.status(200).json({
                 success: true,
                 data: {
@@ -82,15 +147,18 @@ export const getAzure = catchAsync(async (req, res, next) => {
 });
 
 export const getGcp = catchAsync(async (req, res, next) => {
+    // Fix: declare teamId before any conditional block to avoid ReferenceError
+    const teamId = req.user.teamId;
+
     if (env.nodeEnv === 'production') {
-        const teamId = req.user.teamId;
         const accounts = await CloudAccount.find({ teamId, provider: 'gcp' });
         if (!accounts || accounts.length === 0) {
             return next(new AppError('No cloud accounts configured for this team.', 404, 'NO_CLOUD_ACCOUNTS'));
         }
     }
+
     if (env.nodeEnv !== 'production') {
-        logger.warn({ teamId: req.user.teamId }, 'Serving mock GCP data — not for production use');
+        logger.warn({ teamId }, 'Serving mock GCP data — not for production use');
     }
     res.status(200).json({ gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources });
 });
@@ -104,9 +172,6 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
         return next(new AppError('Provider, name, and credentials are required.', 400, 'MISSING_FIELDS'));
     }
 
-    // Ideally, validate credentials via SDK here before saving
-    // Example: fetchAwsInstances(credentials) to verify keys. Or just save and wait for sync.
-
     // Check if account already exists
     let existingAccount = await CloudAccount.findOne({ teamId, provider, accountId: accountId || name });
 
@@ -119,7 +184,7 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
             teamId,
             provider,
             name,
-            accountId: accountId || name, // Fallback account ID if not provided explicitly
+            accountId: accountId || name,
             credentials,
             status: 'active'
         });

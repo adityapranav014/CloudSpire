@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Will be hashed via bcrypt
-    role: { type: String, enum: ['super_admin', 'finops_manager', 'cloud_engineer', 'team_lead', 'finance_analyst', 'read_only'], default: 'read_only' },
+    role: { type: String, enum: ['Admin', 'DevOps Manager', 'Finance Manager', 'Team Lead', 'Viewer'], default: 'Viewer' },
     teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });

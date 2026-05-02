@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import alertsRouter from './alerts.js';
 import cloudRouter from './cloud.js';
+import dashboardRouter from './dashboard.js';
 import optimizationsRouter from './optimizations.js';
 import rolesRouter from './roles.js';
 import teamsRouter from './teams.js';
@@ -28,6 +29,7 @@ router.get('/health', (_request, response) => {
 
 router.use('/alerts', alertsRouter);
 router.use('/cloud', cloudRouter);
+router.use('/dashboard', dashboardRouter);
 router.use('/optimizations', optimizationsRouter);
 router.use('/roles', rolesRouter);
 router.use('/teams', teamsRouter);

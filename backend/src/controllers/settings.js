@@ -7,8 +7,7 @@ import { logAction } from '../services/auditService.js';
 import { mockSettings } from '../data/mockSettings.js';
 
 export const getSettings = catchAsync(async (req, res) => {
-    // 1. Resolve integrations dynamically from MongoDB
-    const teamId = req.user?.teamId || '000000000000000000000000';
+    const teamId = req.user.teamId;
     const liveIntegrations = await Integration.find({ teamId });
 
     // 2. We keep the base mock for the profile UI details until the full user preferences logic is built
@@ -33,7 +32,7 @@ export const getSettings = catchAsync(async (req, res) => {
 
 export const connectIntegration = catchAsync(async (req, res, next) => {
     const { provider, name, config } = req.body;
-    const teamId = req.user?.teamId || '000000000000000000000000';
+    const teamId = req.user.teamId;
 
     if (!provider || !name) {
         return next(new AppError('Provider and name are required.', 400, 'MISSING_FIELDS'));
@@ -54,15 +53,15 @@ export const connectIntegration = catchAsync(async (req, res, next) => {
 });
 
 export const getApiKeys = catchAsync(async (req, res, next) => {
-    const teamId = req.user?.teamId || '000000000000000000000000';
+    const teamId = req.user.teamId;
     const keys = await ApiKey.find({ teamId }).select('-keyHash').sort('-createdAt');
     res.status(200).json({ success: true, data: { keys } });
 });
 
 export const createApiKey = catchAsync(async (req, res, next) => {
     const { name } = req.body;
-    const teamId = req.user?.teamId || '000000000000000000000000';
-    const userId = req.user?.id || '000000000000000000000000';
+    const teamId = req.user.teamId;
+    const userId = req.user.id;
 
     if (!name) {
         return next(new AppError('API key name is required.', 400, 'MISSING_FIELDS'));
@@ -102,7 +101,7 @@ export const createApiKey = catchAsync(async (req, res, next) => {
 
 export const deleteApiKey = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const teamId = req.user?.teamId || '000000000000000000000000';
+    const teamId = req.user.teamId;
 
     const apiKey = await ApiKey.findOneAndDelete({ _id: id, teamId });
     if (!apiKey) {

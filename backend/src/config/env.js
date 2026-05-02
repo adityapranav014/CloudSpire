@@ -9,11 +9,11 @@ const requiredEnvVars = [
     'CREDENTIALS_ENCRYPTION_KEY',
 ];
 
-// for (const envVarName of requiredEnvVars) {
-//     if (!process.env[envVarName]) {
-//         throw new Error(`Missing required environment variable: ${envVarName}`);
-//     }
-// }
+for (const envVarName of requiredEnvVars) {
+    if (!process.env[envVarName]) {
+        throw new Error(`Missing required environment variable: ${envVarName}`);
+    }
+}
 
 export const env = {
     nodeEnv: process.env.NODE_ENV || 'development',

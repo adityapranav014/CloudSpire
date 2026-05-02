@@ -20,7 +20,7 @@ export default function Reports() {
   const { data: d0, isLoading: l0 } = useMigrationData('/roles');
   const { PERMISSIONS } = d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/reports');
-  const { reportTemplates = [], scheduledReports = [] } = d1 || {};
+  const { reportTemplates = [], scheduledReports = [] } = d1?.data || {};
 
   const [exportFormat, setExportFormat] = useState('CSV')
   const [exportGranularity, setExportGranularity] = useState('Daily')

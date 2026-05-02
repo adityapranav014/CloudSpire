@@ -20,7 +20,7 @@ export default function Signup() {
   const [pwValue, setPwValue] = useState('');
   const [error, setError] = useState('');
 
-  const { persona } = useAuth();
+  const { registerUser } = useAuth();
   // if (persona) { navigate('/dashboard', { replace: true }); return null; }
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -35,11 +35,10 @@ export default function Signup() {
     setIsLoading(true);
     setError('');
     try {
-      setTimeout(() => {
-        navigate('/onboarding');
-      }, 500);
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+      await registerUser(data);
+      navigate('/onboarding');
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

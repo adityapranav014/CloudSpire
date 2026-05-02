@@ -1,4 +1,6 @@
 import { useMigrationData } from '../hooks/useMigrationData';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Bell, Link2, CreditCard, Users, Key, Plus, Trash2, Eye, EyeOff, Copy, AlertCircle } from 'lucide-react'
@@ -11,7 +13,7 @@ import { usePermissions } from '../hooks/usePermissions'
 import UserAvatar from '../components/ui/UserAvatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
-const TABS = ['Profile', 'Notifications', 'Integrations', 'Billing', 'Team Members', 'API Keys']
+const TABS = ['Profile', 'Notifications', 'Integrations', 'Team Members', 'API Keys']
 
 // Maps each restricted tab to the permission required to see it
 // defined inside Settings because PERMISSIONS is fetched dynamically
@@ -57,18 +59,20 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action, da
 
 /** Settings page — profile, notifications, integrations, billing, team, API keys */
 export default function Settings() {
-  const { data: d0, isLoading: l0 } = useMigrationData('/roles');
+  const { user: CURRENT_USER } = useAuth();
+  const { data: d0, isLoading: l0, isError: e0, errorMessage: em0 } = useMigrationData('/roles');
   const { PERMISSIONS } = d0?.data || d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/users');
-  const { CURRENT_USER, getOrgMembers } = d1?.data || d1 || {};
   const { data: d2, isLoading: l2 } = useMigrationData('/settings');
-  const { integrations = [], apiKeys = [] } = d2?.data || d2 || {};
+  const { data: d3, isLoading: l3, mutate: revalidateApiKeys } = useMigrationData('/settings/api-keys');
+
+  const integrations = d2?.data?.integrations || d2?.integrations || [];
+  const apiKeys = d3?.data?.keys || d3?.keys || [];
 
   const teamMembers = d1?.data?.users || d1?.users || [];
 
   const TAB_PERMISSIONS = {
     Integrations: PERMISSIONS?.MANAGE_INTEGRATIONS,
-    Billing: PERMISSIONS?.VIEW_BILLING,
     'Team Members': PERMISSIONS?.MANAGE_TEAM_MEMBERS,
     'API Keys': PERMISSIONS?.MANAGE_API_KEYS,
   }
@@ -85,9 +89,9 @@ export default function Settings() {
   const { can } = usePermissions()
   const visibleTabs = TABS.filter(tab => !TAB_PERMISSIONS[tab] || can(TAB_PERMISSIONS[tab]))
 
-  const isLoading = l0 || l1 || l2;
+  const isLoading = l0 || l1 || l2 || l3;
   if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!d0 || !d1 || !d2 || !CURRENT_USER) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load settings data.</p></div>;
+  if (e0 || (!d0 && !l0) || (!d1 && !l1) || (!d2 && !l2)) return <div className="h-screen flex items-center justify-center"><div className="text-center"><p className="text-red-400 font-semibold mb-1">Failed to load settings</p><p className="text-sm text-zinc-500">{em0 || 'Please make sure the backend is running.'}</p></div></div>;
 
   const toggleNotif = (key) => setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }))
 
@@ -114,7 +118,7 @@ export default function Settings() {
       <div className="overflow-x-auto scrollbar-hide mb-6 border-b" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-base)', padding: '8px 8px 0 8px', borderRadius: '8px 8px 0 0' }}>
         <div className="flex gap-1 min-w-max">
           {visibleTabs.map(tab => {
-            const icons = { Profile: User, Notifications: Bell, Integrations: Link2, Billing: CreditCard, 'Team Members': Users, 'API Keys': Key }
+            const icons = { Profile: User, Notifications: Bell, Integrations: Link2, 'Team Members': Users, 'API Keys': Key }
             const Icon = icons[tab]
             return (
               <button key={tab} onClick={() => setActiveTab(tab)}
@@ -269,40 +273,6 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Billing */}
-      {activeTab === 'Billing' && (
-        <div className="max-w-lg space-y-4">
-          <div className="rounded-xl border p-6 shadow-depth-card" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Current Plan</p>
-                <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--text-primary)' }}>Growth</p>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>$149 / month</p>
-              </div>
-              <div className="px-3 py-1.5 rounded-xl text-sm font-semibold"
-                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--accent-blue)' }}>
-                Active
-              </div>
-            </div>
-            <div className="p-3 rounded-xl mb-4" style={{ background: 'color-mix(in srgb, var(--accent-amber) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-amber) 20%, transparent)' }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--accent-amber)' }}>Usage Limit Warning</p>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>You're tracking $149,400 of cloud spend. Your Growth plan limit is $50,000/month.</p>
-            </div>
-            <button onClick={() => addToast('Redirecting to upgrade page...', 'info')}
-              className="w-full py-3 font-semibold text-sm rounded-xl shiny-primary transition-opacity hover:opacity-90">
-              Upgrade to Enterprise
-            </button>
-          </div>
-          <div className="rounded-xl border p-4 shadow-depth-card" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
-            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Next Invoice</p>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: 'var(--text-secondary)' }}>May 1, 2025</span>
-              <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>$149.00</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Team Members */}
       {activeTab === 'Team Members' && (
         <div className="max-w-2xl">
@@ -394,32 +364,39 @@ export default function Settings() {
               </thead>
               <tbody>
                 {apiKeys.map(k => (
-                  <tr key={k.name} className="border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <tr key={k._id || k.name} className="border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{k.name}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[11px]" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>
-                          {showKey[k.name] ? k.key : k.key.slice(0, 12) + '•'.repeat(16)}
+                          {k.prefix || k.key?.slice(0, 12) + '•••'}
                         </span>
-                        <button onClick={() => setShowKey(prev => ({ ...prev, [k.name]: !prev[k.name] }))}
-                          className="p-1 rounded hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }}>
-                          {showKey[k.name] ? <EyeOff size={11} /> : <Eye size={11} />}
-                        </button>
-                        <button onClick={() => addToast('Key copied to clipboard', 'success')}
+                        <button onClick={() => addToast('Cannot reveal or copy hashed keys. Generate a new one instead.', 'info')}
                           className="p-1 rounded hover:bg-white/10 transition-colors" style={{ color: 'var(--text-muted)' }}>
                           <Copy size={11} />
                         </button>
                       </div>
                     </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{k.created}</td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{k.lastUsed}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{k.createdAt ? new Date(k.createdAt).toLocaleDateString() : k.created}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : k.lastUsed || 'Never'}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setConfirmModal({
                           title: 'Revoke API Key',
                           description: `Revoke "${k.name}"? Any services using this key will immediately lose API access.`,
                           action: 'Revoke',
-                          onConfirm: () => addToast(`API key "${k.name}" revoked`, 'info'),
+                          onConfirm: async () => {
+                            try {
+                              const token = localStorage.getItem('cloudspire_token');
+                              await axios.delete(`http://localhost:4000/api/v1/settings/api-keys/${k._id}`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                              addToast(`API key "${k.name}" revoked`, 'info');
+                              revalidateApiKeys();
+                            } catch (e) {
+                              addToast(e.response?.data?.error || 'Failed to revoke API key', 'error');
+                            }
+                          }
                         })}
                         className="px-2 py-1 text-[10px] font-semibold rounded-lg transition-colors hover:bg-[--bg-hover]"
                         style={{ color: 'var(--accent-rose)' }}>
@@ -431,7 +408,24 @@ export default function Settings() {
               </tbody>
             </table>
           </div>
-          <button onClick={() => addToast('New API key generated and copied to clipboard', 'success')}
+          <button onClick={async () => {
+            try {
+              const name = window.prompt("Enter a name for the new API Key:");
+              if (!name) return;
+              const token = localStorage.getItem('cloudspire_token');
+              const res = await axios.post('http://localhost:4000/api/v1/settings/api-keys', { name }, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (res.data.success) {
+                const rawKey = res.data.data?.rawKey || res.data.rawKey;
+                if (rawKey) navigator.clipboard.writeText(rawKey);
+                addToast(`Key "${name}" created and copied to clipboard! (Save this, it won't be shown again)`, 'success');
+                revalidateApiKeys();
+              }
+            } catch (err) {
+              addToast(err.response?.data?.error || 'Failed to create API key', 'error');
+            }
+          }}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
             <Plus size={14} /> Generate New API Key
           </button>

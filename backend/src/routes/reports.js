@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { getReports } from '../controllers/reports.js';
+import { getReports, triggerReportGeneration } from '../controllers/reports.js';
+import { protect } from '../middleware/auth.js';
 
 const router = Router();
 
-router.get('/', getReports);
+router.get('/', protect, getReports);
+router.post('/generate', protect, triggerReportGeneration);
 
 export default router;

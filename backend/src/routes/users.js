@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import * as usersController from '../controllers/users.js';
 import { validate } from '../middleware/validate.js';
+import { protect, restrictTo } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -21,8 +22,8 @@ const getUserParamsSchema = z.object({
 });
 
 // Routes using middleware wrapper for Async Operations and validations
-router.get('/', usersController.getIndex);
-router.get('/:id', validate(getUserParamsSchema), usersController.getUserById);
-router.post('/', validate(createUserSchema), usersController.createUser);
+router.get('/', protect, usersController.getIndex);
+router.get('/:id', protect, validate(getUserParamsSchema), usersController.getUserById);
+router.post('/', protect, restrictTo('super_admin'), validate(createUserSchema), usersController.createUser);
 
 export default router;

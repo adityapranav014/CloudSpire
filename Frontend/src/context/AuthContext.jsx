@@ -1,56 +1,146 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useMigrationData } from '../hooks/useMigrationData'
+import axios from 'axios'
 
 const AuthContext = createContext(null)
-const STORAGE_KEY = 'cloudspire_demo_role'
+const STORAGE_KEY = 'cloudspire_token'
+
+const api = axios.create({
+  baseURL: 'http://localhost:4000/api/v1',
+})
+
+// Attach token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(STORAGE_KEY)
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// ── Response interceptor: auto-logout on 401 ──
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // If the server says token is expired/invalid, force logout
+    if (error.response?.status === 401) {
+      const errorCode = error.response?.data?.errorCode
+      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'INVALID_TOKEN') {
+        localStorage.removeItem(STORAGE_KEY)
+        // Redirect to login only if we're not already there
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login'
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+/**
+ * Extracts a user-friendly error message from an Axios error.
+ * Backend sends: { success: false, error: "...", errorCode: "..." }
+ */
+const extractErrorMessage = (err, fallback = 'An unexpected error occurred. Please try again.') => {
+  // Network error (backend is down)
+  if (err.code === 'ERR_NETWORK' || !err.response) {
+    return 'Unable to reach the server. Please check your connection and try again.'
+  }
+  // Backend returned a standardized error
+  return err.response?.data?.error || err.response?.data?.message || fallback
+}
 
 export function AuthProvider({ children }) {
-  const { data: rolesData, isLoading } = useMigrationData('/roles')
-  const { DEMO_PERSONAS = [], ROLE_PERMISSIONS = {}, PAGE_ACCESS = {} } = rolesData || {}
+  const { data: rolesData } = useMigrationData('/roles')
+  const { ROLE_PERMISSIONS = {}, PAGE_ACCESS = {} } = rolesData || {}
 
-  const [persona, setPersona] = useState(null)
+  const [user, setUser] = useState(null)
+  const [token, setToken] = useState(localStorage.getItem(STORAGE_KEY) || null)
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
+
+  // persona maps mostly to user for the frontend backward compatibility
+  const persona = user;
+
+  const loadUser = useCallback(async () => {
+    try {
+      if (!token) return;
+      const res = await api.get('/auth/me');
+      setUser(res.data.data.user);
+    } catch (error) {
+      console.error('Failed to authenticate:', extractErrorMessage(error));
+      logout()
+    } finally {
+      setIsLoadingAuth(false)
+    }
+  }, [token])
 
   useEffect(() => {
-    if (DEMO_PERSONAS.length > 0 && !persona) {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      let found;
-      if (saved) {
-        found = DEMO_PERSONAS.find(p => p.role === saved)
-      }
-      setPersona(found || DEMO_PERSONAS.find(p => p.role === 'finops_manager') || DEMO_PERSONAS[0])
-    }
-  }, [DEMO_PERSONAS, persona])
+    if (token) loadUser();
+    else setIsLoadingAuth(false);
+  }, [token, loadUser])
 
+  const login = async (email, password) => {
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      const newToken = res.data.token;
+      localStorage.setItem(STORAGE_KEY, newToken);
+      setToken(newToken);
+      setUser(res.data.data.user);
+    } catch (err) {
+      // Re-throw with a clean user-friendly message so Login.jsx can display it
+      const message = extractErrorMessage(err, 'Invalid email or password. Please try again.')
+      throw new Error(message)
+    }
+  };
+
+  const registerUser = async (data) => {
+    try {
+      const res = await api.post('/auth/register', data);
+      const newToken = res.data.token;
+      localStorage.setItem(STORAGE_KEY, newToken);
+      setToken(newToken);
+      setUser(res.data.data.user);
+    } catch (err) {
+      const message = extractErrorMessage(err, 'Registration failed. Please try again.')
+      throw new Error(message)
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setToken(null);
+    setUser(null);
+  }
+
+  // Preserve legacy demo role switch for testing if needed
   const switchRole = useCallback((roleId) => {
-    const next = DEMO_PERSONAS.find(p => p.role === roleId)
-    if (!next) return
-    setPersona(next)
-    localStorage.setItem(STORAGE_KEY, roleId)
-  }, [DEMO_PERSONAS])
+    console.warn("switchRole is mocked in Production mode");
+    setUser((prev) => prev ? { ...prev, role: roleId } : null);
+  }, []);
 
   /** Returns true if the current role has the given permission key */
   const can = useCallback((permission) => {
-    if (!persona) return false
-    return ROLE_PERMISSIONS[persona.role]?.includes(permission) ?? false
-  }, [persona, ROLE_PERMISSIONS])
+    if (!user) return false
+    return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false
+  }, [user, ROLE_PERMISSIONS])
 
   /** Returns true if the current role is allowed to navigate to `route` (e.g. '/accounts') */
   const canAccessPage = useCallback((route) => {
-    if (!persona) return false
+    if (!user) return false
     const allowed = PAGE_ACCESS[route]
     if (!allowed) return true  // unknown routes are open (public)
-    return allowed.includes(persona.role)
-  }, [persona, PAGE_ACCESS])
+    return allowed.includes(user.role)
+  }, [user, PAGE_ACCESS])
 
   /** Returns true if the current role matches the given roleId */
-  const isRole = useCallback((roleId) => persona?.role === roleId, [persona])
+  const isRole = useCallback((roleId) => user?.role === roleId, [user])
 
-  if (isLoading || !persona) {
+  if (isLoadingAuth) {
     return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>
   }
 
   return (
-    <AuthContext.Provider value={{ persona, switchRole, can, canAccessPage, isRole }}>
+    <AuthContext.Provider value={{ persona, user, token, login, registerUser, logout, switchRole, can, canAccessPage, isRole }}>
       {children}
     </AuthContext.Provider>
   )

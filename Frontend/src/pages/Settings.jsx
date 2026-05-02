@@ -1,6 +1,7 @@
 import { useMigrationData } from '../hooks/useMigrationData';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { useSelector } from 'react-redux';
+import { selectUser } from '../store/slices/authSlice';
+import api from '../services/api';
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Bell, Link2, CreditCard, Users, Key, Plus, Trash2, Eye, EyeOff, Copy, AlertCircle } from 'lucide-react'
@@ -59,7 +60,7 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action, da
 
 /** Settings page — profile, notifications, integrations, billing, team, API keys */
 export default function Settings() {
-  const { user: CURRENT_USER } = useAuth();
+  const CURRENT_USER = useSelector(selectUser);
   const { data: d0, isLoading: l0, isError: e0, errorMessage: em0 } = useMigrationData('/roles');
   const { PERMISSIONS } = d0?.data || d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/users');
@@ -387,10 +388,7 @@ export default function Settings() {
                           action: 'Revoke',
                           onConfirm: async () => {
                             try {
-                              const token = localStorage.getItem('cloudspire_token');
-                              await axios.delete(`http://localhost:4000/api/v1/settings/api-keys/${k._id}`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                              });
+                              await api.delete(`/settings/api-keys/${k._id}`);
                               addToast(`API key "${k.name}" revoked`, 'info');
                               revalidateApiKeys();
                             } catch (e) {
@@ -410,12 +408,9 @@ export default function Settings() {
           </div>
           <button onClick={async () => {
             try {
-              const name = window.prompt("Enter a name for the new API Key:");
+              const name = window.prompt('Enter a name for the new API Key:');
               if (!name) return;
-              const token = localStorage.getItem('cloudspire_token');
-              const res = await axios.post('http://localhost:4000/api/v1/settings/api-keys', { name }, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const res = await api.post('/settings/api-keys', { name });
               if (res.data.success) {
                 const rawKey = res.data.data?.rawKey || res.data.rawKey;
                 if (rawKey) navigator.clipboard.writeText(rawKey);

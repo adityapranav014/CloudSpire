@@ -1,5 +1,6 @@
 import { useMigrationData } from '../hooks/useMigrationData';
 import { useState, useEffect } from 'react'
+import api from '../services/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap, Trash2, StopCircle, Play, ArrowRight, CheckCircle, AlertCircle,
@@ -150,17 +151,8 @@ export default function Optimizer() {
     setSchedules(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s))
 
     try {
-      const token = localStorage.getItem('cloudspire_token');
-      const response = await fetch(`http://localhost:4000/api/v1/optimizations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ enabled: !current.enabled })
-      })
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to update');
-      }
-      if (mutate) mutate() // refresh useMigrationData cache
+      await api.put(`/optimizations/${id}`, { enabled: !current.enabled })
+      if (mutate) mutate()
     } catch (err) {
       // rollback
       setSchedules(prev => prev.map(s => s.id === id ? { ...s, enabled: current.enabled } : s))

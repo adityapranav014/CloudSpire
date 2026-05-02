@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch } from 'react-redux';
+import { registerUser } from '../store/slices/authSlice';
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -15,13 +16,11 @@ const schema = z.object({
 
 export default function Signup() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [pwValue, setPwValue] = useState('');
   const [error, setError] = useState('');
-
-  const { registerUser } = useAuth();
-  // if (persona) { navigate('/dashboard', { replace: true }); return null; }
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
@@ -34,13 +33,12 @@ export default function Signup() {
   const onSubmit = async (data) => {
     setIsLoading(true);
     setError('');
-    try {
-      await registerUser(data);
+    const result = await dispatch(registerUser(data));
+    setIsLoading(false);
+    if (registerUser.fulfilled.match(result)) {
       navigate('/onboarding');
-    } catch (err) {
-      setError(err.message || 'An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
+    } else {
+      setError(result.payload || 'An unexpected error occurred. Please try again.');
     }
   };
 

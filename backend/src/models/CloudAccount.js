@@ -34,6 +34,11 @@ function decrypt(text) {
 }
 
 const cloudAccountSchema = new mongoose.Schema({
+    orgId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Org',
+        required: [true, 'CloudAccount must belong to an organisation.'],
+    },
     teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
     provider: { type: String, enum: ['aws', 'gcp', 'azure'], required: true },
     accountId: { type: String, required: true },
@@ -51,8 +56,8 @@ const cloudAccountSchema = new mongoose.Schema({
     lastSync: { type: Date },
 }, { timestamps: true });
 
-// Compound index for fast team + provider lookups
-cloudAccountSchema.index({ teamId: 1, provider: 1, accountId: 1 }, { unique: true });
+// Unique per org + provider + accountId (an account can only be connected once per org)
+cloudAccountSchema.index({ orgId: 1, teamId: 1, provider: 1, accountId: 1 }, { unique: true });
 
 // Encrypt sensitive credential fields before persisting
 cloudAccountSchema.pre('save', function (next) {

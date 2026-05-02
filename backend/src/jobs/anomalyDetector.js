@@ -1,66 +1,111 @@
-import cron from 'node-cron';
 import CostRecord from '../models/CostRecord.js';
 import Alert from '../models/Alert.js';
 import Team from '../models/Team.js';
 import Integration from '../models/Integration.js';
 import { sendAnomalyAlertEmail } from '../services/emailService.js';
 import { notifySlack } from '../services/integrationService.js';
+import { logger } from '../utils/logger.js';
+import mongoose from 'mongoose';
+
+// Minimal distributed lock: one record per job name in a dedicated collection.
+// If another worker is already running, the findOneAndUpdate will not match (due to lockedAt check).
+const JobLockSchema = new mongoose.Schema({
+    _id: { type: String }, // job name
+    lockedAt: { type: Date, required: true },
+    lockedUntil: { type: Date, required: true },
+});
+const JobLock = mongoose.models.JobLock || mongoose.model('JobLock', JobLockSchema);
+
+const JOB_NAME = 'anomaly-detector';
+const LOCK_TTL_MS = 30 * 60 * 1000; // 30 minutes max runtime
+
+async function acquireLock() {
+    const now = new Date();
+    const lockedUntil = new Date(now.getTime() + LOCK_TTL_MS);
+    try {
+        await JobLock.findOneAndUpdate(
+            { _id: JOB_NAME, lockedUntil: { $lt: now } }, // only acquire if previous lock expired
+            { lockedAt: now, lockedUntil },
+            { upsert: true, new: true }
+        );
+        return true;
+    } catch {
+        return false; // another instance holds the lock (upsert failed on duplicate key)
+    }
+}
+
+async function releaseLock() {
+    await JobLock.findOneAndUpdate(
+        { _id: JOB_NAME },
+        { lockedUntil: new Date(0) } // expire immediately so next run can acquire
+    );
+}
 
 export const analyzeAnomalies = async () => {
-    try {
-        console.log("Running Daily Anomaly Detection Job...");
+    const acquired = await acquireLock();
+    if (!acquired) {
+        logger.info('Anomaly detection job already running on another instance — skipping.');
+        return;
+    }
 
-        // Find all teams
+    try {
+        logger.info('Running daily anomaly detection job');
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
         const teams = await Team.find();
 
-        for (let team of teams) {
-            // Aggregation pipeline to find average service cost over last 30 days
-            const stats = await CostRecord.aggregate([
-                { $match: { teamId: team._id, date: { $gte: new Date(new Date().setDate(new Date().getDate() - 30)) } } },
-                { $group: { _id: "$service", avgCost: { $avg: "$cost" }, maxCost: { $max: "$cost" } } }
+        for (const team of teams) {
+            // Single aggregation: compute avg/max per service AND get latest record per service
+            const [stats, latestRecords] = await Promise.all([
+                CostRecord.aggregate([
+                    { $match: { teamId: team._id, date: { $gte: thirtyDaysAgo } } },
+                    { $group: { _id: '$service', avgCost: { $avg: '$cost' }, maxCost: { $max: '$cost' } } },
+                ]),
+                CostRecord.aggregate([
+                    { $match: { teamId: team._id } },
+                    { $sort: { date: -1 } },
+                    { $group: { _id: '$service', latestCost: { $first: '$cost' }, provider: { $first: '$provider' } } },
+                ]),
             ]);
 
-            for (let stat of stats) {
-                // Determine if recent record is wildly higher than moving average
-                const latestRecord = await CostRecord.findOne({ teamId: team._id, service: stat._id }).sort('-date');
+            const latestMap = new Map(latestRecords.map((r) => [r._id, r]));
 
-                if (latestRecord && latestRecord.cost > (stat.avgCost * 1.5)) { // 50% deviation Threshold
-                    // We found an anomaly! Check if we already alerted
-                    const existingAlert = await Alert.findOne({ teamId: team._id, resourceId: stat._id, status: 'open' });
+            const openAlerts = await Alert.find({ teamId: team._id, status: 'open' }).select('resourceId');
+            const openAlertSet = new Set(openAlerts.map((a) => a.resourceId));
 
-                    if (!existingAlert) {
-                        const newAlert = await Alert.create({
-                            teamId: team._id,
-                            title: `${stat._id} Spend Surge`,
-                            description: `Spend on ${stat._id} jumped to $${latestRecord.cost} (avg: $${stat.avgCost.toFixed(2)})`,
-                            severity: latestRecord.cost > stat.avgCost * 3 ? 'critical' : 'high',
-                            status: 'open',
-                            provider: latestRecord.provider,
-                            resourceId: stat._id,
-                            expectedSpend: stat.avgCost,
-                            actualSpend: latestRecord.cost
-                        });
+            const slackIntegration = await Integration.findOne({ teamId: team._id, provider: 'slack' });
 
-                        // Fetch team integrations to notify
-                        const slackDest = await Integration.findOne({ teamId: team._id, provider: 'slack' });
-                        if (slackDest && slackDest.config?.webhookUrl) {
-                            await notifySlack(slackDest.config.webhookUrl, `🚨 CloudSpire Anomaly: ${newAlert.title}`, {
-                                Service: stat._id,
-                                'Actual Spend': `$${latestRecord.cost}`,
-                                'Expected Spend': `$${stat.avgCost.toFixed(2)}`
-                            });
-                        }
-                    }
+            for (const stat of stats) {
+                const latest = latestMap.get(stat._id);
+                if (!latest || latest.latestCost <= stat.avgCost * 1.5) continue;
+                if (openAlertSet.has(stat._id)) continue;
+
+                const newAlert = await Alert.create({
+                    teamId: team._id,
+                    title: `${stat._id} Spend Surge`,
+                    description: `Spend on ${stat._id} jumped to $${latest.latestCost} (avg: $${stat.avgCost.toFixed(2)})`,
+                    severity: latest.latestCost > stat.avgCost * 3 ? 'critical' : 'high',
+                    status: 'open',
+                    provider: latest.provider,
+                    resourceId: stat._id,
+                    expectedSpend: stat.avgCost,
+                    actualSpend: latest.latestCost,
+                });
+
+                if (slackIntegration?.config?.webhookUrl) {
+                    await notifySlack(slackIntegration.config.webhookUrl, `CloudSpire Anomaly: ${newAlert.title}`, {
+                        Service: stat._id,
+                        'Actual Spend': `$${latest.latestCost}`,
+                        'Expected Spend': `$${stat.avgCost.toFixed(2)}`,
+                    });
                 }
             }
         }
 
+        logger.info('Anomaly detection job completed');
     } catch (err) {
-        console.error("Anomaly Job Failed", err);
+        logger.error({ err }, 'Anomaly detection job failed');
+    } finally {
+        await releaseLock();
     }
-};
-
-// Run every night at midnight
-export const initJobs = () => {
-    cron.schedule('0 0 * * *', analyzeAnomalies);
 };

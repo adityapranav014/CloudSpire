@@ -2,25 +2,28 @@ import { Parser } from 'json2csv';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import CostRecord from '../models/CostRecord.js';
 import crypto from 'crypto';
+import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
-// In a real environment, you'd configure an S3 bucket with env vars
-const s3 = new S3Client({ region: 'us-east-1' });
+const s3 = new S3Client({ region: env.awsRegion });
 
 export const generateStandardReport = async (teamId, format = 'csv') => {
     try {
-        console.log(`Generating Async Report for Team ${teamId}`);
-        // 1. Heavy Database Query simulating Data Warehousing
+        logger.info({ teamId, format }, 'Generating report');
+
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
         const costs = await CostRecord.aggregate([
-            { $match: { teamId: teamId } },
-            { $group: { _id: { svc: "$service", prov: "$provider" }, totalCost: { $sum: "$cost" } } }
+            { $match: { teamId: teamId, date: { $gte: twelveMonthsAgo } } },
+            { $group: { _id: { svc: '$service', prov: '$provider' }, totalCost: { $sum: '$cost' } } },
         ]);
 
         if (costs.length === 0) {
-            console.log("No data available to report");
-            return "No data";
+            logger.info({ teamId }, 'No data available for report');
+            return 'No data';
         }
 
-        // 2. Format parsing
         let fileContent = '';
         if (format === 'csv') {
             const parser = new Parser();
@@ -31,28 +34,24 @@ export const generateStandardReport = async (teamId, format = 'csv') => {
             throw new Error(`Unsupported format ${format}`);
         }
 
-        // 3. Simulating file upload to Cloud Storage
-        // For production, S3 config is required
         const fileName = `reports/${teamId}-${Date.now()}.${format}`;
-
         const params = {
-            Bucket: process.env.S3_BUCKET_NAME || 'cloudspire-reports-bucket', // Requires actual bucket configuration
+            Bucket: env.s3BucketName,
             Key: fileName,
             Body: fileContent,
-            ContentType: format === 'csv' ? 'text/csv' : 'application/json'
+            ContentType: format === 'csv' ? 'text/csv' : 'application/json',
         };
 
-        if (process.env.S3_BUCKET_NAME) {
+        if (env.s3BucketName) {
             await s3.send(new PutObjectCommand(params));
-            console.log(`Document saved to S3 bucket ${params.Bucket} at ${fileName}`);
+            logger.info({ teamId, fileName, bucket: params.Bucket }, 'Report saved to S3');
         } else {
-            // We fallback to console mock behavior so the prototype doesn't break locally
-            console.log("S3 Bucket env not configured. File generated in memory successfully.");
+            logger.warn({ teamId }, 'S3_BUCKET_NAME not configured — report generated in memory only');
         }
 
         return fileName;
     } catch (e) {
-        console.error("Report Generation Failed", e);
+        logger.error({ err: e, teamId }, 'Report generation failed');
         throw e;
     }
 };

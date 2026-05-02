@@ -28,7 +28,7 @@ const statusColor = { open: '#F43F5E', acknowledged: '#F59E0B', resolved: '#10B9
 /** Anomaly detection page — AI-powered spend deviation alerts */
 export default function Anomalies() {
   const { data: d0, isLoading: l0, isError: e0, errorMessage: em0, mutate } = useMigrationData('/alerts');
-  const { anomalies = [], budgetAlerts, anomalyHistory, anomalyStats } = d0 || {};
+  const { anomalies = [], budgetAlerts, anomalyHistory, anomalyStats } = d0?.data || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/roles');
   const { PERMISSIONS } = d1 || {};
 

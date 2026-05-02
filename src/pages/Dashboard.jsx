@@ -371,8 +371,8 @@ export default function Dashboard() {
   const { awsServiceBreakdown, awsAccounts, awsRegionBreakdown } = aws || {};
   const { gcpServiceBreakdown, gcpProjects, gcpRegionBreakdown } = gcp || {};
   const { azureServiceBreakdown, azureSubscriptions, azureRegionBreakdown } = azure || {};
-  const { anomalies, budgetAlerts } = alerts || {};
-  const { rightsizingRecommendations, optimizationSummary } = optimizations || {};
+  const { anomalies, budgetAlerts } = alerts?.data || {};
+  const { rightsizingRecommendations, optimizationSummary } = optimizations?.data || {};
 
   const totalSpend = currentMonthStats?.totalSpend || 1;
 

@@ -78,7 +78,7 @@ export default function Optimizer() {
   const { data: dGCP, isLoading: lGCP } = useMigrationData('/cloud/gcp');
   const { gcpProjects = [], gcpOrphanedResources = [] } = dGCP || {};
   const { data: d2, isLoading: l2, mutate } = useMigrationData('/optimizations');
-  const { optimizationSummary = { totalPotentialSavings: 0, implementedThisMonth: 0, savingsImplementedPercent: 0, savingsBreakdown: { idleInstances: 0, orphanedStorage: 0, rightSizing: 0, reservedInstances: 0, scheduledShutdowns: 0 } }, rightsizingRecommendations = [], reservedInstanceOpportunities = [], scheduledShutdowns } = d2 || {};
+  const { optimizationSummary = { totalPotentialSavings: 0, implementedThisMonth: 0, savingsImplementedPercent: 0, savingsBreakdown: { idleInstances: 0, orphanedStorage: 0, rightSizing: 0, reservedInstances: 0, scheduledShutdowns: 0 } }, rightsizingRecommendations = [], reservedInstanceOpportunities = [], scheduledShutdowns } = d2?.data || {};
   const { data: d3, isLoading: l3 } = useMigrationData('/roles');
   const { PERMISSIONS } = d3 || {};
 

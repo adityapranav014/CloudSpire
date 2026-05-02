@@ -1,20 +1,22 @@
+import bcrypt from 'bcrypt';
 import User from '../models/User.js';
-import { catchAsync } from '../middleware/asyncHandler.js'; // fixed import name
+import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 
 export const getIndex = catchAsync(async (req, res, next) => {
-    const users = await User.find();
-    if (!users || users.length === 0) {
-        throw new AppError('No users found', 404);
-    }
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+        User.find().skip(skip).limit(limit),
+        User.countDocuments(),
+    ]);
 
     res.status(200).json({
         success: true,
-        data: {
-            users,
-            CURRENT_USER: users[0] || null // temporary mock of logged in user
-        },
-        error: null
+        data: { users, total, page, limit },
+        error: null,
     });
 });
 
@@ -29,23 +31,32 @@ export const getUserById = catchAsync(async (req, res, next) => {
     res.status(200).json({
         success: true,
         data: user,
-        error: null
+        error: null,
     });
 });
 
 export const createUser = catchAsync(async (req, res, next) => {
-    const userPayload = req.body;
-    // Set a dummy teamId if not provided for now, until full auth flow exists
-    if (!userPayload.teamId) {
-        userPayload.teamId = '000000000000000000000000';
+    const { name, email, role, password } = req.body;
+
+    if (!password) {
+        return next(new AppError('Password is required.', 400, 'MISSING_FIELDS'));
     }
 
-    // Hash password with bcrypt in Phase 2
-    const created = await User.create(userPayload);
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const created = await User.create({
+        name,
+        email,
+        role,
+        password: hashedPassword,
+        teamId: req.user.teamId,
+    });
+
+    created.password = undefined;
 
     res.status(201).json({
         success: true,
         data: created,
-        error: null
+        error: null,
     });
 });

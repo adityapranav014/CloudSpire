@@ -9,7 +9,8 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
 export const getIndex = catchAsync(async (req, res, next) => {
-    const filter = req.query.teamId ? { teamId: req.query.teamId } : {};
+    const teamId = req.user.teamId;
+    const filter = req.query.teamId ? { teamId: req.query.teamId } : { teamId };
     const optimizations = await Optimization.find(filter);
 
     // Fall back to rich mock data in dev when no real optimizations exist
@@ -50,7 +51,7 @@ export const getIndex = catchAsync(async (req, res, next) => {
 export const updateSchedule = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { enabled, targetStatus = 'pending' } = req.body;
-    const teamId = req.user?.teamId || '000000000000000000000000';
+    const teamId = req.user.teamId;
 
     // In Phase 5: Executing real optimizations
     let schedule = await Optimization.findById(id);

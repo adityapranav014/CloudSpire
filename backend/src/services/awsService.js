@@ -1,6 +1,6 @@
 import { CostExplorerClient, GetCostAndUsageCommand } from "@aws-sdk/client-cost-explorer";
 import { EC2Client, DescribeInstancesCommand, StopInstancesCommand } from "@aws-sdk/client-ec2";
-import { AppError } from "../utils/AppError.js";
+import { logger } from "../utils/logger.js";
 
 // Helper to instantiate clients
 const getAwsClients = (credentials) => {
@@ -38,7 +38,7 @@ export const fetchAwsCostAndUsage = async (credentials, startDate, endDate) => {
         const response = await ceClient.send(command);
         return response;
     } catch (error) {
-        console.error("AWS CE Error:", error);
+        logger.error({ err: error }, "AWS CE Error");
         throw new Error("Failed to fetch AWS Cost and Usage data");
     }
 };
@@ -50,7 +50,7 @@ export const fetchAwsInstances = async (credentials) => {
         const response = await ec2Client.send(command);
         return response.Reservations.flatMap(r => r.Instances);
     } catch (error) {
-        console.error("AWS EC2 Error:", error);
+        logger.error({ err: error }, "AWS EC2 Error");
         throw new Error("Failed to fetch AWS EC2 instances");
     }
 };
@@ -67,7 +67,7 @@ export const executeAwsOptimization = async (credentials, action, resourceId) =>
 
         throw new Error(`Action ${action} not supported yet`);
     } catch (error) {
-        console.error("AWS Optimization Error:", error);
+        logger.error({ err: error }, "AWS Optimization Error");
         throw new Error("Failed to execute AWS optimization");
     }
 };

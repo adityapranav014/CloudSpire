@@ -27,7 +27,7 @@ export const register = catchAsync(async (req, res, next) => {
             );
 
             [newUser] = await User.create(
-                [{ name, email, password, teamId: newTeam._id, role: 'super_admin' }],
+                [{ name, email, password, teamId: newTeam._id, role: 'Admin' }],
                 { session }
             );
 
@@ -67,4 +67,21 @@ export const getMe = catchAsync(async (req, res, next) => {
         success: true,
         data: { user },
     });
+});
+
+export const logout = catchAsync(async (req, res) => {
+    // With Bearer-token auth the server cannot invalidate the token — the
+    // client is responsible for discarding it. We respond 200 so the frontend
+    // can clear state cleanly. A Redis blacklist can be added in Phase 4.
+    res.status(200).json({ success: true, data: null });
+});
+
+export const refreshToken = catchAsync(async (req, res, next) => {
+    // Re-issue a token for the currently authenticated user.
+    // The `protect` middleware has already verified the incoming token.
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isActive) {
+        return next(new AppError('User not found or inactive.', 401, 'USER_NOT_FOUND'));
+    }
+    createSendToken(user, 200, res);
 });

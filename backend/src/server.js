@@ -1,9 +1,11 @@
 import http from 'node:http';
+import cron from 'node-cron';
 
 import app from './app.js';
 import { connectToDatabase, disconnectFromDatabase } from './config/database.js';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
+import { analyzeAnomalies } from './jobs/anomalyDetector.js';
 
 const server = http.createServer(app);
 
@@ -15,6 +17,12 @@ const startServer = async () => {
         logger.error({ err: error }, 'Could not connect to MongoDB');
         process.exit(1);
     }
+
+    // Schedule anomaly detection — every hour, only after DB is ready
+    cron.schedule('0 * * * *', () => {
+        logger.info('Cron: triggering anomaly detection job');
+        analyzeAnomalies().catch(err => logger.error({ err }, 'Anomaly detection job error'));
+    });
 
     server.listen(env.port, () => {
         logger.info({ port: env.port }, 'CloudSpire backend listening');

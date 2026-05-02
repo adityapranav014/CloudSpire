@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import ChatSession from '../models/ChatSession.js';
-import { streamChatCompletion, generateSessionTitle, AVAILABLE_MODELS } from '../services/openRouterService.js';
+import { streamChatCompletion, generateSessionTitle, AVAILABLE_MODELS, DEFAULT_MODEL } from '../services/openRouterService.js';
 import { buildCloudContextPrompt } from '../services/cloudContextService.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
@@ -38,7 +38,7 @@ function validate(schema, data) {
 }
 
 function resolveModel(requested) {
-    if (!requested) return 'openai/gpt-4o-mini';
+    if (!requested) return DEFAULT_MODEL;
     if (!VALID_MODEL_IDS.includes(requested)) {
         throw new AppError(`Unsupported model: ${requested}`, 400, 'INVALID_MODEL');
     }

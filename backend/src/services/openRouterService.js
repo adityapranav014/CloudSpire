@@ -4,19 +4,16 @@ import { logger } from '../utils/logger.js';
 
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 
-/** Available models exposed to clients */
+/** Available models — only verified working OpenRouter endpoints */
 export const AVAILABLE_MODELS = [
     { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', contextWindow: 128000 },
     { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', contextWindow: 128000 },
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', contextWindow: 200000 },
-    { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic', contextWindow: 200000 },
     { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', provider: 'Google', contextWindow: 1000000 },
     { id: 'google/gemini-2.5-pro-preview', name: 'Gemini 2.5 Pro', provider: 'Google', contextWindow: 1000000 },
-    { id: 'meta-llama/llama-4-maverick', name: 'Llama 4 Maverick', provider: 'Meta', contextWindow: 128000 },
-    { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek', contextWindow: 64000 },
-    { id: 'mistralai/mistral-small-3.2-24b-instruct', name: 'Mistral Small 3.2', provider: 'Mistral', contextWindow: 128000 },
-    { id: 'qwen/qwen3-235b-a22b', name: 'Qwen3 235B', provider: 'Qwen', contextWindow: 32000 },
 ];
+
+/** Default model used when none is specified */
+export const DEFAULT_MODEL = 'openai/gpt-4o-mini';
 
 // ── Fallback system prompt (used only when cloud context injection fails) ─────
 const FALLBACK_SYSTEM_PROMPT = `You are CloudSpire AI, an expert FinOps and cloud cost optimization assistant embedded inside the CloudSpire platform.

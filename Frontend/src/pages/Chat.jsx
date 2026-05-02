@@ -971,7 +971,6 @@ export default function Chat() {
                         >
                             <Plus size={12} /> New chat
                         </button>
-                        <ModelSelector models={models} selected={selectedModel} onChange={setSelectedModel} />
                     </div>
                 </div>
 

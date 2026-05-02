@@ -1,8 +1,19 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle, ArrowRight, X, Upload, ShieldCheck } from 'lucide-react'
+import { CheckCircle, ArrowRight, X, Upload, ShieldCheck, AlertCircle } from 'lucide-react'
 import { BrandLogo } from '../constants/brandAssets'
+import axios from 'axios'
+import { useAuth } from '../context/AuthContext'
+
+const api = axios.create({ baseURL: 'http://localhost:4000/api/v1' })
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('cloudspire_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 const PROVIDER_META = {
   aws: {
@@ -64,6 +75,7 @@ export default function Onboarding() {
   const [connectedProviders, setConnectedProviders] = useState({})
   const [testingProvider, setTestingProvider] = useState(null)
   const [syncProgress, setSyncProgress] = useState(-1)
+  const [connectionError, setConnectionError] = useState(null)
 
   // Dynamic step list based on selected providers
   const steps = useMemo(() => [
@@ -114,12 +126,46 @@ export default function Onboarding() {
     )
   }
 
-  const handleTestConnection = providerKey => {
+  const [formData, setFormData] = useState({})
+
+  const handleTestConnection = async (providerKey) => {
     setTestingProvider(providerKey)
-    setTimeout(() => {
+    setConnectionError(null)
+    try {
+      if (providerKey === 'aws' || providerKey === 'azure') {
+        const payload = {
+          provider: providerKey,
+          name: `${PROVIDER_META[providerKey].short} Environment`,
+          accountId: formData['Account alias (optional)'] || `acc-${Date.now()}`,
+          credentials: {
+            accessKey: formData['Access Key ID'],
+            secretKey: formData['Secret Access Key'],
+            tenantId: formData['Tenant ID'],
+            clientId: formData['Client ID'],
+            clientSecret: formData['Client Secret'],
+            subscriptionId: formData['Subscription ID']
+          }
+        }
+        await api.post('/cloud/connect', payload)
+      } else if (providerKey === 'gcp') {
+        await api.post('/cloud/connect', {
+          provider: 'gcp',
+          name: 'GCP Environment',
+          credentials: { serviceAccountJson: "mock-for-now" }
+        })
+      }
+
       setTestingProvider(null)
       setConnectedProviders(p => ({ ...p, [providerKey]: true }))
-    }, 1600)
+    } catch (err) {
+      console.error(err)
+      setTestingProvider(null)
+      setConnectionError(err.response?.data?.error || err.message || 'Connection failed. Please check your credentials and try again.')
+    }
+  }
+
+  const handleInputChange = (fieldLabel, value) => {
+    setFormData(prev => ({ ...prev, [fieldLabel]: value }))
   }
 
   const Spinner = ({ color = '#2563eb' }) => (
@@ -127,12 +173,15 @@ export default function Onboarding() {
       style={{ borderColor: color, borderTopColor: 'transparent' }} />
   )
 
-  const Field = ({ label, placeholder, type = 'text' }) => (
+  const Field = ({ label, placeholder, type = 'text', value, onChange }) => (
     <div>
       <label className="block text-xs font-medium mb-1.5 text-slate-600">{label}</label>
       <input
         type={type}
         placeholder={placeholder}
+        value={value || ''}
+        onChange={(e) => onChange(label, e.target.value)}
+        autoComplete="off"
         className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </div>
@@ -219,9 +268,9 @@ export default function Onboarding() {
                     </div>
 
                     <div className="space-y-4 mb-7">
-                      <Field label="Your name" placeholder="Alex Johnson" />
-                      <Field label="Work email" placeholder="alex@company.com" type="email" />
-                      <Field label="Company name" placeholder="Acme Inc." />
+                      <Field label="Your name" placeholder="Alex Johnson" value={formData['Your name']} onChange={handleInputChange} />
+                      <Field label="Work email" placeholder="alex@company.com" type="email" value={formData['Work email']} onChange={handleInputChange} />
+                      <Field label="Company name" placeholder="Acme Inc." value={formData['Company name']} onChange={handleInputChange} />
                     </div>
 
                     <button
@@ -332,7 +381,14 @@ export default function Onboarding() {
                       {provider.fields ? (
                         <div className="space-y-4 mb-5">
                           {provider.fields.map(f => (
-                            <Field key={f.label} label={f.label} placeholder={f.placeholder} type={f.type} />
+                            <Field
+                              key={f.label}
+                              label={f.label}
+                              placeholder={f.placeholder}
+                              type={f.type}
+                              value={formData[f.label]}
+                              onChange={handleInputChange}
+                            />
                           ))}
                         </div>
                       ) : (
@@ -380,6 +436,12 @@ export default function Onboarding() {
                       </AnimatePresence>
 
                       {/* Read-only note */}
+                      {connectionError && (
+                        <div className="flex items-start gap-2.5 mb-3 px-3.5 py-3 rounded-xl border border-red-200 bg-red-50">
+                          <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-500" />
+                          <p className="text-xs leading-relaxed text-red-600">{connectionError}</p>
+                        </div>
+                      )}
                       <div className="flex items-start gap-2.5 mb-5 px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-100">
                         <ShieldCheck size={14} className="shrink-0 mt-0.5 text-slate-400" />
                         <p className="text-xs leading-relaxed text-slate-500">

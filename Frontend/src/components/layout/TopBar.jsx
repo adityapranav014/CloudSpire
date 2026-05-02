@@ -5,6 +5,7 @@ import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLef
 
 
 import { usePermissions } from '../../hooks/usePermissions'
+import { useAuth } from '../../context/AuthContext'
 
 import UserAvatar from '../ui/UserAvatar'
 import { useMigrationData } from '../../hooks/useMigrationData'
@@ -54,13 +55,15 @@ export default function TopBar({ onOpenMenu = () => { } }) {
   const [backendStatus, setBackendStatus] = useState('checking')
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
+  const { user: personaUser, logout: performLogout } = useAuth()
   const { persona: mockPersona } = usePermissions()
 
   // Use session user if available, fallback to mock persona for demo purposes
-  const user = mockPersona
-  const meta = ROLE_META[user.role || 'finops_manager']
+  const user = personaUser || mockPersona
+  const meta = ROLE_META[user?.role || 'finops_manager'] || { color: 'text-primary' }
 
   const handleSignOut = async () => {
+    performLogout()
     navigate('/login')
   }
 
@@ -213,7 +216,7 @@ export default function TopBar({ onOpenMenu = () => { } }) {
           >
             <UserAvatar user={user} size="sm" />
             <span className="hidden sm:block text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {user.name.split(' ')[0]} {user.name.split(' ')[1]?.[0]}.
+              {user?.name?.split(' ')[0]} {user?.name?.split(' ')[1]?.[0]}.
             </span>
             <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} />
           </button>
@@ -227,15 +230,15 @@ export default function TopBar({ onOpenMenu = () => { } }) {
                 <div className="flex items-center gap-2.5 mb-1.5">
                   <UserAvatar user={user} size="md" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
+                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{user?.name}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
                   </div>
                 </div>
                 <span
                   className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
                   style={{ background: meta?.bg || '#eee', color: meta?.color || '#000' }}
                 >
-                  {meta?.label || user.role}
+                  {meta?.label || user?.role}
                 </span>
               </div>
               {[

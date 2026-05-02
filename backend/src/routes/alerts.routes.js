@@ -1,5 +1,5 @@
 import express from 'express';
-import * as alertsController from '../controllers/alerts.js';
+import * as alertsController from '../controllers/alerts.controller.js';
 
 const router = express.Router();
 router.get('/', alertsController.getIndex);

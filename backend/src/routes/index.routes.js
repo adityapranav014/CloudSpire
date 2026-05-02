@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import alertsRouter from './alerts.js';
-import cloudRouter from './cloud.js';
-import optimizationsRouter from './optimizations.js';
-import rolesRouter from './roles.js';
-import teamsRouter from './teams.js';
-import unifiedRouter from './unified.js';
-import usersRouter from './users.js';
-import settingsRouter from './settings.js';
-import reportsRouter from './reports.js';
+import alertsRouter from './alerts.routes.js';
+import cloudRouter from './cloud.routes.js';
+import optimizationsRouter from './optimizations.routes.js';
+import rolesRouter from './roles.routes.js';
+import teamsRouter from './teams.routes.js';
+import unifiedRouter from './unified.routes.js';
+import usersRouter from './users.routes.js';
+import settingsRouter from './settings.routes.js';
+import reportsRouter from './reports.routes.js';
+import authRouter from './auth.routes.js';
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use('/unified', unifiedRouter);
 router.use('/users', usersRouter);
 router.use('/settings', settingsRouter);
 router.use('/reports', reportsRouter);
+router.use('/auth', authRouter);
 
 export default router;

@@ -20,19 +20,17 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
 
-  const { persona } = useAuth();
+  const { login } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data) => {
     setIsLoading(true);
     setError('');
     try {
-      // Simulate quick auth for demo
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 500);
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+      await login(data.email, data.password);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Invalid email or password. Please try again.');
       setIsLoading(false);
     }
   };
@@ -60,7 +58,7 @@ export default function Login() {
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider ml-1">Email address</label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-3.5 h-4 w-4 text-text-muted transition-colors group-focus-within:text-primary" />
-                <input {...register('email')} type="email" placeholder="name@company.com" autoComplete="email"
+                <input {...register('email')} type="email" placeholder="name@company.com" autoComplete="off"
                   className={'w-full bg-bg-elevated border ' + (errors.email ? 'border-accent-rose' : 'border-border-default') + ' focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl py-3 pl-10 pr-4 outline-none transition-all text-sm'} />
               </div>
               {errors.email && <p className="text-accent-rose text-[11px] ml-1">{errors.email.message}</p>}
@@ -72,7 +70,7 @@ export default function Login() {
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-3.5 h-4 w-4 text-text-muted transition-colors group-focus-within:text-primary" />
-                <input {...register('password')} type={showPw ? 'text' : 'password'} placeholder="••••••••" autoComplete="current-password"
+                <input {...register('password')} type={showPw ? 'text' : 'password'} placeholder="••••••••" autoComplete="off"
                   className={'w-full bg-bg-elevated border ' + (errors.password ? 'border-accent-rose' : 'border-border-default') + ' focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl py-3 pl-10 pr-10 outline-none transition-all text-sm'} />
                 <button type="button" onClick={() => setShowPw(v => !v)} tabIndex={-1}
                   className="absolute right-3 top-3.5 text-text-muted hover:text-text-secondary transition-colors"

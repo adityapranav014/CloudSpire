@@ -3,7 +3,7 @@ import express from 'express';
 import morgan from 'morgan';
 
 import { env } from './config/env.js';
-import apiRouter from './routes/index.js';
+import apiRouter from './routes/index.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
 

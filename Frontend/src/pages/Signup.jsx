@@ -20,7 +20,7 @@ export default function Signup() {
   const [pwValue, setPwValue] = useState('');
   const [error, setError] = useState('');
 
-  const { persona } = useAuth();
+  const { registerUser } = useAuth();
   // if (persona) { navigate('/dashboard', { replace: true }); return null; }
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -35,11 +35,10 @@ export default function Signup() {
     setIsLoading(true);
     setError('');
     try {
-      setTimeout(() => {
-        navigate('/onboarding');
-      }, 500);
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+      await registerUser(data);
+      navigate('/onboarding');
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +67,7 @@ export default function Signup() {
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider ml-1">Full Name</label>
               <div className="relative group">
                 <User className="absolute left-3 top-3 h-4 w-4 text-text-muted transition-colors group-focus-within:text-primary" />
-                <input {...register('name')} type="text" placeholder="John Doe" autoComplete="name"
+                <input {...register('name')} type="text" placeholder="John Doe" autoComplete="off"
                   className={'w-full bg-bg-elevated border ' + (errors.name ? 'border-accent-rose' : 'border-border-default') + ' focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl py-2.5 pl-10 pr-4 outline-none transition-all text-sm'} />
               </div>
               {errors.name && <p className="text-accent-rose text-[11px] ml-1">{errors.name.message}</p>}
@@ -78,7 +77,7 @@ export default function Signup() {
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider ml-1">Email address</label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-text-muted transition-colors group-focus-within:text-primary" />
-                <input {...register('email')} type="email" placeholder="name@company.com" autoComplete="email"
+                <input {...register('email')} type="email" placeholder="name@company.com" autoComplete="off"
                   className={'w-full bg-bg-elevated border ' + (errors.email ? 'border-accent-rose' : 'border-border-default') + ' focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl py-2.5 pl-10 pr-4 outline-none transition-all text-sm'} />
               </div>
               {errors.email && <p className="text-accent-rose text-[11px] ml-1">{errors.email.message}</p>}
@@ -89,7 +88,7 @@ export default function Signup() {
               <div className="relative group">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-text-muted transition-colors group-focus-within:text-primary" />
                 <input {...register('password', { onChange: e => setPwValue(e.target.value) })}
-                  type={showPw ? 'text' : 'password'} placeholder="••••••••" autoComplete="new-password"
+                  type={showPw ? 'text' : 'password'} placeholder="••••••••" autoComplete="off"
                   className={'w-full bg-bg-elevated border ' + (errors.password ? 'border-accent-rose' : 'border-border-default') + ' focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl py-2.5 pl-10 pr-10 outline-none transition-all text-sm'} />
                 <button type="button" onClick={() => setShowPw(v => !v)} tabIndex={-1}
                   className="absolute right-3 top-3 text-text-muted hover:text-text-secondary transition-colors"

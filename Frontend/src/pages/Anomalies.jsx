@@ -27,18 +27,15 @@ const statusColor = { open: '#F43F5E', acknowledged: '#F59E0B', resolved: '#10B9
 
 /** Anomaly detection page — AI-powered spend deviation alerts */
 export default function Anomalies() {
-  const { data: d0, isLoading: l0, mutate } = useMigrationData('/alerts');
+  const { data: d0, isLoading: l0, isError: e0, errorMessage: em0, mutate } = useMigrationData('/alerts');
   const { anomalies = [], budgetAlerts, anomalyHistory, anomalyStats } = d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/roles');
   const { PERMISSIONS } = d1 || {};
 
   const isLoading = l0 || l1;
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!d0 || !d1) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load anomalies data. Please make sure the backend is running.</p></div>;
 
   const [filter, setFilter] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
-
   const [configOpen, setConfigOpen] = useState(false)
   const [threshold, setThreshold] = useState(20)
   const [alertFrequency, setAlertFrequency] = useState('Immediate')
@@ -46,22 +43,29 @@ export default function Anomalies() {
   const { addToast } = useToast()
   const { can } = usePermissions()
 
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (e0 || (!d0 && !l0)) return <div className="h-screen flex items-center justify-center"><div className="text-center"><p className="text-red-400 font-semibold mb-1">Failed to load anomalies</p><p className="text-sm text-zinc-500">{em0 || 'Please make sure the backend is running.'}</p><button onClick={() => mutate()} className="mt-3 px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">Retry</button></div></div>;
+
   const filtered = anomalies.filter(a =>
     filter === 'all' || a.status === filter
   )
 
   const updateStatus = async (id, status, successMsg) => {
     try {
-      const response = await fetch(`http://localhost:5001/alerts/${id}`, {
+      const token = localStorage.getItem('cloudspire_token');
+      const response = await fetch(`http://localhost:4000/api/v1/alerts/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ status })
       });
-      if (!response.ok) throw new Error('Failed to update')
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update');
+      }
       if (mutate) mutate()
       addToast(successMsg, 'success')
     } catch (err) {
-      addToast('Failed to update anomaly status', 'error')
+      addToast(err.message || 'Failed to update anomaly status', 'error')
     }
   }
 

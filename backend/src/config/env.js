@@ -6,12 +6,13 @@ const requiredEnvVars = [
     'MONGODB_URI',
     'BETTER_AUTH_SECRET',
     'JWT_SECRET',
-    'CREDENTIALS_ENCRYPTION_KEY',
+    'ENCRYPTION_KEY',
 ];
 
 for (const envVarName of requiredEnvVars) {
     if (!process.env[envVarName]) {
-        throw new Error(`Missing required environment variable: ${envVarName}`);
+        console.error(`FATAL: ${envVarName} not set`);
+        process.exit(1);
     }
 }
 
@@ -24,7 +25,7 @@ export const env = {
     betterAuthSecret: process.env.BETTER_AUTH_SECRET,
     jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    credentialsEncryptionKey: process.env.CREDENTIALS_ENCRYPTION_KEY,
+    encryptionKey: process.env.ENCRYPTION_KEY,
     resendApiKey: process.env.RESEND_API_KEY,
     s3BucketName: process.env.S3_BUCKET_NAME,
     awsRegion: process.env.AWS_REGION || 'us-east-1',

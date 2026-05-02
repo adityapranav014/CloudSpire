@@ -16,15 +16,17 @@ export const getAws = catchAsync(async (req, res, next) => {
     const { orgId, teamId } = req;
     const accounts = await CloudAccount.find({ orgId, provider: 'aws' });
 
-    if (accounts?.length > 0 && accounts[0].credentials?.accessKey) {
-        try {
-            const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
-            const end   = new Date().toISOString().split('T')[0];
+    if (accounts?.length > 0) {
+        const creds = accounts[0].getDecryptedCredentials();
+        if (creds.accessKey) {
+            try {
+                const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
+                const end   = new Date().toISOString().split('T')[0];
 
-            const [liveCostData, liveInstances] = await Promise.all([
-                fetchAwsCostAndUsage(accounts[0].credentials, start, end),
-                fetchAwsInstances(accounts[0].credentials),
-            ]);
+                const [liveCostData, liveInstances] = await Promise.all([
+                    fetchAwsCostAndUsage(creds, start, end),
+                    fetchAwsInstances(creds),
+                ]);
 
             // Persist to DB — non-blocking, passes orgId for proper scoping
             persistCostRecords(orgId, teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
@@ -42,6 +44,7 @@ export const getAws = catchAsync(async (req, res, next) => {
         } catch (error) {
             logger.warn({ err: error, orgId }, 'Failed real AWS sync, falling back to mock data');
         }
+        } // Closing brace for if (creds.accessKey)
     }
 
     // No real account — serve AWS CUR sample data (or mock in dev)
@@ -70,15 +73,17 @@ export const getAzure = catchAsync(async (req, res, next) => {
     const { orgId, teamId } = req;
     const accounts = await CloudAccount.find({ orgId, provider: 'azure' });
 
-    if (accounts?.length > 0 && accounts[0].credentials?.tenantId) {
-        try {
-            const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
-            const end   = new Date().toISOString().split('T')[0];
+    if (accounts?.length > 0) {
+        const creds = accounts[0].getDecryptedCredentials();
+        if (creds.tenantId) {
+            try {
+                const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
+                const end   = new Date().toISOString().split('T')[0];
 
-            const [liveCostData, liveVMs] = await Promise.all([
-                fetchAzureCostAndUsage(accounts[0].credentials, start, end),
-                fetchAzureVMs(accounts[0].credentials),
-            ]);
+                const [liveCostData, liveVMs] = await Promise.all([
+                    fetchAzureCostAndUsage(creds, start, end),
+                    fetchAzureVMs(creds),
+                ]);
 
             const normalised = (liveCostData || []).map(row => ({
                 TimePeriod: { Start: row[1] || new Date().toISOString().split('T')[0] },
@@ -99,6 +104,7 @@ export const getAzure = catchAsync(async (req, res, next) => {
         } catch (error) {
             logger.warn({ err: error, orgId }, 'Failed real Azure sync, falling back to mock data');
         }
+        } // Closing brace for if (creds.tenantId)
     }
 
     if (env.nodeEnv === 'production') {
@@ -136,6 +142,13 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
     if (!provider || !name || !credentials) {
         return next(new AppError('Provider, name, and credentials are required.', 400, 'MISSING_FIELDS'));
     }
+    
+    // Validate credentials aren't empty strings
+    for (const [key, value] of Object.entries(credentials)) {
+        if (typeof value === 'string' && value.trim() === '') {
+            return next(new AppError(`Credential field ${key} cannot be empty.`, 400, 'INVALID_CREDENTIALS'));
+        }
+    }
 
     const resolvedAccountId = accountId || name;
 
@@ -167,5 +180,15 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
         details: { provider, name, accountId: resolvedAccountId },
     });
 
-    res.status(201).json({ success: true, data: account });
+    res.status(201).json({ 
+        success: true, 
+        data: {
+            _id: account._id,
+            provider: account.provider,
+            accountId: account.accountId,
+            status: account.status,
+            name: account.name,
+            connectedAt: account.createdAt,
+        }
+    });
 });

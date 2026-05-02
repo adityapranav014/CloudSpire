@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { authClient } from '../lib/auth-client';
+import { useAuth } from '../context/AuthContext';
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -20,8 +20,8 @@ export default function Signup() {
   const [pwValue, setPwValue] = useState('');
   const [error, setError] = useState('');
 
-  const { data: session, isPending } = authClient.useSession();
-  if (!isPending && session) { navigate('/dashboard', { replace: true }); return null; }
+  const { persona } = useAuth();
+  // if (persona) { navigate('/dashboard', { replace: true }); return null; }
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
@@ -35,13 +35,9 @@ export default function Signup() {
     setIsLoading(true);
     setError('');
     try {
-      const { error: authError } = await authClient.signUp.email({
-        email: data.email,
-        password: data.password,
-        name: data.name,
-      });
-      if (authError) { setError(authError.message || 'Failed to create account.'); return; }
-      navigate('/onboarding');
+      setTimeout(() => {
+        navigate('/onboarding');
+      }, 500);
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {

@@ -16,7 +16,7 @@ import { getUserById, getUsersByTeam } from './mockUsers.js'
 // Raw team config — shape mirrors GET /api/teams API response
 const TEAM_CONFIGS = [
   {
-    id: 'team-001', name: 'Frontend Team',  leadId: 'u-002', color: '#3B82F6',
+    id: 'team-001', name: 'Frontend Team', leadId: 'u-002', color: '#3B82F6',
     monthlyBudget: 18000, monthlySpend: 14200, budgetPercent: 78.9,
     providers: ['aws', 'gcp'],
     topService: 'Amazon CloudFront', topServiceCost: 3200,
@@ -27,7 +27,7 @@ const TEAM_CONFIGS = [
     overBudget: false,
   },
   {
-    id: 'team-002', name: 'Backend Team',   leadId: 'u-003', color: '#10B981',
+    id: 'team-002', name: 'Backend Team', leadId: 'u-003', color: '#10B981',
     monthlyBudget: 45000, monthlySpend: 38600, budgetPercent: 85.8,
     providers: ['aws', 'gcp', 'azure'],
     topService: 'Amazon EC2', topServiceCost: 18400,
@@ -38,7 +38,7 @@ const TEAM_CONFIGS = [
     overBudget: false,
   },
   {
-    id: 'team-003', name: 'Data Science',   leadId: 'u-004', color: '#8B5CF6',
+    id: 'team-003', name: 'Data Science', leadId: 'u-004', color: '#8B5CF6',
     monthlyBudget: 30000, monthlySpend: 32100, budgetPercent: 107,
     providers: ['gcp', 'aws'],
     topService: 'BigQuery', topServiceCost: 7200,
@@ -60,7 +60,7 @@ const TEAM_CONFIGS = [
     overBudget: false,
   },
   {
-    id: 'team-005', name: 'QA & Testing',   leadId: 'u-006', color: '#F43F5E',
+    id: 'team-005', name: 'QA & Testing', leadId: 'u-006', color: '#F43F5E',
     monthlyBudget: 8000, monthlySpend: 5300, budgetPercent: 66.3,
     providers: ['aws'],
     topService: 'Amazon EC2', topServiceCost: 3200,
@@ -77,16 +77,35 @@ const TEAM_CONFIGS = [
  * Consumer shape is identical to what a real joined API endpoint would return.
  */
 export const teams = TEAM_CONFIGS.map(config => {
-  const leadUser   = getUserById(config.leadId)
+  const leadUser = getUserById(config.leadId)
   const memberList = getUsersByTeam(config.id)
 
   return {
     ...config,
-    lead:       leadUser?.name ?? '',
-    avatar:     leadUser?.avatar ?? '',
-    members:    memberList.length + 1, // +1 for the lead
+    lead: leadUser?.name ?? '',
+    avatar: leadUser?.avatar ?? '',
+    members: memberList.length + 1, // +1 for the lead
     memberList: leadUser
       ? [{ ...leadUser, teamRole: 'Lead' }, ...memberList]
       : memberList,
+    budgetHistory: [
+      { month: 'Jan', budget: config.monthlyBudget * 0.85, spend: config.spend90d },
+      { month: 'Feb', budget: config.monthlyBudget * 0.92, spend: config.spend60d },
+      { month: 'Mar', budget: config.monthlyBudget, spend: config.spend30d * 0.93 },
+      { month: 'Apr', budget: config.monthlyBudget, spend: config.monthlySpend },
+    ],
+    serviceBreakdown: [
+      { service: config.topService, cost: config.topServiceCost, percent: +((config.topServiceCost / config.monthlySpend) * 100).toFixed(1) },
+      { service: 'Shared Platform', cost: config.monthlySpend * 0.24, percent: +((config.monthlySpend * 0.24 / config.monthlySpend) * 100).toFixed(1) },
+      { service: 'Storage', cost: config.monthlySpend * 0.16, percent: +((config.monthlySpend * 0.16 / config.monthlySpend) * 100).toFixed(1) },
+      { service: 'Data Transfer', cost: config.monthlySpend * 0.11, percent: +((config.monthlySpend * 0.11 / config.monthlySpend) * 100).toFixed(1) },
+      { service: 'Other', cost: config.monthlySpend * 0.09, percent: +((config.monthlySpend * 0.09 / config.monthlySpend) * 100).toFixed(1) },
+    ],
+    resourceList: config.projects.map((project, index) => ({
+      name: project,
+      type: index % 2 === 0 ? 'Service' : 'Cluster',
+      monthlyCost: Math.round(config.monthlySpend / (index + 3)),
+      owner: leadUser?.name ?? '',
+    }))
   }
 })

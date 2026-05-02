@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import {
-  ResponsiveContainer, ComposedChart, Area, XAxis, YAxis,
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend
 } from 'recharts'
 
@@ -62,7 +62,7 @@ export default function AreaSpendChart() {
   }))
 
   return (
-    <div className="rounded-xl flex flex-col group layer-raised p-5">
+    <div className="rounded-xl flex flex-col group layer-raised p-5 h-full">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Spend Over Time</h3>
@@ -87,60 +87,62 @@ export default function AreaSpendChart() {
         </div>
       </div>
 
-      <div className="flex-1 layer-recessed rounded-xl p-4 mt-2">
-        <ResponsiveContainer width="100%" height="100%" minHeight={240}>
-          <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-            <defs>
-              <linearGradient id="awsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF9900" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#FF9900" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gcpGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4285F4" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#4285F4" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="azureGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0078D4" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#0078D4" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
-            <XAxis
-              dataKey="date"
-              tick={{ fill: '#4A5568', fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-              interval={Math.floor(days / 7)}
-            />
-            <YAxis
-              tickFormatter={fmt}
-              tick={{ fill: '#4A5568', fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              wrapperStyle={{ paddingTop: 12 }}
-              content={({ payload }) => (
-                <div className="flex items-center justify-center gap-2 pt-3">
-                  {payload.map(p => (
-                    <div
-                      key={p.dataKey}
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium"
-                      style={{ borderColor: p.color + '40', background: p.color + '12', color: 'var(--text-secondary)' }}
-                    >
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
-                      {getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}
-                    </div>
-                  ))}
-                </div>
-              )}
-            />
-            <Area type="monotone" dataKey="aws" stroke="#FF9900" strokeWidth={2} fill="url(#awsGrad)" dot={false} />
-            <Area type="monotone" dataKey="gcp" stroke="#4285F4" strokeWidth={2} fill="url(#gcpGrad)" dot={false} />
-            <Area type="monotone" dataKey="azure" stroke="#0078D4" strokeWidth={2} fill="url(#azureGrad)" dot={false} />
-          </ComposedChart>
-        </ResponsiveContainer>
+      <div className="flex-1 layer-recessed rounded-xl p-4 mt-2 min-h-[240px] w-full" style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 16, right: 16, bottom: 16, left: 16, minHeight: 0, minWidth: 0 }}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <AreaChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="awsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FF9900" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="#FF9900" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gcpGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4285F4" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="#4285F4" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="azureGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0078D4" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="#0078D4" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: '#4A5568', fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                interval={Math.floor(days / 7)}
+              />
+              <YAxis
+                tickFormatter={fmt}
+                tick={{ fill: '#4A5568', fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ paddingTop: 12 }}
+                content={({ payload }) => (
+                  <div className="flex items-center justify-center gap-2 pt-3">
+                    {payload.map(p => (
+                      <div
+                        key={p.dataKey}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium"
+                        style={{ borderColor: p.color + '40', background: p.color + '12', color: 'var(--text-secondary)' }}
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
+                        {getBrandAsset(p.dataKey)?.label ?? p.dataKey.toUpperCase()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Area type="monotone" dataKey="aws" stackId="1" stroke="#FF9900" strokeWidth={2} fill="url(#awsGrad)" dot={false} />
+              <Area type="monotone" dataKey="gcp" stackId="1" stroke="#4285F4" strokeWidth={2} fill="url(#gcpGrad)" dot={false} />
+              <Area type="monotone" dataKey="azure" stackId="1" stroke="#0078D4" strokeWidth={2} fill="url(#azureGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   )

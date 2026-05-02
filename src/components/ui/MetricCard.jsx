@@ -8,9 +8,9 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
   const displayValue = isCurrency && typeof value === 'number' ? fmt.format(value) : value
   const trendColor =
     trend === 'neutral' ? 'var(--text-muted)' :
-    trend === 'warning' ? 'var(--accent-amber)' :
-    trend === 'up'      ? (upIsGood ? 'var(--accent-emerald)' : 'var(--accent-rose)') :
-    /* down */            (upIsGood ? 'var(--accent-rose)'    : 'var(--accent-emerald)')
+      trend === 'warning' ? 'var(--accent-amber)' :
+        trend === 'up' ? (upIsGood ? 'var(--accent-emerald)' : 'var(--accent-rose)') :
+    /* down */            (upIsGood ? 'var(--accent-rose)' : 'var(--accent-emerald)')
 
   return (
     <motion.div
@@ -56,8 +56,8 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
               background: `color-mix(in srgb, ${trendColor} 12%, transparent)`,
             }}
           >
-            {trend === 'up'      && <TrendingUp  size={11} />}
-            {trend === 'down'    && <TrendingDown size={11} />}
+            {trend === 'up' && <TrendingUp size={11} />}
+            {trend === 'down' && <TrendingDown size={11} />}
             {(trend === 'neutral' || trend === 'warning') && <Minus size={11} />}
             {trendValue}
           </span>
@@ -69,12 +69,12 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
 
       {/* Sparkline flush to bottom */}
       {sparklineData.length > 0 && (
-        <div className="h-14 w-full -mb-px" style={{ minHeight: 56 }}>
+        <div className="h-14 w-full -mb-px" style={{ minHeight: 56, minWidth: 0 }}>
           <ResponsiveContainer width="100%" height={56} minWidth={0}>
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id={`sg-${sparklineKey}-${title.replace(/\s/g,'')}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={accentColor} stopOpacity={0.25} />
+                <linearGradient id={`sg-${sparklineKey}-${title.replace(/\s/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={accentColor} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={accentColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -83,7 +83,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
                 dataKey={sparklineKey}
                 stroke={accentColor}
                 strokeWidth={1.5}
-                fill={`url(#sg-${sparklineKey}-${title.replace(/\s/g,'')})`}
+                fill={`url(#sg-${sparklineKey}-${title.replace(/\s/g, '')})`}
                 dot={false}
                 isAnimationActive={false}
               />

@@ -4,9 +4,8 @@ import morgan from 'morgan';
 
 import { env } from './config/env.js';
 import apiRouter from './routes/index.js';
-
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "./config/auth.js";
+import { errorHandler } from './middleware/errorHandler.js';
+import { AppError } from './utils/AppError.js';
 
 const app = express();
 
@@ -16,9 +15,6 @@ app.use(
         credentials: true,
     })
 );
-
-// Better Auth handler must come BEFORE express.json()
-app.use("/api/auth", toNodeHandler(auth));
 
 app.use(express.json());
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
@@ -33,18 +29,12 @@ app.get('/health', (_request, response) => {
 
 app.use('/api/v1', apiRouter);
 
-app.use((_request, response) => {
-    response.status(404).json({
-        message: 'Route not found',
-    });
+// Handle 404
+app.use((req, res, next) => {
+    next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
 });
 
-app.use((error, _request, response, _next) => {
-    const statusCode = error.statusCode || 500;
-
-    response.status(statusCode).json({
-        message: error.message || 'Internal server error',
-    });
-});
+// Centralized error handling
+app.use(errorHandler);
 
 export default app;

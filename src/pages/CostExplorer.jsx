@@ -91,44 +91,6 @@ const ChartLegend = ({ payload }) => (
   </div>
 )
 
-const groupedData = {
-  Service: [
-    { label: 'Compute', aws: 36000, gcp: 18400, azure: 15200 },
-    { label: 'Storage', aws: 12800, gcp: 4100, azure: 3100 },
-    { label: 'Databases', aws: 11400, gcp: 2900, azure: 5200 },
-    { label: 'Containers', aws: 4800, gcp: 3800, azure: 2800 },
-    { label: 'AI / ML', aws: 2400, gcp: 1300, azure: 1800 },
-  ],
-  Region: [
-    { label: 'us-east-1', aws: 41200, gcp: 0, azure: 0 },
-    { label: 'us-central1', aws: 0, gcp: 22800, azure: 0 },
-    { label: 'eastus', aws: 0, gcp: 0, azure: 16800 },
-    { label: 'us-west-2', aws: 18600, gcp: 0, azure: 0 },
-    { label: 'westeurope', aws: 0, gcp: 0, azure: 6400 },
-  ],
-  Account: [
-    { label: 'AWS Prod', aws: 82400, gcp: 0, azure: 0 },
-    { label: 'GCP Prod', aws: 0, gcp: 39100, azure: 0 },
-    { label: 'Azure Prod', aws: 0, gcp: 0, azure: 27900 },
-    { label: 'AWS Staging', aws: 14200, gcp: 0, azure: 0 },
-    { label: 'GCP Data', aws: 0, gcp: 12400, azure: 0 },
-  ],
-  Team: [
-    { label: 'DevOps', aws: 16200, gcp: 12400, azure: 10800 },
-    { label: 'Backend', aws: 18800, gcp: 8200, azure: 6900 },
-    { label: 'Data Science', aws: 14100, gcp: 9300, azure: 5200 },
-    { label: 'Frontend', aws: 9600, gcp: 2800, azure: 1800 },
-    { label: 'QA', aws: 4200, gcp: 1200, azure: 900 },
-  ],
-  'Resource Type': [
-    { label: 'VM / Compute', aws: 31200, gcp: 18400, azure: 12400 },
-    { label: 'Object Storage', aws: 12800, gcp: 4100, azure: 3100 },
-    { label: 'Managed DB', aws: 11400, gcp: 2900, azure: 5200 },
-    { label: 'Containers', aws: 4800, gcp: 3800, azure: 2800 },
-    { label: 'Serverless', aws: 8200, gcp: 1400, azure: 1400 },
-  ],
-}
-
 const granularityMap = {
   Daily: 30,
   Weekly: 60,
@@ -137,66 +99,18 @@ const granularityMap = {
 
 const PAGE_SIZE = 25
 
-function normalizeDateRows(granularity) {
-  const rows = dailySpend.slice(-granularityMap[granularity]).map((day, index) => ({
-    label: granularity === 'Monthly'
-      ? new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })
-      : granularity === 'Weekly'
-        ? `W${Math.floor(index / 7) + 1}`
-        : new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    aws: day.aws,
-    gcp: day.gcp,
-    azure: day.azure,
-  }))
-
-  if (granularity === 'Daily') return rows.slice(-14)
-
-  const aggregated = rows.reduce((acc, row) => {
-    const existing = acc.find(item => item.label === row.label)
-    if (existing) {
-      existing.aws += row.aws
-      existing.gcp += row.gcp
-      existing.azure += row.azure
-      return acc
-    }
-    acc.push({ ...row })
-    return acc
-  }, [])
-
-  return aggregated.map((row) => ({
-    ...row,
-    aws: +row.aws.toFixed(2),
-    gcp: +row.gcp.toFixed(2),
-    azure: +row.azure.toFixed(2),
-  }))
-}
-
-function getChartData(groupBy, granularity) {
-  if (groupBy === 'Service' || groupBy === 'Region' || groupBy === 'Account' || groupBy === 'Team' || groupBy === 'Resource Type') {
-    return groupedData[groupBy]
-  }
-  return normalizeDateRows(granularity)
-}
-
-function buildCsv(rows) {
-  const header = ['Date', 'Provider', 'Account', 'Service', 'Region', 'Usage Quantity', 'Unit', 'Cost', 'vs Last Period']
-  const lines = rows.map((row) => [row.date, row.provider, row.account, row.service, row.region, row.usage, row.unit, row.cost, row.change].join(','))
-  return [header.join(','), ...lines].join('\n')
-}
-
 /** Cost Explorer — deep-dive spend analysis with filters and comparison */
 export default function CostExplorer() {
   const { data: d0, isLoading: l0 } = useMigrationData('/unified');
-  const { dailySpend, tagBreakdown } = d0 || {};
+  const { dailySpend = [], tagBreakdown, monthlySpend } = d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/cloud/aws');
-  const { awsAccounts, awsRegionBreakdown, awsServiceBreakdown } = d1 || {};
+  const { awsAccounts = [], awsRegionBreakdown = [], awsServiceBreakdown = [] } = d1 || {};
   const { data: d2, isLoading: l2 } = useMigrationData('/cloud/gcp');
-  const { gcpProjects, gcpRegionBreakdown, gcpServiceBreakdown } = d2 || {};
+  const { gcpProjects = [], gcpRegionBreakdown = [], gcpServiceBreakdown = [] } = d2 || {};
   const { data: d3, isLoading: l3 } = useMigrationData('/cloud/azure');
-  const { azureRegionBreakdown, azureServiceBreakdown, azureSubscriptions } = d3 || {};
+  const { azureRegionBreakdown = [], azureServiceBreakdown = [], azureSubscriptions = [] } = d3 || {};
 
   const isLoading = l0 || l1 || l2 || l3;
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
 
   const [datePreset, setDatePreset] = useState('This Month')
   const [selectedProviders, setSelectedProviders] = useState(['aws', 'gcp', 'azure'])
@@ -206,6 +120,113 @@ export default function CostExplorer() {
   const [sortKey, setSortKey] = useState('cost')
   const [sortDir, setSortDir] = useState('desc')
   const [page, setPage] = useState(0)
+
+  const normalizeDateRows = React.useCallback((granLevel) => {
+    if (!dailySpend || dailySpend.length === 0) return [];
+    const limit = granularityMap[granLevel] || 30;
+    const items = dailySpend.slice(-limit).map((day, index) => ({
+      label: granLevel === 'Monthly'
+        ? new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })
+        : granLevel === 'Weekly'
+          ? `W${Math.floor(index / 7) + 1}`
+          : new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      aws: day.aws,
+      gcp: day.gcp,
+      azure: day.azure,
+    }))
+
+    if (granLevel === 'Daily') return items.slice(-14)
+
+    const aggregated = items.reduce((acc, row) => {
+      const existing = acc.find(item => item.label === row.label)
+      if (existing) {
+        existing.aws += row.aws
+        existing.gcp += row.gcp
+        existing.azure += row.azure
+        return acc
+      }
+      acc.push({ ...row })
+      return acc
+    }, [])
+
+    return aggregated.map((row) => ({
+      ...row,
+      aws: +(row.aws || 0).toFixed(2),
+      gcp: +(row.gcp || 0).toFixed(2),
+      azure: +(row.azure || 0).toFixed(2),
+    }))
+  }, [dailySpend]);
+
+  const groupedDataObj = React.useMemo(() => {
+    const mapServices = () => {
+      const data = {}
+      const add = (arr, prov) => (arr || []).forEach(s => {
+        if (!data[s.service]) data[s.service] = { label: s.service, aws: 0, gcp: 0, azure: 0 }
+        data[s.service][prov] += s.cost || 0
+      })
+      add(awsServiceBreakdown, 'aws')
+      add(gcpServiceBreakdown, 'gcp')
+      add(azureServiceBreakdown, 'azure')
+      return Object.values(data).sort((a, b) => (b.aws + b.gcp + b.azure) - (a.aws + a.gcp + a.azure)).slice(0, 8)
+    }
+
+    const mapRegions = () => {
+      const data = {}
+      const add = (arr, prov) => (arr || []).forEach(r => {
+        if (!data[r.region]) data[r.region] = { label: r.region, aws: 0, gcp: 0, azure: 0 }
+        data[r.region][prov] += r.cost || 0
+      })
+      add(awsRegionBreakdown, 'aws')
+      add(gcpRegionBreakdown, 'gcp')
+      add(azureRegionBreakdown, 'azure')
+      return Object.values(data).sort((a, b) => (b.aws + b.gcp + b.azure) - (a.aws + a.gcp + a.azure)).slice(0, 8)
+    }
+
+    const mapAccounts = () => {
+      const data = {}
+      const add = (arr, prov) => (arr || []).forEach(a => {
+        if (!data[a.name]) data[a.name] = { label: a.name, aws: 0, gcp: 0, azure: 0 }
+        data[a.name][prov] += a.spend || 0
+      })
+      add(awsAccounts, 'aws')
+      add(gcpProjects, 'gcp')
+      add(azureSubscriptions, 'azure')
+      return Object.values(data).sort((a, b) => (b.aws + b.gcp + b.azure) - (a.aws + a.gcp + a.azure)).slice(0, 8)
+    }
+
+    const mapTags = (keyName) => {
+      if (!tagBreakdown || !tagBreakdown[keyName]) return []
+      return tagBreakdown[keyName].map(t => {
+        const total = tagBreakdown[keyName].reduce((s, x) => s + x.cost, 0) || 1
+        const ratio = t.cost / total
+        const awsT = (awsAccounts.reduce((s, a) => s + a.spend, 0) * ratio) || 0
+        const gcpT = (gcpProjects.reduce((s, a) => s + a.spend, 0) * ratio) || 0
+        const azT = (azureSubscriptions.reduce((s, a) => s + a.spend, 0) * ratio) || 0
+        return { label: t.value || t.label, aws: awsT, gcp: gcpT, azure: azT }
+      })
+    }
+
+    return {
+      Service: mapServices(),
+      Region: mapRegions(),
+      Account: mapAccounts(),
+      Team: mapTags('Team'),
+      'Resource Type': mapServices()
+    }
+  }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown, awsRegionBreakdown, gcpRegionBreakdown, azureRegionBreakdown, awsAccounts, gcpProjects, azureSubscriptions, tagBreakdown])
+
+  const getChartData = React.useCallback((group, granLevel) => {
+    if (group === 'Service' || group === 'Region' || group === 'Account' || group === 'Team' || group === 'Resource Type') {
+      return groupedDataObj[group] || []
+    }
+    return normalizeDateRows(granLevel)
+  }, [groupedDataObj, normalizeDateRows])
+
+  const buildCsv = (rows) => {
+    const header = ['Date', 'Provider', 'Account', 'Service', 'Region', 'Usage Quantity', 'Unit', 'Cost', 'vs Last Period']
+    const lines = rows.map((row) => [row.date, row.provider, row.account, row.service, row.region, row.usage, row.unit, row.cost, row.change].join(','))
+    return [header.join(','), ...lines].join('\n')
+  }
 
   const tableRows = React.useMemo(() => {
     if (!awsServiceBreakdown || !gcpServiceBreakdown || !azureServiceBreakdown) return [];
@@ -247,6 +268,8 @@ export default function CostExplorer() {
   }, [awsRegionBreakdown, gcpRegionBreakdown, azureRegionBreakdown]);
   const [tagKey, setTagKey] = useState('Environment')
   const { addToast } = useToast()
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
 
   const filtered = tableRows
     .filter(r => selectedProviders.includes(r.provider))
@@ -439,8 +462,8 @@ export default function CostExplorer() {
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Grouped by provider with {granularity.toLowerCase()} filtering for {datePreset.toLowerCase()}</p>
           </div>
         </div>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-80" style={{ minWidth: 0, minHeight: 0 }}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             {chartMode === 'Bar' ? (
               <BarChart data={activeChartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />

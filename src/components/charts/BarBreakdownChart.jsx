@@ -71,34 +71,34 @@ export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWi
         )}
       </div>
 
-      <div className="flex-1 layer-recessed rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={200}>
+      <div className="flex-1 layer-recessed rounded-xl p-4" style={{ minWidth: 0, minHeight: 0 }}>
+        <ResponsiveContainer width="100%" height={200} minWidth={0}>
           <BarChart data={data} layout="vertical" margin={{ top: 2, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" horizontal={false} />
-          <XAxis
-            type="number"
-            tickFormatter={fmt}
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            type="category"
-            dataKey="label"
-            width={yAxisWidth}
-            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.05)' }} />
-          <Bar dataKey="cost" radius={[0, 4, 4, 0]} maxBarSize={14}>
-            <LabelList content={<CustomBarLabel />} />
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.provider ? (getBrandAsset(entry.provider)?.color ?? COLORS[i % COLORS.length]) : COLORS[i % COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            <XAxis
+              type="number"
+              tickFormatter={fmt}
+              tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              width={yAxisWidth}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.05)' }} />
+            <Bar dataKey="cost" radius={[0, 4, 4, 0]} maxBarSize={14}>
+              <LabelList content={<CustomBarLabel />} />
+              {data.map((entry, i) => (
+                <Cell key={i} fill={entry.provider ? (getBrandAsset(entry.provider)?.color ?? COLORS[i % COLORS.length]) : COLORS[i % COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )

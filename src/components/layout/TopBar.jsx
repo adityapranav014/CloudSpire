@@ -7,7 +7,6 @@ import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLef
 import { usePermissions } from '../../hooks/usePermissions'
 
 import UserAvatar from '../ui/UserAvatar'
-import { authClient } from '../../lib/auth-client'
 import { useMigrationData } from '../../hooks/useMigrationData'
 import {
   CommandDialog,
@@ -56,20 +55,13 @@ export default function TopBar({ onOpenMenu = () => { } }) {
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
   const { persona: mockPersona } = usePermissions()
-  const { data: session } = authClient.useSession()
 
   // Use session user if available, fallback to mock persona for demo purposes
-  const user = session?.user || mockPersona
-  const meta = ROLE_META[user.role || 'FinOps Manager']
+  const user = mockPersona
+  const meta = ROLE_META[user.role || 'finops_manager']
 
   const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          navigate('/login')
-        }
-      }
-    })
+    navigate('/login')
   }
 
   useEffect(() => {

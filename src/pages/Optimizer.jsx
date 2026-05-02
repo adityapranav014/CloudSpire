@@ -74,13 +74,15 @@ export default function Optimizer() {
   const { data: d0, isLoading: l0 } = useMigrationData('/cloud/aws');
   const { awsEC2Instances, awsOrphanedResources } = d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/cloud/azure');
-  const { azureVMs } = d1 || {};
-  const { data: d2, isLoading: l2 } = useMigrationData('/optimizations');
+  const { azureVMs, azureOrphanedResources } = d1 || {};
+  const { data: dGCP, isLoading: lGCP } = useMigrationData('/cloud/gcp');
+  const { gcpProjects, gcpOrphanedResources } = dGCP || {};
+  const { data: d2, isLoading: l2, mutate } = useMigrationData('/optimizations');
   const { optimizationSummary, rightsizingRecommendations, reservedInstanceOpportunities, scheduledShutdowns } = d2 || {};
   const { data: d3, isLoading: l3 } = useMigrationData('/roles');
   const { PERMISSIONS } = d3 || {};
 
-  const isLoading = l0 || l1 || l2 || l3;
+  const isLoading = l0 || l1 || l2 || l3 || lGCP;
   if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
 
   const [activeTab, setActiveTab] = useState('Idle Instances')
@@ -119,31 +121,9 @@ export default function Optimizer() {
   ]
 
   const orphanedResources = [
-    ...awsOrphanedResources.map(resource => ({ ...resource, provider: 'aws', daysSinceLastUsed: 42 })),
-    {
-      resourceId: 'disk-gcp-unused-001',
-      provider: 'gcp',
-      type: 'Persistent Disk',
-      name: 'stale-analytics-disk',
-      region: 'us-central1',
-      monthlyCost: 22.8,
-      createdAt: '2024-09-14',
-      lastAttached: '2024-10-28',
-      savingsIfDeleted: 22.8,
-      daysSinceLastUsed: 180,
-    },
-    {
-      resourceId: 'azure-ip-unused-001',
-      provider: 'azure',
-      type: 'Public IP',
-      name: 'orphaned-pip-eastus',
-      region: 'eastus',
-      monthlyCost: 8.2,
-      createdAt: '2024-11-08',
-      lastAttached: '2024-12-01',
-      savingsIfDeleted: 8.2,
-      daysSinceLastUsed: 149,
-    },
+    ...(awsOrphanedResources || []).map(resource => ({ ...resource, provider: 'aws', daysSinceLastUsed: resource.daysSinceLastUsed || 42 })),
+    ...(gcpOrphanedResources || []).map(resource => ({ ...resource, provider: 'gcp' })),
+    ...(azureOrphanedResources || []).map(resource => ({ ...resource, provider: 'azure' })),
   ]
   const orphaned = orphanedResources.filter(r => !dismissed.includes(r.resourceId))
 
@@ -157,8 +137,26 @@ export default function Optimizer() {
     prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
   )
 
-  const toggleSchedule = (id) => {
+  const toggleSchedule = async (id) => {
+    const current = schedules.find(s => s.id === id)
+    if (!current) return;
+
+    // optimistic update
     setSchedules(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s))
+
+    try {
+      const response = await fetch(`http://localhost:5001/optimizations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !current.enabled })
+      })
+      if (!response.ok) throw new Error('Failed to update')
+      if (mutate) mutate() // refresh useMigrationData cache
+    } catch (err) {
+      // rollback
+      setSchedules(prev => prev.map(s => s.id === id ? { ...s, enabled: current.enabled } : s))
+      addToast('Failed to update schedule on server', 'error')
+    }
   }
 
   return (

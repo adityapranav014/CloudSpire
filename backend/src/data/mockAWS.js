@@ -1,10 +1,37 @@
 // AWS Cost Explorer API shape — GetCostAndUsage
 
 export const awsAccounts = [
-  { id: "123456789012", name: "Production - Main", env: "production", spend: 82400, resources: 248 },
-  { id: "234567890123", name: "Staging Environment", env: "staging", spend: 14200, resources: 67 },
-  { id: "345678901234", name: "Data & Analytics", env: "production", spend: 21800, resources: 34 },
-  { id: "456789012345", name: "Security & Audit", env: "production", spend: 4100, resources: 12 },
+  {
+    id: "123456789012", name: "Production - Main", env: "production", spend: 82400, resources: 248, lastSync: "2025-04-28T10:15:00Z", status: "connected", region: "us-east-1",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 2000 + Math.random() * 500 })),
+    resourceList: [
+      { type: 'EC2', name: 'prod-web-server-01', status: 'Running', monthlyCost: 450, region: 'us-east-1' },
+      { type: 'RDS', name: 'prod-db-cluster', status: 'Available', monthlyCost: 850, region: 'us-east-1' },
+      { type: 'S3', name: 'analytics-archive-bucket', status: 'Healthy', monthlyCost: 120, region: 'us-east-1' },
+      { type: 'Lambda', name: 'prod-data-processor', status: 'Active', monthlyCost: 65, region: 'us-east-1' },
+    ]
+  },
+  {
+    id: "234567890123", name: "Staging Environment", env: "staging", spend: 14200, resources: 67, lastSync: "2025-04-28T10:14:00Z", status: "connected", region: "us-east-1",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 400 + Math.random() * 100 })),
+    resourceList: [
+      { type: 'EC2', name: 'staging-web-01', status: 'Running', monthlyCost: 150, region: 'us-east-1' },
+    ]
+  },
+  {
+    id: "345678901234", name: "Data & Analytics", env: "production", spend: 21800, resources: 34, lastSync: "2025-04-28T10:10:00Z", status: "connected", region: "us-west-2",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 600 + Math.random() * 200 })),
+    resourceList: [
+      { type: 'EMR', name: 'analytics-cluster', status: 'Running', monthlyCost: 1200, region: 'us-west-2' },
+    ]
+  },
+  {
+    id: "456789012345", name: "Security & Audit", env: "production", spend: 4100, resources: 12, lastSync: "2025-04-28T10:05:00Z", status: "warning", region: "us-east-1",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 100 + Math.random() * 50 })),
+    resourceList: [
+      { type: 'GuardDuty', name: 'prod-guardduty', status: 'Active', monthlyCost: 80, region: 'us-east-1' },
+    ]
+  },
 ];
 
 export const awsServiceBreakdown = [

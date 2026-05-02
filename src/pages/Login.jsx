@@ -1,11 +1,11 @@
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { authClient } from '../lib/auth-client';
+import { useAuth } from '../context/AuthContext';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -20,24 +20,19 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: session, isPending } = authClient.useSession();
-  if (!isPending && session) { navigate(from, { replace: true }); return null; }
-
+  const { persona } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data) => {
     setIsLoading(true);
     setError('');
     try {
-      const { error: authError } = await authClient.signIn.email({
-        email: data.email,
-        password: data.password,
-      });
-      if (authError) { setError(authError.message || 'Invalid email or password.'); return; }
-      navigate(from, { replace: true });
+      // Simulate quick auth for demo
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 500);
     } catch {
       setError('An unexpected error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

@@ -55,32 +55,16 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action, da
   )
 }
 
-const integrations = [
-  { key: 'slack', name: 'Slack', connected: false, description: 'Get anomaly alerts and spend digests in Slack.' },
-  { key: 'teams', name: 'Microsoft Teams', connected: false, description: 'Receive CloudSpire notifications in MS Teams channels.' },
-  { key: 'jira', name: 'Jira', connected: false, description: 'Auto-create tickets for anomalies and optimization tasks.' },
-  { key: 'pagerduty', name: 'PagerDuty', connected: false, description: 'Page on-call engineers for critical spend anomalies.' },
-  { key: 'terraform', name: 'Terraform', connected: true, description: 'Manage cloud resources with Terraform integration.' },
-  { key: 'githubActions', name: 'GitHub Actions', connected: false, description: 'Trigger cost reports in CI/CD pipelines.' },
-]
-
-const apiKeys = [
-  { name: 'Production API Key', key: 'csp_live_xxxxxxxxxxxxxxxxxxxx', created: 'Jan 10, 2025', lastUsed: '2 hours ago' },
-  { name: 'CI/CD Integration', key: 'csp_live_yyyyyyyyyyyyyyyyyyyy', created: 'Mar 1, 2025', lastUsed: '3 days ago' },
-]
-
 /** Settings page — profile, notifications, integrations, billing, team, API keys */
 export default function Settings() {
   const { data: d0, isLoading: l0 } = useMigrationData('/roles');
-  const { PERMISSIONS } = d0 || {};
+  const { PERMISSIONS } = d0?.data || d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/users');
-  const { CURRENT_USER, getOrgMembers } = d1 || {};
+  const { CURRENT_USER, getOrgMembers } = d1?.data || d1 || {};
+  const { data: d2, isLoading: l2 } = useMigrationData('/settings');
+  const { integrations = [], apiKeys = [] } = d2?.data || d2 || {};
 
-  const isLoading = l0 || l1;
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!d0 || !d1) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load settings data.</p></div>;
-
-  const teamMembers = getOrgMembers ? getOrgMembers() : [];
+  const teamMembers = d1?.data?.users || d1?.users || [];
 
   const TAB_PERMISSIONS = {
     Integrations: PERMISSIONS?.MANAGE_INTEGRATIONS,
@@ -101,15 +85,11 @@ export default function Settings() {
   const { can } = usePermissions()
   const visibleTabs = TABS.filter(tab => !TAB_PERMISSIONS[tab] || can(TAB_PERMISSIONS[tab]))
 
+  const isLoading = l0 || l1 || l2;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!d0 || !d1 || !d2 || !CURRENT_USER) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load settings data.</p></div>;
+
   const toggleNotif = (key) => setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }))
-  const Toggle = ({ name }) => (
-    <button onClick={() => toggleNotif(name)}
-      className="w-11 h-6 rounded-full relative overflow-hidden transition-colors"
-      style={{ background: notifSettings[name] ? 'var(--accent-primary)' : 'var(--border-default)' }}>
-      <span className="absolute left-0.5 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform"
-        style={{ transform: notifSettings[name] ? 'translateX(20px)' : 'translateX(0px)' }} />
-    </button>
-  )
 
   const roleColors = {
     Admin: { bg: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: 'var(--accent-rose)' },
@@ -218,7 +198,13 @@ export default function Settings() {
                   )}
                 </p>
               </div>
-              <Toggle name={item.key} />
+              <button
+                onClick={() => toggleNotif(item.key)}
+                className="w-11 h-6 rounded-full relative overflow-hidden transition-colors"
+                style={{ background: notifSettings[item.key] ? 'var(--accent-primary)' : 'var(--border-default)' }}>
+                <span className="absolute left-0.5 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                  style={{ transform: notifSettings[item.key] ? 'translateX(20px)' : 'translateX(0px)' }} />
+              </button>
             </div>
           ))}
 

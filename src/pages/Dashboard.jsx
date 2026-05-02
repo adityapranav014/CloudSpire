@@ -40,20 +40,8 @@ const now = new Date()
 const monthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' })
 const dayLabel = `${now.toLocaleString('en-US', { month: 'short' })} 1\u2013${now.getDate()}, ${now.getFullYear()}`
 
-const PROVIDERS = [
-  { provider: 'aws', name: 'Amazon Web Services', spend: 82400, change: 8.2, accounts: 4, unit: 'accounts', color: '#FF9900' },
-  { provider: 'gcp', name: 'Google Cloud', spend: 39100, change: 12.4, accounts: 4, unit: 'projects', color: '#4285F4' },
-  { provider: 'azure', name: 'Microsoft Azure', spend: 27900, change: 6.8, accounts: 3, unit: 'subscriptions', color: '#0078D4' },
-]
-const TOTAL_SPEND = PROVIDERS.reduce((s, p) => s + p.spend, 0)
-
-const topRegions = [
-  { label: 'N. Virginia', cost: 41200, provider: 'aws' },
-  { label: 'Iowa (GCP)', cost: 22800, provider: 'gcp' },
-  { label: 'US West', cost: 18600, provider: 'aws' },
-  { label: 'East US', cost: 16800, provider: 'azure' },
-  { label: 'EU Ireland', cost: 11400, provider: 'aws' },
-]
+// --- Layout logic and rendering...
+// (No hardcoded START values for global states)
 
 // --- Default layouts per breakpoint -------------------------
 // lg = 12 cols, md = 8 cols, sm = 4 cols, xs = 2 cols
@@ -213,9 +201,9 @@ function WidgetShell({ id, isEditMode, onRemove, children }) {
 }
 
 // --- Widget content renders -----------------------------------
-function ProviderCard({ provider: p }) {
+function ProviderCard({ provider: p, totalSpend }) {
   // .. left untouched, does not use external globals directly ..
-  const pct = ((p.spend / 149400) * 100).toFixed(0) // Note: using hardcoded TOTAL_SPEND for simplicity
+  const pct = ((p.spend / (totalSpend || 1)) * 100).toFixed(0)
   return (
     <div
       className="h-full rounded-xl layer-raised p-4 flex flex-col"
@@ -380,26 +368,67 @@ export default function Dashboard() {
   const isLoading = ls1 || ls2 || ls3 || ls4 || ls5 || ls6;
 
   const { currentMonthStats, dailySpend } = unified || {};
-  const { awsServiceBreakdown } = aws || {};
-  const { gcpServiceBreakdown } = gcp || {};
-  const { azureServiceBreakdown } = azure || {};
+  const { awsServiceBreakdown, awsAccounts, awsRegionBreakdown } = aws || {};
+  const { gcpServiceBreakdown, gcpProjects, gcpRegionBreakdown } = gcp || {};
+  const { azureServiceBreakdown, azureSubscriptions, azureRegionBreakdown } = azure || {};
   const { anomalies, budgetAlerts } = alerts || {};
   const { rightsizingRecommendations, optimizationSummary } = optimizations || {};
 
-  const topServices = useMemo(() => {
-    if (!awsServiceBreakdown || !gcpServiceBreakdown || !azureServiceBreakdown) return [];
+  const totalSpend = currentMonthStats?.totalSpend || 1;
+
+  const providersData = useMemo(() => {
     return [
-      ...awsServiceBreakdown.slice(0, 4),
-      ...gcpServiceBreakdown.slice(0, 3),
-      ...azureServiceBreakdown.slice(0, 3),
+      {
+        provider: 'aws',
+        name: 'Amazon Web Services',
+        spend: awsServiceBreakdown?.reduce((s, p) => s + p.cost, 0) || 0,
+        change: 8.2, // mock metric since change per provider isn't unified yet
+        accounts: (awsAccounts || []).length,
+        unit: 'accounts',
+        color: '#FF9900'
+      },
+      {
+        provider: 'gcp',
+        name: 'Google Cloud',
+        spend: gcpServiceBreakdown?.reduce((s, p) => s + p.cost, 0) || 0,
+        change: 12.4, // mock metric
+        accounts: (gcpProjects || []).length,
+        unit: 'projects',
+        color: '#4285F4'
+      },
+      {
+        provider: 'azure',
+        name: 'Microsoft Azure',
+        spend: azureServiceBreakdown?.reduce((s, p) => s + p.cost, 0) || 0,
+        change: 6.8, // mock metric
+        accounts: (azureSubscriptions || []).length,
+        unit: 'subscriptions',
+        color: '#0078D4'
+      }
+    ];
+  }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown, awsAccounts, gcpProjects, azureSubscriptions]);
+
+  const topRegionsData = useMemo(() => {
+    return [
+      ...(awsRegionBreakdown || []).map(r => ({ label: r.region, cost: r.cost, provider: 'aws' })),
+      ...(gcpRegionBreakdown || []).map(r => ({ label: r.region, cost: r.cost, provider: 'gcp' })),
+      ...(azureRegionBreakdown || []).map(r => ({ label: r.region, cost: r.cost, provider: 'azure' }))
+    ].sort((a, b) => b.cost - a.cost).slice(0, 5);
+  }, [awsRegionBreakdown, gcpRegionBreakdown, azureRegionBreakdown]);
+
+  const topServices = useMemo(() => {
+    const total = currentMonthStats?.totalSpend || 1;
+    return [
+      ...(awsServiceBreakdown || []).slice(0, 4),
+      ...(gcpServiceBreakdown || []).slice(0, 3),
+      ...(azureServiceBreakdown || []).slice(0, 3),
     ].sort((a, b) => b.cost - a.cost)
       .slice(0, 8)
-      .map(s => ({ service: s.service, cost: s.cost, percent: +(s.cost / 149400 * 100).toFixed(1) }))
-  }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown])
+      .map(s => ({ service: s.service, cost: s.cost, percent: +(s.cost / total * 100).toFixed(1) }))
+  }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown, currentMonthStats])
 
   const sparkData = useMemo(() => {
-    if (!dailySpend) return [];
-    return dailySpend.slice(-14).map(d => ({
+    return (dailySpend || []).slice(-14).map(d => ({
       ...d,
       savings: d.total * 0.05 + Math.random() * 500,
       budgetLine: d.total * 1.1 - Math.random() * 200,
@@ -414,9 +443,6 @@ export default function Dashboard() {
 
   const activeWidgetIds = useMemo(() => getActiveIds(layouts), [layouts])
   const openAlerts = (anomalies || []).filter(a => a.status === 'open')
-
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!unified || !aws || !gcp || !azure || !alerts || !optimizations) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load dashboard data. Please make sure the backend is running.</p></div>;
 
   const computedLayouts = useMemo(() => {
     const result = {}
@@ -487,10 +513,10 @@ export default function Dashboard() {
           <MetricCard
             className="h-full"
             title="Total Spend"
-            value={fmt.format(currentMonthStats.totalSpend)}
+            value={fmt.format(currentMonthStats?.totalSpend || 0)}
             subtitle={monthLabel}
             trend="up"
-            trendValue={`+${currentMonthStats.changePercent}% MoM`}
+            trendValue={`+${currentMonthStats?.changePercent || 0}% MoM`}
             icon={DollarSign}
             accentColor="#F59E0B"
             upIsGood={false}
@@ -503,12 +529,12 @@ export default function Dashboard() {
           <MetricCard
             className="h-full"
             title="vs Last Month"
-            value={`${currentMonthStats.totalSpend - currentMonthStats.prevMonthSpend >= 0 ? '+' : ''}${fmt.format(currentMonthStats.totalSpend - currentMonthStats.prevMonthSpend)}`}
-            subtitle={`prev: ${fmt.format(currentMonthStats.prevMonthSpend)}`}
-            trend={currentMonthStats.changePercent > 0 ? 'up' : 'down'}
-            trendValue={`${currentMonthStats.changePercent > 0 ? '+' : ''}${currentMonthStats.changePercent}%`}
-            icon={currentMonthStats.changePercent > 0 ? TrendingUp : TrendingDown}
-            accentColor={currentMonthStats.changePercent > 0 ? '#F43F5E' : '#10B981'}
+            value={`${(currentMonthStats?.totalSpend || 0) - (currentMonthStats?.prevMonthSpend || 0) >= 0 ? '+' : ''}${fmt.format((currentMonthStats?.totalSpend || 0) - (currentMonthStats?.prevMonthSpend || 0))}`}
+            subtitle={`prev: ${fmt.format(currentMonthStats?.prevMonthSpend || 0)}`}
+            trend={(currentMonthStats?.changePercent || 0) > 0 ? 'up' : 'down'}
+            trendValue={`${(currentMonthStats?.changePercent || 0) > 0 ? '+' : ''}${currentMonthStats?.changePercent || 0}%`}
+            icon={(currentMonthStats?.changePercent || 0) > 0 ? TrendingUp : TrendingDown}
+            accentColor={(currentMonthStats?.changePercent || 0) > 0 ? '#F43F5E' : '#10B981'}
             upIsGood={false}
             sparklineKey="total"
             sparklineData={sparkData}
@@ -519,8 +545,8 @@ export default function Dashboard() {
           <MetricCard
             className="h-full"
             title="Month-End Forecast"
-            value={fmt.format(currentMonthStats.projectedMonthEnd)}
-            subtitle={`${currentMonthStats.budgetUsedPercent}% of budget consumed`}
+            value={fmt.format(currentMonthStats?.projectedMonthEnd || 0)}
+            subtitle={`${currentMonthStats?.budgetUsedPercent || 0}% of budget consumed`}
             trend="warning"
             trendValue="Approaching limit"
             icon={Calendar}
@@ -534,10 +560,10 @@ export default function Dashboard() {
           <MetricCard
             className="h-full"
             title="Savings Identified"
-            value={fmt.format(currentMonthStats.savingsIdentified)}
+            value={fmt.format(currentMonthStats?.savingsIdentified || 0)}
             subtitle="Apply in Optimizer"
             trend="neutral"
-            trendValue={`${fmt.format(optimizationSummary.totalPotentialSavings)} available`}
+            trendValue={`${fmt.format(optimizationSummary?.totalPotentialSavings || 0)} available`}
             icon={Zap}
             accentColor="#10B981"
             sparklineKey="savings"
@@ -545,17 +571,17 @@ export default function Dashboard() {
           />
         )
       case 'provider-aws':
-        return <ProviderCard provider={PROVIDERS[0]} />
+        return <ProviderCard provider={providersData[0] || {}} totalSpend={totalSpend} />
       case 'provider-gcp':
-        return <ProviderCard provider={PROVIDERS[1]} />
+        return <ProviderCard provider={providersData[1] || {}} totalSpend={totalSpend} />
       case 'provider-azure':
-        return <ProviderCard provider={PROVIDERS[2]} />
+        return <ProviderCard provider={providersData[2] || {}} totalSpend={totalSpend} />
       case 'chart-area-spend':
         return <AreaSpendChart />
       case 'chart-donut':
-        return <DonutAllocationChart data={topServices} title="Cost by Service" />
+        return <DonutAllocationChart data={topServices} title="Top 8 Services" />
       case 'chart-bar-regions':
-        return <BarBreakdownChart data={topRegions} title="Top Regions by Spend" />
+        return <BarBreakdownChart data={topRegionsData} title="Top Regions by Spend" />
       case 'intel-alerts':
         return <AlertsWidget anomalies={anomalies} />
       case 'intel-savings':
@@ -572,6 +598,9 @@ export default function Dashboard() {
     const lg = layouts.lg ?? DEFAULT_LAYOUTS.lg
     return lg.map(l => l.i)
   }, [layouts])
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!unified || !aws || !gcp || !azure || !alerts || !optimizations) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load dashboard data. Please make sure the backend is running.</p></div>;
 
   return (
     <>
@@ -614,7 +643,7 @@ export default function Dashboard() {
                   Cost Overview
                 </h1>
                 <p className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {PROVIDERS.length} providers &bull; {monthLabel}
+                  {providersData.length} providers &bull; {monthLabel}
                 </p>
               </div>
 
@@ -677,10 +706,10 @@ export default function Dashboard() {
             {/* Stats bar */}
             <div className="mt-4 pt-4 border-t grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-0" style={{ borderColor: 'var(--border-subtle)' }}>
               {[
-                { label: 'MTD Spend', value: fmt.format(TOTAL_SPEND), color: 'var(--text-primary)' },
-                { label: 'Providers', value: String(PROVIDERS.length), color: 'var(--text-primary)' },
+                { label: 'MTD Spend', value: fmt.format(totalSpend), color: 'var(--text-primary)' },
+                { label: 'Providers', value: String(providersData.length), color: 'var(--text-primary)' },
                 { label: 'Open Alerts', value: String(openAlerts.length), color: openAlerts.length > 0 ? 'var(--accent-rose)' : 'var(--accent-emerald)' },
-                { label: 'Savings Avail.', value: `${fmt.format(optimizationSummary.totalPotentialSavings)}/mo`, color: 'var(--accent-emerald)' },
+                { label: 'Savings Avail.', value: `${fmt.format(optimizationSummary?.totalPotentialSavings || 0)}/mo`, color: 'var(--accent-emerald)' },
               ].map((stat, i) => (
                 <div key={i} className="flex items-center">
                   {i > 0 && <div className="hidden sm:block w-px h-7 mx-4" style={{ background: 'var(--border-subtle)' }} />}

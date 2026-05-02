@@ -23,9 +23,9 @@ export default function DonutAllocationChart({ data, title = 'Cost by Service' }
   return (
     <div className="rounded-xl flex flex-col group layer-raised p-5 h-full">
       <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>{title}</h3>
-      <div className="flex items-center gap-4 flex-1 layer-recessed rounded-xl p-4">
-        <div className="relative w-[120px] h-[120px] sm:w-[160px] sm:h-[160px] shrink-0" style={{ minWidth: 0 }}>
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <div className="flex items-center gap-4 flex-1 layer-recessed rounded-xl p-4 min-h-[0]">
+        <div className="relative w-[120px] h-[120px] sm:w-[160px] sm:h-[160px] shrink-0" style={{ minWidth: 0, minHeight: 0 }}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <PieChart>
               <Pie
                 data={data}

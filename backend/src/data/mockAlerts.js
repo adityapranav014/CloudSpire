@@ -83,3 +83,5 @@ export const anomalyHistory = Array.from({ length: 30 }, (_, i) => {
     count: [0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 1, 3, 0, 0, 1, 0, 2, 0, 0, 1, 0, 0, 0, 1, 2, 0, 1, 1, 3][i],
   };
 });
+
+export const anomalyStats = { resolvedThisMonth: 4, spendPrevented: 2780, averageResolutionTime: '4.2 hrs' };

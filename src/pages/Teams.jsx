@@ -15,31 +15,6 @@ import { usePermissions } from '../hooks/usePermissions'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-function getTeamDetails(team) {
-  return {
-    budgetHistory: [
-      { month: 'Jan', budget: team.monthlyBudget * 0.85, spend: team.spend90d },
-      { month: 'Feb', budget: team.monthlyBudget * 0.92, spend: team.spend60d },
-      { month: 'Mar', budget: team.monthlyBudget, spend: team.spend30d * 0.93 },
-      { month: 'Apr', budget: team.monthlyBudget, spend: team.monthlySpend },
-    ],
-    serviceBreakdown: [
-      { service: team.topService, cost: team.topServiceCost, percent: +((team.topServiceCost / team.monthlySpend) * 100).toFixed(1) },
-      { service: 'Shared Platform', cost: team.monthlySpend * 0.24, percent: +((team.monthlySpend * 0.24 / team.monthlySpend) * 100).toFixed(1) },
-      { service: 'Storage', cost: team.monthlySpend * 0.16, percent: +((team.monthlySpend * 0.16 / team.monthlySpend) * 100).toFixed(1) },
-      { service: 'Data Transfer', cost: team.monthlySpend * 0.11, percent: +((team.monthlySpend * 0.11 / team.monthlySpend) * 100).toFixed(1) },
-      { service: 'Other', cost: team.monthlySpend * 0.09, percent: +((team.monthlySpend * 0.09 / team.monthlySpend) * 100).toFixed(1) },
-    ],
-    members: (team.memberList || []).slice(0, 5),
-    resources: team.projects.map((project, index) => ({
-      name: project,
-      type: index % 2 === 0 ? 'Service' : 'Cluster',
-      monthlyCost: Math.round(team.monthlySpend / (index + 3)),
-      owner: team.lead,
-    })),
-  }
-}
-
 function TeamDetailModal({ team, onClose }) {
   if (!team) return null
   const sparkData = [
@@ -47,7 +22,7 @@ function TeamDetailModal({ team, onClose }) {
     { label: '60d', value: team.spend60d },
     { label: '30d', value: team.spend30d },
   ]
-  const details = getTeamDetails(team)
+  const members = (team.memberList || []).slice(0, 5)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
       <motion.div
@@ -83,9 +58,9 @@ function TeamDetailModal({ team, onClose }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.9fr] gap-5 mb-5">
-          <div>
+          <div style={{ minWidth: 0, minHeight: 0 }}>
             <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Spend Trend</p>
-            <ResponsiveContainer width="100%" height={120}>
+            <ResponsiveContainer width="100%" height={120} minWidth={0} minHeight={0}>
               <LineChart data={sparkData}>
                 <Line type="monotone" dataKey="value" stroke={team.color} strokeWidth={2} dot={{ fill: team.color }} />
                 <XAxis dataKey="label" tick={{ fill: '#4A5568', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -97,7 +72,7 @@ function TeamDetailModal({ team, onClose }) {
             </ResponsiveContainer>
           </div>
 
-          <DonutAllocationChart data={details.serviceBreakdown} title="Service Breakdown" />
+          <DonutAllocationChart data={team.serviceBreakdown || []} title="Service Breakdown" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
@@ -109,7 +84,7 @@ function TeamDetailModal({ team, onClose }) {
 
             <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Members</p>
             <div className="space-y-2">
-              {details.members.map((member) => (
+              {members.map((member) => (
                 <div key={member.name} className="flex items-center justify-between p-2.5 shadow-depth-inset rounded-xl border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                   <div className="flex items-center gap-2.5">
                     <UserAvatar user={member} size="md" />
@@ -123,10 +98,10 @@ function TeamDetailModal({ team, onClose }) {
             </div>
           </div>
 
-          <div>
+          <div style={{ minWidth: 0, minHeight: 0 }}>
             <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Budget History</p>
-            <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={details.budgetHistory}>
+            <ResponsiveContainer width="100%" height={160} minWidth={0} minHeight={0}>
+              <LineChart data={team.budgetHistory || []}>
                 <Line type="monotone" dataKey="budget" stroke="#64748B" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="spend" stroke={team.color} strokeWidth={2} dot={{ fill: team.color }} />
                 <XAxis dataKey="month" tick={{ fill: '#4A5568', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -144,7 +119,7 @@ function TeamDetailModal({ team, onClose }) {
           <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Resource List</p>
           <div className="overflow-x-auto scrollbar-hide">
             <div className="space-y-2 min-w-[380px]">
-              {details.resources.map((resource) => (
+              {(team.resourceList || []).map((resource) => (
                 <div key={resource.name} className="grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr] gap-3 p-3 rounded-xl text-xs" style={{ background: 'var(--bg-card)' }}>
                   <span style={{ color: 'var(--text-primary)' }}>{resource.name}</span>
                   <span style={{ color: 'var(--text-secondary)' }}>{resource.type}</span>
@@ -168,13 +143,15 @@ export default function Teams() {
   const { PERMISSIONS, ROLES } = d1 || {};
 
   const isLoading = l0 || l1;
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!teams || !PERMISSIONS) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load teams data.</p></div>;
 
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const { addToast } = useToast()
   const { can, isRole, persona } = usePermissions()
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (!teams || !PERMISSIONS) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load teams data.</p></div>;
+
 
   // Team Leads only see their own team
   const visibleTeams = isRole(ROLES.TEAM_LEAD)

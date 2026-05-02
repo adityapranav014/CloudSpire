@@ -13,28 +13,14 @@ import { CloudProviderIcon } from '../components/ui/CloudProviderIcon';
 import { getBrandSurfaceStyles } from '../constants/brandAssets';
 import DateRangePickerSaaS from '../components/ui/DateRangePickerSaaS';
 
-const reportTemplates = [
-  { id: 1, title: 'Monthly Cost Digest', description: 'PDF summary of all providers with trend analysis and top cost drivers.', icon: BarChart3, color: 'var(--accent-primary)' },
-  { id: 2, title: 'Cost by Team', description: 'Budget vs actuals breakdown per team for finance allocation.', icon: Users2, color: 'var(--accent-emerald)' },
-  { id: 3, title: 'Anomaly Report', description: 'All detected anomalies with root cause analysis and resolution status.', icon: ShieldAlert, color: 'var(--accent-rose)' },
-  { id: 4, title: 'RI Utilization', description: 'Reserved Instance and Committed Use Discount coverage report.', icon: Layers, color: 'var(--accent-violet)' },
-  { id: 5, title: 'Year-over-Year', description: '12-month trend comparison across all cloud providers and services.', icon: TrendingUp, color: 'var(--accent-amber)' },
-  { id: 6, title: 'Custom Report', description: 'Build your own report by selecting dimensions, filters, and date range.', icon: SlidersHorizontal, color: 'var(--accent-cyan)' },
-]
-
-const scheduledReports = [
-  { id: 1, name: 'Monthly Cost Digest', frequency: 'Monthly', recipients: 'cfo@company.com', format: 'PDF', lastSent: 'Apr 1, 2025', nextSend: 'May 1, 2025' },
-  { id: 2, name: 'Weekly Anomalies', frequency: 'Weekly', recipients: 'devops@company.com', format: 'Email', lastSent: 'Apr 22, 2025', nextSend: 'Apr 29, 2025' },
-  { id: 3, name: 'Team Budget Report', frequency: 'Monthly', recipients: 'finance@company.com', format: 'CSV', lastSent: 'Apr 1, 2025', nextSend: 'May 1, 2025' },
-]
+const iconMap = { BarChart3, Users2, ShieldAlert, Layers, TrendingUp, SlidersHorizontal };
 
 /** Reports page — scheduled reports, export billing data */
 export default function Reports() {
   const { data: d0, isLoading: l0 } = useMigrationData('/roles');
   const { PERMISSIONS } = d0 || {};
-
-  const isLoading = l0;
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  const { data: d1, isLoading: l1 } = useMigrationData('/reports');
+  const { reportTemplates = [], scheduledReports = [] } = d1 || {};
 
   const [exportFormat, setExportFormat] = useState('CSV')
   const [exportGranularity, setExportGranularity] = useState('Daily')
@@ -42,6 +28,9 @@ export default function Reports() {
   const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
   const { addToast } = useToast()
   const { can } = usePermissions()
+
+  const isLoading = l0 || l1;
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -59,46 +48,49 @@ export default function Reports() {
       {/* Report Templates */}
       <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Report Templates</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-        {reportTemplates.map((r, i) => (
-          <motion.div
-            key={r.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: i * 0.05 }}
-            className="rounded-xl border p-5 shadow-depth-card"
-            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-depth-inset"
-                style={{ background: `color-mix(in srgb, ${r.color} 10%, var(--bg-base))` }}
-              >
-                <r.icon size={20} style={{ color: r.color }} strokeWidth={1.75} />
-              </div>
-              <div className="w-2 h-2 rounded-full mt-1.5" style={{ background: r.color }} />
-            </div>
-            <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{r.title}</h3>
-            <p className="text-xs mb-4 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{r.description}</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => addToast(`Generating "${r.title}"...`, 'info')}
-                className="flex-1 py-1.5 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 shadow-depth-1 transition-opacity hover:opacity-90"
-                style={{ background: r.color, color: '#fff', border: '1px solid transparent', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.15)' }}
-              >
-                <Play size={11} fill="currentColor" /> Generate Now
-              </button>
-              {can(PERMISSIONS.SCHEDULE_REPORTS) && (
-                <button
-                  onClick={() => addToast(`"${r.title}" scheduled`, 'success')}
-                  className="flex-1 py-1.5 text-xs font-medium rounded-xl border shadow-depth-1 transition-colors flex items-center justify-center gap-1 hover:bg-[--bg-hover]"
-                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+        {reportTemplates.map((r, i) => {
+          const Icon = iconMap[r.iconName] || FileText;
+          return (
+            <motion.div
+              key={r.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
+              className="rounded-xl border p-5 shadow-depth-card"
+              style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-depth-inset"
+                  style={{ background: `color-mix(in srgb, ${r.color} 10%, var(--bg-base))` }}
                 >
-                  <Clock size={11} /> Schedule
+                  <Icon size={20} style={{ color: r.color }} strokeWidth={1.75} />
+                </div>
+                <div className="w-2 h-2 rounded-full mt-1.5" style={{ background: r.color }} />
+              </div>
+              <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{r.title}</h3>
+              <p className="text-xs mb-4 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{r.description}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => addToast(`Generating "${r.title}"...`, 'info')}
+                  className="flex-1 py-1.5 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 shadow-depth-1 transition-opacity hover:opacity-90"
+                  style={{ background: r.color, color: '#fff', border: '1px solid transparent', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.15)' }}
+                >
+                  <Play size={11} fill="currentColor" /> Generate Now
                 </button>
-              )}
-            </div>
-          </motion.div>
-        ))}
+                {can(PERMISSIONS.SCHEDULE_REPORTS) && (
+                  <button
+                    onClick={() => addToast(`"${r.title}" scheduled`, 'success')}
+                    className="flex-1 py-1.5 text-xs font-medium rounded-xl border shadow-depth-1 transition-colors flex items-center justify-center gap-1 hover:bg-[--bg-hover]"
+                    style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+                  >
+                    <Clock size={11} /> Schedule
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )
+        })}
       </div>
 
       {/* Scheduled Reports */}

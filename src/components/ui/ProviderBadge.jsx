@@ -29,7 +29,6 @@ export default function ProviderBadge({ provider, size = 'md' }) {
       style={surfaceStyles}
     >
       <BrandLogo brandKey={provider} size={sizeConfig.icon} />
-      <span>{asset.label}</span>
     </span>
   )
 }

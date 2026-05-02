@@ -27,27 +27,6 @@ const fmtShort = new Intl.NumberFormat('en-US', { style: 'currency', currency: '
 
 const TABS = ['All Accounts', 'AWS', 'GCP', 'Azure']
 
-const providerResourceTemplates = {
-  aws: [
-    { type: 'EC2', name: 'prod-web-server-01', status: 'Running' },
-    { type: 'RDS', name: 'prod-db-cluster', status: 'Available' },
-    { type: 'S3', name: 'analytics-archive-bucket', status: 'Healthy' },
-    { type: 'Lambda', name: 'prod-data-processor', status: 'Active' },
-  ],
-  gcp: [
-    { type: 'Compute Engine', name: 'prod-api-node-01', status: 'Running' },
-    { type: 'BigQuery', name: 'finops_reporting', status: 'Healthy' },
-    { type: 'Cloud SQL', name: 'platform-postgres', status: 'Available' },
-    { type: 'GKE', name: 'prod-gke-cluster', status: 'Active' },
-  ],
-  azure: [
-    { type: 'VM', name: 'vm-prod-web-001', status: 'Running' },
-    { type: 'SQL Database', name: 'prod-sql-eastus', status: 'Online' },
-    { type: 'AKS', name: 'aks-prod-eastus', status: 'Healthy' },
-    { type: 'Blob Storage', name: 'prodblobarchive01', status: 'Available' },
-  ],
-}
-
 /** Accounts page — connected cloud accounts and per-account data */
 export default function Accounts() {
   const { data: d0, isLoading: l0 } = useMigrationData('/cloud/aws');
@@ -66,39 +45,15 @@ export default function Accounts() {
   if (!d0 || !d1 || !d2 || !d3 || !d4) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load accounts data. Please make sure the backend is running.</p></div>;
 
   const allAccounts = [
-    ...awsAccounts.map(a => ({ ...a, provider: 'aws', lastSync: '2 min ago', status: 'connected', region: 'us-east-1' })),
-    ...gcpProjects.map(p => ({ id: p.id, name: p.name, spend: p.spend, resources: p.resources, env: p.env, provider: 'gcp', lastSync: '3 min ago', status: 'connected', region: 'us-central1' })),
-    ...azureSubscriptions.map(s => ({ id: s.id, name: s.name, spend: s.spend, resources: s.resources, env: s.env, provider: 'azure', lastSync: '4 min ago', status: 'connected', region: 'eastus' })),
+    ...awsAccounts.map(a => ({ ...a, provider: 'aws' })),
+    ...gcpProjects.map(p => ({ ...p, provider: 'gcp' })),
+    ...azureSubscriptions.map(s => ({ ...s, provider: 'azure' })),
   ]
 
   const providerServiceBreakdowns = {
     aws: awsServiceBreakdown,
     gcp: gcpServiceBreakdown,
     azure: azureServiceBreakdown,
-  }
-
-  function buildAccountTrend(account) {
-    const providerKey = account.provider === 'azure' ? 'azure' : account.provider
-    const providerTotal = allAccounts
-      .filter(item => item.provider === account.provider)
-      .reduce((sum, item) => sum + item.spend, 0)
-    const accountShare = providerTotal > 0 ? account.spend / providerTotal : 0
-
-    return dailySpend.slice(-90).map((day) => {
-      const dailyProviderSpend = day[providerKey] ?? 0
-      return {
-        date: day.date,
-        spend: +(dailyProviderSpend * accountShare).toFixed(2),
-      }
-    })
-  }
-
-  function buildAccountResources(account) {
-    return providerResourceTemplates[account.provider].map((resource, index) => ({
-      ...resource,
-      monthlyCost: account.spend / (8 + index * 2),
-      region: account.region,
-    }))
   }
 
   const [tab, setTab] = useState('All Accounts')
@@ -112,9 +67,9 @@ export default function Accounts() {
 
   const [selectedAccount, setSelectedAccount] = useState(null)
 
-  const selectedServices = selectedAccount ? providerServiceBreakdowns[selectedAccount.provider].slice(0, 5) : []
-  const selectedTrend = selectedAccount ? buildAccountTrend(selectedAccount) : []
-  const selectedResources = selectedAccount ? buildAccountResources(selectedAccount) : []
+  const selectedServices = selectedAccount ? providerServiceBreakdowns[selectedAccount.provider]?.slice(0, 5) : []
+  const selectedTrend = selectedAccount ? (selectedAccount.trendData || []) : []
+  const selectedResources = selectedAccount ? (selectedAccount.resourceList || []) : []
 
   const { can } = usePermissions()
   const handleSync = () => addToast('Syncing all accounts...', 'info')
@@ -426,8 +381,8 @@ export default function Accounts() {
                       <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Daily</span>
                     </div>
                     <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-surface)' }}>
-                      <div className="h-36 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                      <div className="h-36 w-full" style={{ minWidth: 0, minHeight: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                           <AreaChart data={selectedTrend} margin={{ top: 4, right: 0, left: -8, bottom: 0 }}>
                             <defs>
                               <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">

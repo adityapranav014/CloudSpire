@@ -27,8 +27,8 @@ const statusColor = { open: '#F43F5E', acknowledged: '#F59E0B', resolved: '#10B9
 
 /** Anomaly detection page — AI-powered spend deviation alerts */
 export default function Anomalies() {
-  const { data: d0, isLoading: l0 } = useMigrationData('/alerts');
-  const { anomalies, budgetAlerts, anomalyHistory } = d0 || {};
+  const { data: d0, isLoading: l0, mutate } = useMigrationData('/alerts');
+  const { anomalies = [], budgetAlerts, anomalyHistory, anomalyStats } = d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/roles');
   const { PERMISSIONS } = d1 || {};
 
@@ -38,7 +38,7 @@ export default function Anomalies() {
 
   const [filter, setFilter] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
-  const [localAnomalies, setLocalAnomalies] = useState(anomalies)
+
   const [configOpen, setConfigOpen] = useState(false)
   const [threshold, setThreshold] = useState(20)
   const [alertFrequency, setAlertFrequency] = useState('Immediate')
@@ -46,28 +46,35 @@ export default function Anomalies() {
   const { addToast } = useToast()
   const { can } = usePermissions()
 
-  const filtered = localAnomalies.filter(a =>
+  const filtered = anomalies.filter(a =>
     filter === 'all' || a.status === filter
   )
 
-  const acknowledge = (id) => {
-    setLocalAnomalies(prev => prev.map(a => a.id === id ? { ...a, status: 'acknowledged' } : a))
-    addToast('Anomaly acknowledged', 'info')
+  const updateStatus = async (id, status, successMsg) => {
+    try {
+      const response = await fetch(`http://localhost:5001/alerts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) throw new Error('Failed to update')
+      if (mutate) mutate()
+      addToast(successMsg, 'success')
+    } catch (err) {
+      addToast('Failed to update anomaly status', 'error')
+    }
   }
-  const resolve = (id) => {
-    setLocalAnomalies(prev => prev.map(a => a.id === id ? { ...a, status: 'resolved' } : a))
-    addToast('Anomaly marked as resolved', 'success')
-  }
-  const dismiss = (id) => {
-    setLocalAnomalies(prev => prev.filter(a => a.id !== id))
-    addToast('Anomaly dismissed', 'info')
-  }
+
+  const acknowledge = (id) => updateStatus(id, 'acknowledged', 'Anomaly acknowledged')
+  const resolve = (id) => updateStatus(id, 'resolved', 'Anomaly marked as resolved')
+  const dismiss = (id) => updateStatus(id, 'dismissed', 'Anomaly dismissed')
+
   const createTicket = (anomaly) => addToast(`Ticket created for ${anomaly.service}`, 'success')
 
   const counts = {
-    open: localAnomalies.filter(a => a.status === 'open').length,
-    acknowledged: localAnomalies.filter(a => a.status === 'acknowledged').length,
-    resolved: localAnomalies.filter(a => a.status === 'resolved').length,
+    open: anomalies.filter(a => a.status === 'open').length,
+    acknowledged: anomalies.filter(a => a.status === 'acknowledged').length,
+    resolved: anomalies.filter(a => a.status === 'resolved').length,
   }
 
   return (
@@ -79,8 +86,8 @@ export default function Anomalies() {
         {[
           { label: 'Open Alerts', value: counts.open, color: '#F43F5E', icon: AlertTriangle },
           { label: 'Acknowledged', value: counts.acknowledged, color: '#F59E0B', icon: Clock },
-          { label: 'Resolved This Month', value: 4, color: '#10B981', icon: CheckCircle },
-          { label: 'Spend Prevented', value: '$2,780', color: '#3B82F6', icon: DollarSign },
+          { label: 'Resolved This Month', value: anomalyStats?.resolvedThisMonth || 4, color: '#10B981', icon: CheckCircle },
+          { label: 'Spend Prevented', value: fmt.format(anomalyStats?.spendPrevented || 2780), color: '#3B82F6', icon: DollarSign },
         ].map(s => {
           const Icon = s.icon
           return (
@@ -101,7 +108,7 @@ export default function Anomalies() {
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-1 mb-5 p-1 rounded-xl shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)', display: 'inline-flex' }}>
         {[
-          { key: 'all', label: `All (${localAnomalies.length})`, icon: Layers },
+          { key: 'all', label: `All (${anomalies.length})`, icon: Layers },
           { key: 'open', label: `Open (${counts.open})`, icon: AlertCircle },
           { key: 'acknowledged', label: `Acknowledged (${counts.acknowledged})`, icon: Clock },
           { key: 'resolved', label: `Resolved (${counts.resolved})`, icon: CheckCircle2 },
@@ -272,11 +279,10 @@ export default function Anomalies() {
                   {a.status === 'open' && can(PERMISSIONS.ACKNOWLEDGE_ANOMALIES) && (
                     <button
                       onClick={() => acknowledge(a.id)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-90 shadow-depth-primary border"
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-80"
                       style={{
-                        borderColor: '#D97706',
-                        color: '#fff',
-                        background: 'linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%)'
+                        background: '#F59E0B',
+                        color: '#fff'
                       }}
                     >
                       Acknowledge
@@ -285,11 +291,10 @@ export default function Anomalies() {
                   {a.status !== 'resolved' && can(PERMISSIONS.MANAGE_ANOMALIES) && (
                     <button
                       onClick={() => resolve(a.id)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-90 shadow-depth-primary border"
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-80"
                       style={{
-                        borderColor: '#059669',
-                        color: '#fff',
-                        background: 'linear-gradient(180deg, #34D399 0%, #10B981 100%)'
+                        background: '#10B981',
+                        color: '#fff'
                       }}
                     >
                       Resolve
@@ -321,8 +326,8 @@ export default function Anomalies() {
       {/* Alert history chart */}
       <div className="rounded-xl border shadow-depth-card p-5 mb-6" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
         <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Anomaly History — Last 30 Days</h3>
-        <div className="rounded-lg p-4 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
-          <ResponsiveContainer width="100%" height={120}>
+        <div className="rounded-lg p-4 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)', minWidth: 0, minHeight: 0 }}>
+          <ResponsiveContainer width="100%" height={120} minWidth={0}>
             <AreaChart data={anomalyHistory} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
               <XAxis dataKey="date" tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} interval={4}

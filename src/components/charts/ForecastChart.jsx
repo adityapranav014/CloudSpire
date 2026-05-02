@@ -64,7 +64,7 @@ export default function ForecastChart() {
   const { hist: data, today: TODAY } = buildData(dailySpend);
 
   return (
-    <div className="rounded-xl flex flex-col group layer-raised p-5">
+    <div className="rounded-xl flex flex-col group layer-raised p-5 h-full">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Spend & Forecast</h3>
@@ -87,34 +87,35 @@ export default function ForecastChart() {
           </div>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={260}>
-        <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-          <defs>
-            <linearGradient id="fcastGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} interval={9} />
-          <YAxis tickFormatter={fmt} tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} />
-          <Tooltip content={<CustomTooltip />} />
-          <ReferenceArea
-            x1={data.find(d => d.date === TODAY)?.label}
-            x2={data[data.length - 1].label}
-            fill="#F59E0B"
-            fillOpacity={0.04}
-          />
-          <ReferenceLine
-            x={data.find(d => d.date === TODAY)?.label}
-            stroke="#F59E0B"
-            strokeDasharray="4 4"
-            label={{ value: 'Today', fill: '#F59E0B', fontSize: 10, position: 'top' }}
-          />
-          <Area type="monotone" dataKey="actual" stroke="#3B82F6" strokeWidth={2} fill="url(#fcastGrad)" dot={false} connectNulls={false} />
-          <Line type="monotone" dataKey="forecast" stroke="#F59E0B" strokeWidth={2} strokeDasharray="6 3" dot={false} connectNulls={false} />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  )
+      <div style={{ minWidth: 0, minHeight: 0, width: '100%', height: 260 }}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+            <defs>
+              <linearGradient id="fcastGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1E2D40" vertical={false} />
+            <XAxis dataKey="label" tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} interval={9} />
+            <YAxis tickFormatter={fmt} tick={{ fill: '#4A5568', fontSize: 10 }} tickLine={false} axisLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceArea
+              x1={data.find(d => d.date === TODAY)?.label}
+              x2={data[data.length - 1].label}
+              fill="#F59E0B"
+              fillOpacity={0.04}
+            />
+            <ReferenceLine
+              x={data.find(d => d.date === TODAY)?.label}
+              stroke="#F59E0B"
+              strokeDasharray="4 4"
+              label={{ value: 'Today', fill: '#F59E0B', fontSize: 10, position: 'top' }}
+            />
+            <Area type="monotone" dataKey="actual" stroke="#3B82F6" strokeWidth={2} fill="url(#fcastGrad)" dot={false} connectNulls={false} />
+            <Line type="monotone" dataKey="forecast" stroke="#F59E0B" strokeWidth={2} strokeDasharray="6 3" dot={false} connectNulls={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      )
 }

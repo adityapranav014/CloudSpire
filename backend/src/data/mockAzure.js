@@ -1,9 +1,30 @@
 // Azure Cost Management API — UsageDetail, BillingAccount, Subscription schemas
 
 export const azureSubscriptions = [
-  { id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", name: "Production Workloads", tenantId: "tenant-001", spend: 27900, env: "production", resources: 84 },
-  { id: "b2c3d4e5-f6a7-8901-bcde-f12345678901", name: "Development & Testing", tenantId: "tenant-001", spend: 6800, env: "development", resources: 22 },
-  { id: "c3d4e5f6-a7b8-9012-cdef-123456789012", name: "Disaster Recovery", tenantId: "tenant-001", spend: 3200, env: "production", resources: 11 },
+  {
+    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", name: "Production Workloads", tenantId: "tenant-001", spend: 27900, env: "production", resources: 84, lastSync: "2025-04-28T10:14:00Z", status: "connected", region: "eastus",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 600 + Math.random() * 100 })),
+    resourceList: [
+      { type: 'VM', name: 'vm-prod-web-001', status: 'Running', monthlyCost: 250, region: 'eastus' },
+      { type: 'SQL Database', name: 'prod-sql-eastus', status: 'Online', monthlyCost: 400, region: 'eastus' },
+      { type: 'AKS', name: 'aks-prod-eastus', status: 'Healthy', monthlyCost: 550, region: 'eastus' },
+      { type: 'Blob Storage', name: 'prodblobarchive01', status: 'Available', monthlyCost: 150, region: 'eastus' },
+    ]
+  },
+  {
+    id: "b2c3d4e5-f6a7-8901-bcde-f12345678901", name: "Development & Testing", tenantId: "tenant-001", spend: 6800, env: "development", resources: 22, lastSync: "2025-04-28T09:45:00Z", status: "connected", region: "westus",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 100 + Math.random() * 50 })),
+    resourceList: [
+      { type: 'VM', name: 'vm-dev-desktop-01', status: 'Stopped', monthlyCost: 80, region: 'westus' },
+    ]
+  },
+  {
+    id: "c3d4e5f6-a7b8-9012-cdef-123456789012", name: "Disaster Recovery", tenantId: "tenant-001", spend: 3200, env: "production", resources: 11, lastSync: "2025-04-27T10:00:00Z", status: "warning", region: "centralus",
+    trendData: Array.from({ length: 90 }, (_, i) => ({ date: new Date(Date.now() - (89 - i) * 86400000).toISOString().split('T')[0], spend: 50 + Math.random() * 20 })),
+    resourceList: [
+      { type: 'Blob Storage', name: 'drblobarchive01', status: 'Available', monthlyCost: 200, region: 'centralus' },
+    ]
+  },
 ];
 
 export const azureServiceBreakdown = [
@@ -43,3 +64,4 @@ export const azureRegionBreakdown = [
   { region: "southeastasia", label: "Southeast Asia (Singapore)", cost: 3100, percent: 11.1 },
   { region: "australiaeast", label: "Australia East (Sydney)", cost: 1600, percent: 5.8 },
 ];
+export const azureOrphanedResources = [ { resourceId: 'azure-ip-unused-001', type: 'Public IP', name: 'orphaned-pip-eastus', region: 'eastus', monthlyCost: 8.2, createdAt: '2024-11-08', lastAttached: '2024-12-01', savingsIfDeleted: 8.2, daysSinceLastUsed: 149 } ];

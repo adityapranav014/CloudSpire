@@ -6,6 +6,8 @@ import rolesRouter from './roles.js';
 import teamsRouter from './teams.js';
 import unifiedRouter from './unified.js';
 import usersRouter from './users.js';
+import settingsRouter from './settings.js';
+import reportsRouter from './reports.js';
 
 const router = Router();
 
@@ -29,5 +31,7 @@ router.use('/roles', rolesRouter);
 router.use('/teams', teamsRouter);
 router.use('/unified', unifiedRouter);
 router.use('/users', usersRouter);
+router.use('/settings', settingsRouter);
+router.use('/reports', reportsRouter);
 
 export default router;

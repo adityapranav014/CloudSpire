@@ -1,5 +1,5 @@
 import CloudAccount from '../models/CloudAccount.js';
-import { persistCostRecords } from '../services/costService.js';
+import { persistCostRecords, getCostData } from '../services/costService.js';
 import { fetchAwsCostAndUsage, fetchAwsInstances } from '../services/awsService.js';
 import { fetchAzureCostAndUsage, fetchAzureVMs } from '../services/azureService.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
@@ -8,7 +8,7 @@ import { logAction } from '../services/auditService.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
-import { awsAccounts, awsServiceBreakdown, awsEC2Instances, awsOrphanedResources, awsRegionBreakdown } from '../data/mockAWS.js';
+import { awsAccounts, awsEC2Instances, awsOrphanedResources } from '../data/mockAWS.js';
 import { azureSubscriptions, azureServiceBreakdown, azureVMs, azureRegionBreakdown, azureOrphanedResources } from '../data/mockAzure.js';
 import { gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources } from '../data/mockGCP.js';
 
@@ -44,12 +44,26 @@ export const getAws = catchAsync(async (req, res, next) => {
         }
     }
 
+    // No real account — serve AWS CUR sample data (or mock in dev)
     if (env.nodeEnv === 'production') {
         return next(new AppError('No AWS accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
     }
 
-    logger.warn({ orgId }, 'Serving mock AWS data — not for production use');
-    res.status(200).json({ awsAccounts, awsServiceBreakdown, awsEC2Instances, awsOrphanedResources, awsRegionBreakdown });
+    // In dev mode: use getCostData() which transparently serves sample data
+    // (if the CSV was downloaded) or falls back to empty data.
+    logger.warn({ orgId }, 'No real AWS account — serving sample/demo AWS CUR data');
+    const costData = await getCostData(orgId, 'aws');
+
+    return res.status(200).json({
+        success: true,
+        isSampleData: costData.isSampleData,
+        currency: costData.currency,
+        awsAccounts,                                      // UI still needs account list shape
+        awsServiceBreakdown: costData.serviceBreakdown,  // from real CUR CSV (not mocked)
+        awsRegionBreakdown:  costData.regionBreakdown,
+        awsEC2Instances:     awsEC2Instances,             // instance data stays mocked until connector built
+        awsOrphanedResources: awsOrphanedResources,
+    });
 });
 
 export const getAzure = catchAsync(async (req, res, next) => {

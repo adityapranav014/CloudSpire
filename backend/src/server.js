@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { analyzeAnomalies } from './jobs/anomalyDetector.js';
 import { initSocket } from './services/socketService.js';
+import { seedSampleDataIfNeeded } from './services/sampleDataService.js';
 
 const server = http.createServer(app);
 
@@ -14,6 +15,9 @@ const startServer = async () => {
     try {
         await connectToDatabase(env.mongoUri);
         logger.info('Successfully connected to MongoDB');
+
+        // Seed demo data from AWS CUR sample CSV — runs once, skips if already seeded
+        await seedSampleDataIfNeeded();
     } catch (error) {
         logger.error({ err: error }, 'Could not connect to MongoDB');
         process.exit(1);

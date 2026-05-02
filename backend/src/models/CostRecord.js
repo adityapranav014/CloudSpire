@@ -26,7 +26,7 @@ const costRecordSchema = new mongoose.Schema(
         cloudAccountId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'CloudAccount',
-            required: [true, 'CostRecord must reference a cloud account.'],
+            default: null, // null for sample data records (source: 'sample')
         },
         provider: {
             type: String,
@@ -54,6 +54,23 @@ const costRecordSchema = new mongoose.Schema(
             type: String,
             default: 'USD',
         },
+        // resourceId — AWS line_item_resource_id (ARN or resource name)
+        resourceId: {
+            type: String,
+            default: null,
+        },
+        // source — isolates sample/demo data from real org billing records.
+        // 'live'   → fetched from a real cloud account (AWS/GCP/Azure)
+        // 'sample' → seeded from the AWS CUR sample CSV at startup
+        //
+        // RULE: NEVER query sample records for a real org. The dashboard
+        // controller uses this field to serve sample data ONLY when the
+        // org has zero connected CloudAccounts.
+        source: {
+            type: String,
+            enum: ['live', 'sample'],
+            default: 'live',
+        },
     },
     { timestamps: true }
 );
@@ -69,10 +86,14 @@ costRecordSchema.index({ orgId: 1, teamId: 1, date: -1, provider: 1 });
 // Anomaly detector aggregation (per service, 30-day window)
 costRecordSchema.index({ orgId: 1, teamId: 1, date: -1, service: 1 });
 
+// Fast isolation of sample records (used by sampleDataService seeder check)
+costRecordSchema.index({ source: 1 });
+
 // Upsert filter in costService.js (must be unique per day+service+region+account)
+// cloudAccountId may be null for sample records — sparse avoids duplicate-null issues
 costRecordSchema.index(
     { orgId: 1, teamId: 1, cloudAccountId: 1, provider: 1, date: 1, service: 1, region: 1 },
-    { unique: true }
+    { unique: true, sparse: true }
 );
 
 export default mongoose.model('CostRecord', costRecordSchema);

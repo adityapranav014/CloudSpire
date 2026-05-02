@@ -24,10 +24,11 @@ import WidgetGalleryPanel from '../components/dashboard/WidgetGalleryPanel'
 import { WIDGET_REGISTRY } from '../components/dashboard/WidgetRegistry'
 
 // Redux slices
-import { fetchDashboardSummary, selectDashboardSummary, selectDashboardLoading, selectDashboardError } from '../store/slices/dashboardSlice'
+import { fetchDashboardSummary, selectDashboardSummary, selectDashboardLoading, selectDashboardError, selectIsSampleData } from '../store/slices/dashboardSlice'
 import { fetchRecommendations, selectOptimizationSummary, selectRightsizingRecommendations, selectTotalPotentialSavings } from '../store/slices/recommendationsSlice'
 import { selectActiveAlerts } from '../store/slices/alertsSlice'
 import { selectAllServerMetrics } from '../store/slices/metricsSlice'
+import DemoBanner from '../components/DemoBanner'
 // Cloud data still uses SWR via useMigrationData (provider breakdown doesn't need Redux)
 import { useMigrationData } from '../hooks/useMigrationData'
 
@@ -391,6 +392,8 @@ export default function Dashboard() {
   const allServerMetrics     = useSelector(selectAllServerMetrics)
   const localMetrics         = allServerMetrics?.local  // 'local' = serverId from AppLayout
 
+  const isSampleData         = useSelector(selectIsSampleData)
+
   // ── SWR: provider breakdown data (unchanged pattern) ────────────────────
   const { data: aws }   = useMigrationData('/cloud/aws')
   const { data: gcp }   = useMigrationData('/cloud/gcp')
@@ -693,6 +696,9 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
+        {/* Demo data notice — shown when org has no connected cloud accounts */}
+        <DemoBanner show={isSampleData} />
+
         {/* -- Header ------------------------------------ */}
         <div
           className="relative mb-6 rounded-2xl overflow-hidden"

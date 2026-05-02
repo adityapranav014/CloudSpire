@@ -66,4 +66,8 @@ export const selectDashboardLoading    = (state) => state.dashboard.loading;
 export const selectDashboardError      = (state) => state.dashboard.error;
 export const selectDashboardLastFetch  = (state) => state.dashboard.lastFetchedAt;
 
+// Derived: true when org has no connected cloud accounts and we're showing sample data
+export const selectIsSampleData        = (state) => state.dashboard.summary?.isSampleData ?? false;
+export const selectDashboardCurrency   = (state) => state.dashboard.summary?.currency ?? 'USD';
+
 export default dashboardSlice.reducer;

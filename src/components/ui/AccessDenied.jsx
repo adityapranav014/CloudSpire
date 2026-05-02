@@ -11,7 +11,7 @@ export default function AccessDenied({ page }) {
   const ROLE_META = d0?.ROLE_META || {};
   const navigate = useNavigate()
   const { persona } = usePermissions()
-  const meta = ROLE_META[persona.role] || {}
+  const meta = ROLE_META[persona?.role] || {}
 
   return (
     <motion.div
@@ -45,7 +45,7 @@ export default function AccessDenied({ page }) {
           className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
           style={{ background: meta.color }}
         >
-          {persona.initials}
+          {persona?.initials}
         </span>
         Logged in as: {meta.label}
       </div>

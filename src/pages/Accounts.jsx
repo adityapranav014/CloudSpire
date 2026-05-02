@@ -41,6 +41,14 @@ export default function Accounts() {
   const { PERMISSIONS = {} } = d4 || {};
 
   const isLoading = l0 || l1 || l2 || l3 || l4;
+
+  const [tab, setTab] = useState('All Accounts')
+  const [connectOpen, setConnectOpen] = useState(false)
+  const [connectTab, setConnectTab] = useState('aws')
+  const [selectedAccount, setSelectedAccount] = useState(null)
+  const { addToast } = useToast()
+  const { can } = usePermissions()
+
   if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
   if (!d0 || !d1 || !d2 || !d3 || !d4) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load accounts data. Please make sure the backend is running.</p></div>;
 
@@ -56,22 +64,13 @@ export default function Accounts() {
     azure: azureServiceBreakdown,
   }
 
-  const [tab, setTab] = useState('All Accounts')
-  const [connectOpen, setConnectOpen] = useState(false)
-  const [connectTab, setConnectTab] = useState('aws')
-  const { addToast } = useToast()
-
   const filtered = tab === 'All Accounts'
     ? allAccounts
     : allAccounts.filter(a => a.provider === tab.toLowerCase())
 
-  const [selectedAccount, setSelectedAccount] = useState(null)
-
   const selectedServices = selectedAccount ? providerServiceBreakdowns[selectedAccount.provider]?.slice(0, 5) : []
   const selectedTrend = selectedAccount ? (selectedAccount.trendData || []) : []
   const selectedResources = selectedAccount ? (selectedAccount.resourceList || []) : []
-
-  const { can } = usePermissions()
   const handleSync = () => addToast('Syncing all accounts...', 'info')
   const handleConnect = () => {
     setConnectOpen(false)

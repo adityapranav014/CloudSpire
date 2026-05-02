@@ -267,9 +267,9 @@ export default function Onboarding() {
                     </div>
 
                     <div className="space-y-4 mb-7">
-                      <Field label="Your name" placeholder="Alex Johnson" />
-                      <Field label="Work email" placeholder="alex@company.com" type="email" />
-                      <Field label="Company name" placeholder="Acme Inc." />
+                      <Field label="Your name" placeholder="Alex Johnson" value={formData['Your name']} onChange={handleInputChange} />
+                      <Field label="Work email" placeholder="alex@company.com" type="email" value={formData['Work email']} onChange={handleInputChange} />
+                      <Field label="Company name" placeholder="Acme Inc." value={formData['Company name']} onChange={handleInputChange} />
                     </div>
 
                     <button

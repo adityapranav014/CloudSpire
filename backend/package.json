@@ -5,7 +5,7 @@
     "type": "module",
     "main": "src/server.js",
     "scripts": {
-        "dev": "nodemon --exitcrash src/server.js",
+        "dev": "nodemon src/server.js",
         "start": "node src/server.js",
         "worker": "node src/worker.js",
         "test": "vitest run",
@@ -30,8 +30,7 @@
         "node-cron": "^4.2.1",
         "pino": "^10.3.1",
         "pino-http": "^11.0.0",
-        "resend": "^6.12.2",
-        "zod": "^4.4.2"
+        "resend": "^6.12.2"
     },
     "devDependencies": {
         "nodemon": "^3.1.10",

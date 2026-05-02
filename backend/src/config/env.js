@@ -28,7 +28,8 @@ export const env = {
     resendApiKey: process.env.RESEND_API_KEY,
     s3BucketName: process.env.S3_BUCKET_NAME,
     awsRegion: process.env.AWS_REGION || 'us-east-1',
-    
+    openRouterApiKey: process.env.OPENROUTER_API_KEY,
+
     // Azure Configuration
     azure: {
         tenantId: process.env.AZURE_TENANT_ID,

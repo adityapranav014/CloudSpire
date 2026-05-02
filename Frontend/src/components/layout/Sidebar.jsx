@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Search, AlertTriangle, Zap, Users,
-  Link2, FileText, Settings, TrendingUp
+  Link2, FileText, Settings, TrendingUp, MessageSquare
 } from 'lucide-react'
 
 import { usePermissions } from '../../hooks/usePermissions'
@@ -37,6 +37,12 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
       label: 'Reporting',
       items: [
         { label: 'Reports', icon: FileText, to: '/reports' },
+      ],
+    },
+    {
+      label: 'AI',
+      items: [
+        { label: 'AI Chat', icon: MessageSquare, to: '/chat' },
       ],
     },
     {

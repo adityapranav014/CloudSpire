@@ -5,6 +5,7 @@ import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLef
 
 
 import { usePermissions } from '../../hooks/usePermissions'
+import { useAuth } from '../../context/AuthContext'
 
 import UserAvatar from '../ui/UserAvatar'
 import { useMigrationData } from '../../hooks/useMigrationData'
@@ -54,13 +55,15 @@ export default function TopBar({ onOpenMenu = () => { } }) {
   const [backendStatus, setBackendStatus] = useState('checking')
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
+  const { user: personaUser, logout: performLogout } = useAuth()
   const { persona: mockPersona } = usePermissions()
 
   // Use session user if available, fallback to mock persona for demo purposes
-  const user = mockPersona
-  const meta = ROLE_META[user.role || 'finops_manager']
+  const user = personaUser || mockPersona
+  const meta = ROLE_META[user?.role || 'finops_manager'] || { color: 'text-primary' }
 
   const handleSignOut = async () => {
+    performLogout()
     navigate('/login')
   }
 

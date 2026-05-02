@@ -1,27 +1,26 @@
-import { users, CURRENT_USER } from '../data/mockUsers.js';
-import { asyncHandler } from '../middleware/asyncHandler.js';
+import User from '../models/User.js';
+import { catchAsync } from '../middleware/asyncHandler.js'; // fixed import name
 import { AppError } from '../utils/AppError.js';
 
-export const getIndex = asyncHandler(async (req, res, next) => {
-    // 1. Example of an explicit 404 trigger if resource missing
+export const getIndex = catchAsync(async (req, res, next) => {
+    const users = await User.find();
     if (!users || users.length === 0) {
         throw new AppError('No users found', 404);
     }
 
-    // 2. Predictable JSON response structure: { success, data, error }
     res.status(200).json({
         success: true,
         data: {
             users,
-            CURRENT_USER
+            CURRENT_USER: users[0] || null // temporary mock of logged in user
         },
         error: null
     });
 });
 
-export const getUserById = asyncHandler(async (req, res, next) => {
+export const getUserById = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const user = users.find(u => u.id === id);
+    const user = await User.findById(id);
 
     if (!user) {
         throw new AppError('User not found', 404);
@@ -34,13 +33,15 @@ export const getUserById = asyncHandler(async (req, res, next) => {
     });
 });
 
-export const createUser = asyncHandler(async (req, res, next) => {
-    // The request is already validated securely by 'validate' middleware before it hits the controller.
-    const newUser = req.body;
+export const createUser = catchAsync(async (req, res, next) => {
+    const userPayload = req.body;
+    // Set a dummy teamId if not provided for now, until full auth flow exists
+    if (!userPayload.teamId) {
+        userPayload.teamId = '000000000000000000000000';
+    }
 
-    // Simulate DB insertion
-    const created = { id: `usr_${Date.now()}`, ...newUser };
-    users.push(created);
+    // Hash password with bcrypt in Phase 2
+    const created = await User.create(userPayload);
 
     res.status(201).json({
         success: true,

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -358,7 +358,7 @@ function BudgetWidget({ budgetAlerts }) {
 
 // --- Dashboard -----------------------------------------------
 export default function Dashboard() {
-  const { data: unified, isLoading: ls1 } = useMigrationData('/unified')
+  const { data: unified, isLoading: ls1, isError: e1, errorMessage: em1, mutate: m1 } = useMigrationData('/unified')
   const { data: aws, isLoading: ls2 } = useMigrationData('/cloud/aws')
   const { data: gcp, isLoading: ls3 } = useMigrationData('/cloud/gcp')
   const { data: azure, isLoading: ls4 } = useMigrationData('/cloud/azure')
@@ -600,7 +600,7 @@ export default function Dashboard() {
   }, [layouts])
 
   if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!unified || !aws || !gcp || !azure || !alerts || !optimizations) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load dashboard data. Please make sure the backend is running.</p></div>;
+  if (e1 || (!unified && !ls1)) return <div className="h-screen flex items-center justify-center"><div className="text-center"><p className="text-red-400 font-semibold mb-1">Failed to load dashboard</p><p className="text-sm text-zinc-500 mb-3">{em1 || 'Please make sure the backend is running.'}</p><button onClick={() => m1()} className="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">Retry</button></div></div>;
 
   return (
     <>

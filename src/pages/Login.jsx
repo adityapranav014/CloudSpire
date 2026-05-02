@@ -20,19 +20,17 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
 
-  const { persona } = useAuth();
+  const { login } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data) => {
     setIsLoading(true);
     setError('');
     try {
-      // Simulate quick auth for demo
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 500);
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+      await login(data.email, data.password);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Invalid email or password. Please try again.');
       setIsLoading(false);
     }
   };

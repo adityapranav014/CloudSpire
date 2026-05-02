@@ -8,6 +8,7 @@ import unifiedRouter from './unified.js';
 import usersRouter from './users.js';
 import settingsRouter from './settings.js';
 import reportsRouter from './reports.js';
+import authRouter from './auth.js';
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use('/unified', unifiedRouter);
 router.use('/users', usersRouter);
 router.use('/settings', settingsRouter);
 router.use('/reports', reportsRouter);
+router.use('/auth', authRouter);
 
 export default router;

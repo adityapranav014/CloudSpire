@@ -27,7 +27,7 @@ export const register = catchAsync(async (req, res, next) => {
             );
 
             [newUser] = await User.create(
-                [{ name, email, password, teamId: newTeam._id, role: 'Admin' }],
+                [{ name, email, password, teamId: newTeam._id, role: 'super_admin' }],
                 { session }
             );
 

@@ -1,36 +1,15 @@
-import { createContext, useContext, useState } from "react";
-
-const initialState = {
-  provider: "all",
-  setProvider: () => null,
-  dateRange: "30d",
-  setDateRange: () => null,
-};
-
-const FilterContext = createContext(initialState);
-
-export function FilterProvider({ children }) {
-  const [provider, setProvider] = useState("all");
-  const [dateRange, setDateRange] = useState("30d");
-
-  return (
-    <FilterContext.Provider
-      value={{
-        provider,
-        setProvider,
-        dateRange,
-        setDateRange,
-      }}
-    >
-      {children}
-    </FilterContext.Provider>
-  );
-}
+import { useSelector, useDispatch } from 'react-redux';
+import { setProvider as setProviderAction, setDateRange as setDateRangeAction } from '../store/slices/filterSlice';
 
 export function useGlobalFilters() {
-  const context = useContext(FilterContext);
-  if (context === undefined) {
-    throw new Error("useGlobalFilters must be used within a FilterProvider");
-  }
-  return context;
+  const dispatch = useDispatch();
+  const provider = useSelector((state) => state.filters.provider);
+  const dateRange = useSelector((state) => state.filters.dateRange);
+
+  return {
+    provider,
+    setProvider: (val) => dispatch(setProviderAction(val)),
+    dateRange,
+    setDateRange: (val) => dispatch(setDateRangeAction(val)),
+  };
 }

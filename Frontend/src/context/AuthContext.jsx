@@ -1,108 +1,74 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { useMigrationData } from '../hooks/useMigrationData'
-import api, { extractErrorMessage } from '../services/api'
+import { useEffect, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { 
+  loadUser, fetchRoles, login as loginAction, registerUser as registerUserAction, 
+  logout as logoutAction, switchRole as switchRoleAction, setAuthLoading
+} from '../store/slices/authSlice';
 
-const AuthContext = createContext(null)
-const STORAGE_KEY = 'cloudspire_token'
+export function useAuth() {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
+  const isLoadingAuth = useSelector((state) => state.auth.isLoadingAuth);
+  const rolesData = useSelector((state) => state.auth.rolesData);
 
-export function AuthProvider({ children }) {
-  const { data: rolesData } = useMigrationData('/roles')
-  const { ROLE_PERMISSIONS = {}, PAGE_ACCESS = {} } = rolesData || {}
-
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(localStorage.getItem(STORAGE_KEY) || null)
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
-
-  // persona maps mostly to user for the frontend backward compatibility
-  const persona = user;
-
-  const loadUser = useCallback(async () => {
-    try {
-      if (!token) return;
-      const res = await api.get('/auth/me');
-      setUser(res.data.data.user);
-    } catch (error) {
-      console.error('Failed to authenticate:', extractErrorMessage(error));
-      logout()
-    } finally {
-      setIsLoadingAuth(false)
-    }
-  }, [token])
-
-  useEffect(() => {
-    if (token) loadUser();
-    else setIsLoadingAuth(false);
-  }, [token, loadUser])
+  const persona = user; // fallback
 
   const login = async (email, password) => {
-    try {
-      const res = await api.post('/auth/login', { email, password });
-      const newToken = res.data.token;
-      localStorage.setItem(STORAGE_KEY, newToken);
-      setToken(newToken);
-      setUser(res.data.data.user);
-    } catch (err) {
-      // Re-throw with a clean user-friendly message so Login.jsx can display it
-      const message = extractErrorMessage(err, 'Invalid email or password. Please try again.')
-      throw new Error(message)
-    }
+    return dispatch(loginAction({ email, password })).unwrap();
   };
 
   const registerUser = async (data) => {
-    try {
-      const res = await api.post('/auth/register', data);
-      const newToken = res.data.token;
-      localStorage.setItem(STORAGE_KEY, newToken);
-      setToken(newToken);
-      setUser(res.data.data.user);
-    } catch (err) {
-      const message = extractErrorMessage(err, 'Registration failed. Please try again.')
-      throw new Error(message)
-    }
+    return dispatch(registerUserAction(data)).unwrap();
   };
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setToken(null);
-    setUser(null);
-  }
+    dispatch(logoutAction());
+  };
 
-  // Preserve legacy demo role switch for testing if needed
   const switchRole = useCallback((roleId) => {
     console.warn("switchRole is mocked in Production mode");
-    setUser((prev) => prev ? { ...prev, role: roleId } : null);
-  }, []);
+    dispatch(switchRoleAction(roleId));
+  }, [dispatch]);
 
-  /** Returns true if the current role has the given permission key */
   const can = useCallback((permission) => {
-    if (!user) return false
-    return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false
-  }, [user, ROLE_PERMISSIONS])
+    if (!user) return false;
+    return rolesData?.ROLE_PERMISSIONS?.[user.role]?.includes(permission) ?? false;
+  }, [user, rolesData]);
 
-  /** Returns true if the current role is allowed to navigate to `route` (e.g. '/accounts') */
   const canAccessPage = useCallback((route) => {
-    if (!user) return false
-    const allowed = PAGE_ACCESS[route]
-    if (!allowed) return true  // unknown routes are open (public)
-    return allowed.includes(user.role)
-  }, [user, PAGE_ACCESS])
+    if (!user) return false;
+    const allowed = rolesData?.PAGE_ACCESS?.[route];
+    if (!allowed) return true;
+    return allowed.includes(user.role);
+  }, [user, rolesData]);
 
-  /** Returns true if the current role matches the given roleId */
-  const isRole = useCallback((roleId) => user?.role === roleId, [user])
+  const isRole = useCallback((roleId) => user?.role === roleId, [user]);
 
-  if (isLoadingAuth) {
-    return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>
-  }
-
-  return (
-    <AuthContext.Provider value={{ persona, user, token, login, registerUser, logout, switchRole, can, canAccessPage, isRole }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return { 
+    persona, user, token, isLoadingAuth, 
+    login, registerUser, logout, switchRole, 
+    can, canAccessPage, isRole 
+  };
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
-  return ctx
+export function AuthInitializer({ children }) {
+  const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.token);
+  const isLoadingAuth = useSelector((state) => state.auth.isLoadingAuth);
+
+  useEffect(() => {
+    dispatch(fetchRoles());
+    if (token) {
+      dispatch(loadUser());
+    } else {
+      dispatch(setAuthLoading(false));
+    }
+  }, [dispatch, token]);
+
+  if (isLoadingAuth) {
+    return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  }
+
+  return children;
 }

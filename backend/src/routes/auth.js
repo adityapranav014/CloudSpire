@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getMe, logout, refreshToken } from '../controllers/auth.js';
+import { register, login, getMe, logout, refreshToken, completeOnboarding } from '../controllers/auth.js';
 import { protect } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 
@@ -10,5 +10,6 @@ router.post('/login', authLimiter, login);
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 router.post('/refresh', protect, refreshToken);
+router.patch('/complete-onboarding', protect, completeOnboarding);
 
 export default router;

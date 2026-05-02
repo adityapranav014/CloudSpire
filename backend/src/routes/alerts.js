@@ -1,9 +1,11 @@
 import express from 'express';
 import * as alertsController from '../controllers/alerts.js';
 import { protect } from '../middleware/auth.js';
+import { orgScope } from '../middleware/orgScope.js';
 
 const router = express.Router();
-router.get('/', protect, alertsController.getIndex);
-router.put('/:id', protect, alertsController.updateAnomaly);
+
+router.get('/', protect, orgScope, alertsController.getIndex);
+router.put('/:id', protect, orgScope, alertsController.updateAnomaly);
 
 export default router;

@@ -9,6 +9,7 @@ import usersRouter from './users.js';
 import settingsRouter from './settings.js';
 import reportsRouter from './reports.js';
 import authRouter from './auth.js';
+import metricsRouter from './metricsRoutes.js';
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/users', usersRouter);
 router.use('/settings', settingsRouter);
 router.use('/reports', reportsRouter);
 router.use('/auth', authRouter);
+router.use('/metrics', metricsRouter);
 
 export default router;

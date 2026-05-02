@@ -3,6 +3,8 @@ import http from 'node:http';
 import app from './app.js';
 import { connectToDatabase, disconnectFromDatabase } from './config/database.js';
 import { initJobs } from './jobs/anomalyDetector.js';
+import { startReportWorker } from './workers/reportQueueWorker.js';
+import { initReportCleanup } from './jobs/reportCleanup.js';
 import { env } from './config/env.js';
 
 const server = http.createServer(app);
@@ -15,6 +17,19 @@ const startServer = async () => {
         // Initialize background jobs (Anomaly Detection)
         initJobs();
         console.log('Background Cron Jobs Initialized...');
+
+        // Start BullMQ report worker (requires Redis)
+        try {
+            const worker = await startReportWorker();
+            if (worker) {
+                console.log('BullMQ Report Worker started.');
+            }
+        } catch (err) {
+            console.warn('BullMQ worker skipped — Redis may be unavailable:', err.message);
+        }
+
+        // Start report file cleanup cron
+        initReportCleanup();
     } catch (error) {
         console.error('Warning: Could not connect to MongoDB. Some features may be unavailable.', error.message);
         process.exit(1); // Force crash if DB fails so user knows exactly what went wrong

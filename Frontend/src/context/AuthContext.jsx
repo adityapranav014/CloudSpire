@@ -1,54 +1,9 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useMigrationData } from '../hooks/useMigrationData'
-import axios from 'axios'
+import api, { extractErrorMessage } from '../services/api'
 
 const AuthContext = createContext(null)
 const STORAGE_KEY = 'cloudspire_token'
-
-const api = axios.create({
-  baseURL: 'http://localhost:4000/api/v1',
-})
-
-// Attach token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(STORAGE_KEY)
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-// ── Response interceptor: auto-logout on 401 ──
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // If the server says token is expired/invalid, force logout
-    if (error.response?.status === 401) {
-      const errorCode = error.response?.data?.errorCode
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'INVALID_TOKEN') {
-        localStorage.removeItem(STORAGE_KEY)
-        // Redirect to login only if we're not already there
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
-        }
-      }
-    }
-    return Promise.reject(error)
-  }
-)
-
-/**
- * Extracts a user-friendly error message from an Axios error.
- * Backend sends: { success: false, error: "...", errorCode: "..." }
- */
-const extractErrorMessage = (err, fallback = 'An unexpected error occurred. Please try again.') => {
-  // Network error (backend is down)
-  if (err.code === 'ERR_NETWORK' || !err.response) {
-    return 'Unable to reach the server. Please check your connection and try again.'
-  }
-  // Backend returned a standardized error
-  return err.response?.data?.error || err.response?.data?.message || fallback
-}
 
 export function AuthProvider({ children }) {
   const { data: rolesData } = useMigrationData('/roles')

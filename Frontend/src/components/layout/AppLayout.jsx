@@ -2,12 +2,16 @@ import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
+import { useSocket } from '../../hooks/useSocket'
 
 /** Main shell — sidebar + topbar + scrollable content area */
 export default function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const location = useLocation()
   const isFullBleed = location.pathname === '/chat'
+  
+  // Initialize Socket.io connection globally for the authenticated app
+  useSocket();
 
   return (
     <div className="h-[100dvh] overflow-hidden" style={{ background: 'var(--bg-base)' }}>

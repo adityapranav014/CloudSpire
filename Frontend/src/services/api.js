@@ -11,7 +11,10 @@ const api = axios.create({
 
 // Request interceptor: attach bearer token as fallback for cross-domain scenarios
 api.interceptors.request.use((config) => {
-    const token = store.getState().auth.token;
+    // Try Redux token first (in-memory), then fall back to sessionStorage
+    const reduxToken = store.getState().auth.token;
+    const token = reduxToken || sessionStorage.getItem('auth_token');
+    
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

@@ -162,6 +162,10 @@ const authSlice = createSlice({
                 state.user = action.payload.user;
                 state.token = action.payload.token;
                 state.error = null;
+                // Persist token to sessionStorage for cross-domain deployments where httpOnly cookie won't work
+                if (action.payload.token) {
+                    sessionStorage.setItem('auth_token', action.payload.token);
+                }
             })
             .addCase(login.rejected, (state, action) => {
                 state.error = action.payload;
@@ -174,6 +178,10 @@ const authSlice = createSlice({
                 state.user = action.payload.user;
                 state.token = action.payload.token;
                 state.error = null;
+                // Persist token to sessionStorage for cross-domain deployments
+                if (action.payload.token) {
+                    sessionStorage.setItem('auth_token', action.payload.token);
+                }
             })
             .addCase(registerUser.rejected, (state, action) => {
                 state.error = action.payload;
@@ -186,11 +194,13 @@ const authSlice = createSlice({
                 state.user = null;
                 state.token = null;
                 state.error = null;
+                sessionStorage.removeItem('auth_token');
             })
             .addCase(logout.rejected, (state) => {
                 state.user = null;  // Still wipe state even if server call failed
                 state.token = null;
                 state.error = null;
+                sessionStorage.removeItem('auth_token');
             });
 
         // ── fetchRoles ────────────────────────────────────────────────────────

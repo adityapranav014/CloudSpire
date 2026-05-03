@@ -71,13 +71,20 @@ export function useAuth() {
  * AuthInitializer — runs once on app boot.
  * Calls GET /auth/me to restore session from the httpOnly cookie.
  * If the cookie is missing or expired, loadUser rejects → user stays logged out.
- * Does NOT check localStorage or Redux token (both removed in Task 2).
+ * Also tries to restore from sessionStorage token (cross-domain fallback).
  */
 export function AuthInitializer({ children }) {
     const dispatch    = useDispatch();
     const isLoading   = useSelector(selectIsLoadingAuth);
 
     useEffect(() => {
+        // Restore token from sessionStorage if it exists (cross-domain deployments)
+        const storedToken = sessionStorage.getItem('auth_token');
+        if (storedToken) {
+            // Don't set it in Redux here - just keep it in sessionStorage
+            // The api.js interceptor will pick it up on first request
+        }
+        
         // Always try to restore session from cookie — the server will 401 if none exists
         dispatch(fetchRoles());
         dispatch(loadUser()).catch(() => {

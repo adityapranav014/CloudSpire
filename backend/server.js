@@ -1,15 +1,15 @@
 import http from 'node:http';
 import cron from 'node-cron';
 
-import app from './app.js';
-import { connectToDatabase, disconnectFromDatabase } from './config/database.js';
-import { startReportWorker } from './workers/reportQueueWorker.js';
-import { initReportCleanup } from './jobs/reportCleanup.js';
-import { env } from './config/env.js';
-import { logger } from './utils/logger.js';
-import { analyzeAnomalies } from './jobs/anomalyDetector.js';
-import { initSocket } from './services/socketService.js';
-import { seedSampleDataIfNeeded } from './services/sampleDataService.js';
+import app from './src/app.js';
+import { connectToDatabase, disconnectFromDatabase } from './src/config/database.js';
+import { startReportWorker } from './src/workers/reportQueueWorker.js';
+import { initReportCleanup } from './src/jobs/reportCleanup.js';
+import { env } from './src/config/env.js';
+import { logger } from './src/utils/logger.js';
+import { analyzeAnomalies } from './src/jobs/anomalyDetector.js';
+import { initSocket } from './src/services/socketService.js';
+import { seedSampleDataIfNeeded } from './src/services/sampleDataService.js';
 
 const server = http.createServer(app);
 

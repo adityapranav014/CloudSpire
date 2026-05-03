@@ -9,12 +9,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════════════
-   CloudSpire Design System v2.0 — Zinc Neutral Color Tokens
-   ═══════════════════════════════════════════════════════════════
-   Philosophy: Zinc-based neutrals, tonal elevation, no cheap gradients.
-   All text colors verified against WCAG 2.1 AA (4.5:1 minimum).
-   ══════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Radii ── */

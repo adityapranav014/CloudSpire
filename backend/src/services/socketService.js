@@ -30,7 +30,10 @@ export const initSocket = (httpServer) => {
 
     io = new Server(httpServer, {
         cors: {
-            origin: env.clientUrl,   // single origin — same rule as HTTP CORS
+            origin: (origin, callback) => {
+                if (!origin || env.clientUrls.includes(origin)) return callback(null, true);
+                callback(new Error(`CORS: ${origin} not allowed`));
+            },
             methods: ['GET', 'POST'],
             credentials: true,        // required for httpOnly cookie transport
         },

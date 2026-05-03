@@ -2,6 +2,20 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const parsedClientUrls = (process.env.CLIENT_URLS || '')
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean);
+
+const defaultClientUrls = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5175',
+];
+
 const requiredEnvVars = [
     'MONGODB_URI',
     'BETTER_AUTH_SECRET',
@@ -21,6 +35,13 @@ export const env = {
     port: Number(process.env.PORT || 4000),
     mongoUri: process.env.MONGODB_URI,
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    clientUrls: Array.from(
+        new Set([
+            process.env.CLIENT_URL || 'http://localhost:5173',
+            ...parsedClientUrls,
+            ...defaultClientUrls,
+        ])
+    ),
     serverUrl: process.env.SERVER_URL || 'http://localhost:4000',
     betterAuthSecret: process.env.BETTER_AUTH_SECRET,
     jwtSecret: process.env.JWT_SECRET,

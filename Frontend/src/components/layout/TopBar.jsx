@@ -18,7 +18,11 @@ import {
   CommandList,
 } from "../ui/command"
 
-const backendBaseUrl = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:4000' : '')).replace(/\/$/, '')
+const backendBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL
+  || import.meta.env.VITE_API_URL?.replace('/api/v1', '')
+  || (import.meta.env.DEV ? 'http://localhost:4000' : 'https://cloudspire.onrender.com')
+).replace(/\/$/, '')
 const backendHealthUrl = `${backendBaseUrl}/health`
 
 /** Top application bar with search, notifications, and user menu */

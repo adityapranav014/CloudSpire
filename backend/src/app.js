@@ -23,14 +23,7 @@ app.use(helmet());
 app.use(
     cors({
         origin: (origin, callback) => {
-            // Allow requests from any configured client URL or localhost dev ports
-            const allowed = [
-                env.clientUrl,
-                'http://localhost:5173',
-                'http://localhost:5174',
-                'http://localhost:5175',
-            ].filter(Boolean);
-            if (!origin || allowed.includes(origin)) return callback(null, true);
+            if (!origin || env.clientUrls.includes(origin)) return callback(null, true);
             callback(new Error(`CORS: ${origin} not allowed`));
         },
         credentials: true,          // allows browser to send/receive cookies

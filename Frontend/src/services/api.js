@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+const DEFAULT_API_URL = 'https://cloudspire.onrender.com/api/v1';
+const apiBaseUrl = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1',
+    baseURL: apiBaseUrl,
     withCredentials: true,
 });
 

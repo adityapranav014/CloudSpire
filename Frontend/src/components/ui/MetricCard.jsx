@@ -4,7 +4,7 @@ import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', isCurrency = false, upIsGood = false, className = '' }) {
+export default function MetricCard({ title, value, subtitle, trend, trendValue, icon: Icon, accentColor = 'var(--accent-primary)', sparklineData = [], sparklineKey = 'total', progress, isCurrency = false, upIsGood = false, className = '' }) {
   const displayValue = isCurrency && typeof value === 'number' ? fmt.format(value) : value
   const trendColor =
     trend === 'neutral' ? 'var(--text-muted)' :
@@ -65,6 +65,21 @@ export default function MetricCard({ title, value, subtitle, trend, trendValue, 
             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{subtitle}</span>
           )}
         </div>
+
+        {/* Progress Bar */}
+        {typeof progress !== 'undefined' && progress !== null && (
+          <div className="mt-1 flex flex-col gap-1.5 w-full">
+            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, Math.max(0, Number(progress)))}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="h-full rounded-full"
+                style={{ background: Number(progress) > 80 ? 'var(--accent-rose)' : accentColor }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sparkline flush to bottom */}

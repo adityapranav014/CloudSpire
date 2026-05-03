@@ -10,7 +10,9 @@ const alertSchema = new mongoose.Schema({
     resourceId: { type: String, required: true },
     expectedSpend: { type: Number },
     actualSpend: { type: Number },
-    dateDetected: { type: Date, default: Date.now }
+    dateDetected: { type: Date, default: Date.now },
 }, { timestamps: true });
+
+alertSchema.index({ teamId: 1, resourceId: 1, status: 1 });
 
 export default mongoose.model('Alert', alertSchema);

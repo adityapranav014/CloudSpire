@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
-import AppLayout from './components/layout/AppLayout'
+import Layout from './components/Layout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import CostExplorer from './pages/CostExplorer'
@@ -10,6 +10,8 @@ import Teams from './pages/Teams'
 import Accounts from './pages/Accounts'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Chat from './pages/Chat'
+import Metrics from './pages/Metrics'
 import Onboarding from './pages/Onboarding'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -25,15 +27,17 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard"     element={<ProtectedRoute page="/dashboard"><Dashboard /></ProtectedRoute>} />
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<ProtectedRoute page="/dashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/cost-explorer" element={<ProtectedRoute page="/cost-explorer"><CostExplorer /></ProtectedRoute>} />
-            <Route path="/anomalies"     element={<ProtectedRoute page="/anomalies"><Anomalies /></ProtectedRoute>} />
-            <Route path="/optimizer"     element={<ProtectedRoute page="/optimizer"><Optimizer /></ProtectedRoute>} />
-            <Route path="/teams"         element={<ProtectedRoute page="/teams"><Teams /></ProtectedRoute>} />
-            <Route path="/accounts"      element={<ProtectedRoute page="/accounts"><Accounts /></ProtectedRoute>} />
-            <Route path="/reports"       element={<ProtectedRoute page="/reports"><Reports /></ProtectedRoute>} />
-            <Route path="/settings"      element={<ProtectedRoute page="/settings"><Settings /></ProtectedRoute>} />
+            <Route path="/anomalies" element={<ProtectedRoute page="/anomalies"><Anomalies /></ProtectedRoute>} />
+            <Route path="/optimizer" element={<ProtectedRoute page="/optimizer"><Optimizer /></ProtectedRoute>} />
+            <Route path="/teams" element={<ProtectedRoute page="/teams"><Teams /></ProtectedRoute>} />
+            <Route path="/accounts" element={<ProtectedRoute page="/accounts"><Accounts /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute page="/reports"><Reports /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute page="/settings"><Settings /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute page="/chat"><Chat /></ProtectedRoute>} />
+            <Route path="/metrics" element={<ProtectedRoute page="/metrics"><Metrics /></ProtectedRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>

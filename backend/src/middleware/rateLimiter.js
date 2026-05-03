@@ -1,4 +1,5 @@
 import { AppError } from '../utils/AppError.js';
+import rateLimit from 'express-rate-limit';
 
 // ---------------------------------------------------------------------------
 // In-Memory Per-User Rate Limiter
@@ -94,4 +95,17 @@ export const reportDownloadLimiter = rateLimiter({
     windowMs: 60_000,
     max: 20,
     keyPrefix: 'report-dl',
+});
+
+export const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        data: null,
+        error: 'Too many requests, please try again later.',
+        errorCode: 'RATE_LIMITED',
+    },
 });

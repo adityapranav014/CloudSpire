@@ -138,7 +138,7 @@ function TeamDetailModal({ team, onClose }) {
 /** Teams page — cost allocation by team with budget management */
 export default function Teams() {
   const { data: d0, isLoading: l0 } = useMigrationData('/teams');
-  const { teams } = d0 || {};
+  const { teams } = d0?.data || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/roles');
   const { PERMISSIONS, ROLES } = d1 || {};
 

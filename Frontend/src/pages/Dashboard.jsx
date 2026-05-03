@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -358,6 +358,23 @@ function BudgetWidget({ budgetAlerts }) {
 
 // --- Dashboard -----------------------------------------------
 export default function Dashboard() {
+  const [sysMetrics, setSysMetrics] = useState(null)
+  
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch('/api/v1/metrics')
+        if (res.ok) {
+          const data = await res.json()
+          setSysMetrics(data.data)
+        }
+      } catch (e) {}
+    }
+    fetchMetrics()
+    const int = setInterval(fetchMetrics, 10000)
+    return () => clearInterval(int)
+  }, [])
+
   const { data: unified, isLoading: ls1, isError: e1, errorMessage: em1, mutate: m1 } = useMigrationData('/unified')
   const { data: aws, isLoading: ls2 } = useMigrationData('/cloud/aws')
   const { data: gcp, isLoading: ls3 } = useMigrationData('/cloud/gcp')
@@ -371,8 +388,8 @@ export default function Dashboard() {
   const { awsServiceBreakdown, awsAccounts, awsRegionBreakdown } = aws || {};
   const { gcpServiceBreakdown, gcpProjects, gcpRegionBreakdown } = gcp || {};
   const { azureServiceBreakdown, azureSubscriptions, azureRegionBreakdown } = azure || {};
-  const { anomalies, budgetAlerts } = alerts || {};
-  const { rightsizingRecommendations, optimizationSummary } = optimizations || {};
+  const { anomalies, budgetAlerts } = alerts?.data || {};
+  const { rightsizingRecommendations, optimizationSummary } = optimizations?.data || {};
 
   const totalSpend = currentMonthStats?.totalSpend || 1;
 
@@ -681,7 +698,7 @@ export default function Dashboard() {
                       className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:bg-[--bg-hover]"
                       style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
                     >
-                      <Download size={12} /> Export
+                      <Download size={12} /> Generate Report
                     </Link>
                     <Link
                       to="/cost-explorer"
@@ -708,7 +725,8 @@ export default function Dashboard() {
               {[
                 { label: 'MTD Spend', value: fmt.format(totalSpend), color: 'var(--text-primary)' },
                 { label: 'Providers', value: String(providersData.length), color: 'var(--text-primary)' },
-                { label: 'Open Alerts', value: String(openAlerts.length), color: openAlerts.length > 0 ? 'var(--accent-rose)' : 'var(--accent-emerald)' },
+                { label: 'CPU Usage', value: sysMetrics?.cpu?.usage ? `${Number(sysMetrics.cpu.usage).toFixed(1)}%` : '--', color: sysMetrics?.cpu?.usage > 80 ? 'var(--accent-rose)' : 'var(--text-primary)' },
+                { label: 'Memory', value: sysMetrics?.memory?.usedPercentage ? `${Number(sysMetrics.memory.usedPercentage).toFixed(1)}%` : '--', color: sysMetrics?.memory?.usedPercentage > 80 ? 'var(--accent-rose)' : 'var(--text-primary)' },
                 { label: 'Savings Avail.', value: `${fmt.format(optimizationSummary?.totalPotentialSavings || 0)}/mo`, color: 'var(--accent-emerald)' },
               ].map((stat, i) => (
                 <div key={i} className="flex items-center">

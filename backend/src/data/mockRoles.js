@@ -111,6 +111,7 @@ export const PAGE_ACCESS = {
   '/accounts':      ALL.filter(r => r !== ROLES.TEAM_LEAD),
   '/reports':       ALL,
   '/settings':      ALL,
+  '/metrics':       ALL,
 }
 
 // ── Demo personas (one per role) ──────────────────────────────────────────────

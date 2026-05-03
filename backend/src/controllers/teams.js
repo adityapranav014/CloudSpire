@@ -1,11 +1,22 @@
 import Team from '../models/Team.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
+import { teams as mockTeams } from '../data/mockTeams.js';
+import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 export const getIndex = catchAsync(async (req, res, next) => {
-    // Phase 1 Multi-tenancy: extract teamId/ownerId from req.user
-    // const ownerId = req.user.id;
     const teams = await Team.find();
+
+    // In dev mode, fall back to rich mock data when real teams lack enriched fields
+    if (env.nodeEnv !== 'production') {
+        const hasRichData = teams.length > 0 && teams[0].monthlySpend !== undefined;
+        if (!hasRichData) {
+            logger.warn('Serving mock teams data — not for production use');
+            return res.status(200).json({ success: true, data: { teams: mockTeams } });
+        }
+    }
+
     res.status(200).json({ success: true, data: { teams } });
 });
 

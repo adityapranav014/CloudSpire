@@ -4,12 +4,28 @@ import { executeAwsOptimization } from '../services/awsService.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { logAction } from '../services/auditService.js';
+import { optimizationSummary as mockSummary, rightsizingRecommendations as mockRightsize, reservedInstanceOpportunities as mockReserved, scheduledShutdowns as mockShutdowns } from '../data/mockOptimizations.js';
+import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 export const getIndex = catchAsync(async (req, res, next) => {
     const filter = req.query.teamId ? { teamId: req.query.teamId } : {};
     const optimizations = await Optimization.find(filter);
 
-    // Grouping the db entries to match the frontend expectations
+    // Fall back to rich mock data in dev when no real optimizations exist
+    if (env.nodeEnv !== 'production' && optimizations.length === 0) {
+        logger.warn('Serving mock optimizations data — not for production use');
+        return res.status(200).json({
+            success: true,
+            data: {
+                optimizationSummary: mockSummary,
+                rightsizingRecommendations: mockRightsize,
+                reservedInstanceOpportunities: mockReserved,
+                scheduledShutdowns: mockShutdowns,
+            }
+        });
+    }
+
     const rightsizingRecommendations = optimizations.filter(o => o.type === 'rightsize');
     const reservedInstanceOpportunities = optimizations.filter(o => o.type === 'reserved-instance');
     const scheduledShutdowns = optimizations.filter(o => o.type === 'shutdown');

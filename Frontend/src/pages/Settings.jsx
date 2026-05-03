@@ -1,4 +1,5 @@
 import { useMigrationData } from '../hooks/useMigrationData';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { useState } from 'react'
 import { motion } from 'framer-motion'
@@ -58,10 +59,10 @@ function ConfirmModal({ open, onClose, onConfirm, title, description, action, da
 
 /** Settings page — profile, notifications, integrations, billing, team, API keys */
 export default function Settings() {
+  const { user: CURRENT_USER } = useAuth();
   const { data: d0, isLoading: l0, isError: e0, errorMessage: em0 } = useMigrationData('/roles');
   const { PERMISSIONS } = d0?.data || d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/users');
-  const { CURRENT_USER, getOrgMembers } = d1?.data || d1 || {};
   const { data: d2, isLoading: l2 } = useMigrationData('/settings');
   const { data: d3, isLoading: l3, mutate: revalidateApiKeys } = useMigrationData('/settings/api-keys');
 

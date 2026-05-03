@@ -1,5 +1,6 @@
 import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
+import { logger } from '../utils/logger.js';
 
 /* ─── Mongoose / MongoDB error transformers ─── */
 
@@ -63,9 +64,9 @@ export const errorHandler = (err, req, res, _next) => {
     // ── Determine final status code ──
     const statusCode = error.statusCode || err.statusCode || 500;
 
-    // ── Log server errors to console (never swallow 5xx) ──
+    // ── Log server errors (never swallow 5xx) ──
     if (statusCode >= 500) {
-        console.error(`[ERROR] ${req.method} ${req.originalUrl} →`, err.stack || err);
+        logger.error({ err, reqId: req.id, method: req.method, url: req.originalUrl }, err.message);
     }
 
     // ── Build standardized API envelope ──

@@ -1,11 +1,21 @@
 import axios from 'axios';
+import { store } from '../store/index.js';
 
 const DEFAULT_API_URL = 'https://cloudspire.onrender.com/api/v1';
 const apiBaseUrl = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
 
 const api = axios.create({
     baseURL: apiBaseUrl,
-    withCredentials: true,
+    withCredentials: true,  // Send httpOnly cookie if available
+});
+
+// Request interceptor: attach bearer token as fallback for cross-domain scenarios
+api.interceptors.request.use((config) => {
+    const token = store.getState().auth.token;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
 
 api.interceptors.response.use(

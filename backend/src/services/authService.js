@@ -28,14 +28,17 @@ export const signToken = (user) => {
 /**
  * Issues a JWT, sets it as an httpOnly cookie, and sends the response.
  *
+ * Hybrid approach for both same-domain and cross-domain deployments:
+ * - httpOnly cookie: preferred, secure against XSS
+ * - Response token: fallback for cross-domain requests (vercel frontend → onrender backend)
+ *
  * Cookie flags:
  *   httpOnly  — JavaScript cannot read this cookie (blocks XSS token theft)
  *   secure    — HTTPS only in production (false in dev so localhost works)
  *   sameSite  — 'lax' allows cross-site top-level navigation (safe for deployments)
  *   maxAge    — 7 days, matching the JWT expiry
  *
- * The token is NOT returned in the JSON body. The frontend never touches it.
- * If the frontend needs to know the user's identity it calls GET /auth/me.
+ * Frontend uses cookie if available (same-domain), falls back to bearer token if not.
  */
 export const createSendToken = (user, statusCode, res) => {
     const token = signToken(user);
@@ -52,7 +55,8 @@ export const createSendToken = (user, statusCode, res) => {
 
     res.status(statusCode).json({
         success: true,
-        // Token intentionally omitted from body — it is in the httpOnly cookie
+        // Token in body as fallback for cross-domain deployments where httpOnly cookie won't work
+        token,
         data: { user: userPublic },
     });
 };
@@ -71,3 +75,6 @@ export const clearAuthCookie = (res) => {
         path: '/',
     });
 };
+
+// Export for frontend usage in interceptors
+export const COOKIE_MAX_AGE_DAYS = 7;

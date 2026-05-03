@@ -35,8 +35,11 @@ export const login = createAsyncThunk(
     async ({ email, password }, { rejectWithValue }) => {
         try {
             const res = await api.post('/auth/login', { email, password });
-            // Server sets httpOnly cookie. We only store the user object in Redux.
-            return res.data.data.user;
+            // Server sets httpOnly cookie + returns token as fallback for cross-domain
+            return {
+                user: res.data.data.user,
+                token: res.data.token,
+            };
         } catch (error) {
             return rejectWithValue(
                 extractErrorMessage(error, 'Invalid email or password. Please try again.')
@@ -50,8 +53,11 @@ export const registerUser = createAsyncThunk(
     async (data, { rejectWithValue }) => {
         try {
             const res = await api.post('/auth/register', data);
-            // Server sets httpOnly cookie. We only store the user object.
-            return res.data.data.user;
+            // Server sets httpOnly cookie + returns token as fallback for cross-domain
+            return {
+                user: res.data.data.user,
+                token: res.data.token,
+            };
         } catch (error) {
             return rejectWithValue(
                 extractErrorMessage(error, 'Registration failed. Please try again.')
@@ -105,6 +111,7 @@ export const completeOnboarding = createAsyncThunk(
 
 const initialState = {
     user: null,           // Full user object: { id, orgId, teamId, role, name, email, ... }
+    token: null,          // Fallback bearer token for cross-domain deployments (when cookie unavailable)
     isLoadingAuth: true,  // True during initial loadUser call — prevents flash of login page
     error: null,
     rolesData: {
@@ -152,7 +159,8 @@ const authSlice = createSlice({
         builder
             .addCase(login.pending, (state) => { state.error = null; })
             .addCase(login.fulfilled, (state, action) => {
-                state.user = action.payload;
+                state.user = action.payload.user;
+                state.token = action.payload.token;
                 state.error = null;
             })
             .addCase(login.rejected, (state, action) => {
@@ -163,7 +171,8 @@ const authSlice = createSlice({
         builder
             .addCase(registerUser.pending, (state) => { state.error = null; })
             .addCase(registerUser.fulfilled, (state, action) => {
-                state.user = action.payload;
+                state.user = action.payload.user;
+                state.token = action.payload.token;
                 state.error = null;
             })
             .addCase(registerUser.rejected, (state, action) => {
@@ -175,10 +184,12 @@ const authSlice = createSlice({
         builder
             .addCase(logout.fulfilled, (state) => {
                 state.user = null;
+                state.token = null;
                 state.error = null;
             })
             .addCase(logout.rejected, (state) => {
-                state.user = null; // Still wipe state even if server call failed
+                state.user = null;  // Still wipe state even if server call failed
+                state.token = null;
                 state.error = null;
             });
 
@@ -202,6 +213,7 @@ export const { switchRole, clearAuthError, setAuthLoading } = authSlice.actions;
 
 // ─── Selectors ─────────────────────────────────────────────────────────────────
 export const selectUser = (state) => state.auth.user;
+export const selectToken = (state) => state.auth.token;  // Fallback bearer token
 export const selectIsLoadingAuth = (state) => state.auth.isLoadingAuth;
 export const selectAuthError = (state) => state.auth.error;
 export const selectRolesData = (state) => state.auth.rolesData;
@@ -212,7 +224,5 @@ export const selectOrgId = (state) => state.auth.user?.orgId ?? null;
 export const selectTeamId = (state) => state.auth.user?.teamId ?? null;
 export const selectUserRole = (state) => state.auth.user?.role ?? null;
 export const selectOnboardingCompleted = (state) => state.auth.user?.onboardingCompleted ?? false;
-
-// Removed: selectToken — token is in httpOnly cookie, never in Redux state
 
 export default authSlice.reducer;

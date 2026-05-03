@@ -1,4 +1,5 @@
 import http from 'node:http';
+import cron from 'node-cron';
 
 import app from './app.js';
 import { connectToDatabase, disconnectFromDatabase } from './config/database.js';
@@ -6,6 +7,9 @@ import { startReportWorker } from './workers/reportQueueWorker.js';
 import { initReportCleanup } from './jobs/reportCleanup.js';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
+import { analyzeAnomalies } from './jobs/anomalyDetector.js';
+import { initSocket } from './services/socketService.js';
+import { seedSampleDataIfNeeded } from './services/sampleDataService.js';
 
 const server = http.createServer(app);
 
@@ -26,10 +30,22 @@ const startServer = async () => {
 
         // Start report file cleanup cron
         initReportCleanup();
+
+        // Seed demo data from AWS CUR sample CSV — runs once, skips if already seeded
+        await seedSampleDataIfNeeded();
     } catch (error) {
         logger.error({ err: error }, 'Could not connect to MongoDB');
         process.exit(1);
     }
+
+    // Schedule anomaly detection — every hour, only after DB is ready
+    cron.schedule('0 * * * *', () => {
+        logger.info('Cron: triggering anomaly detection job');
+        analyzeAnomalies().catch(err => logger.error({ err }, 'Anomaly detection job error'));
+    });
+
+    // Initialize Socket.io
+    initSocket(server);
 
     server.listen(env.port, () => {
         logger.info({ port: env.port }, 'CloudSpire backend listening');

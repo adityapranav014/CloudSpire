@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -7,6 +8,7 @@ import {
   DollarSign, TrendingUp, TrendingDown, Calendar, Zap,
   AlertTriangle, ArrowRight, Download, Settings2, X,
   GripVertical, LayoutGrid, Check, RotateCcw, ChevronRight,
+  RefreshCw,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -20,6 +22,14 @@ import TrendBadge from '../components/ui/TrendBadge'
 import SeverityBadge from '../components/ui/SeverityBadge'
 import WidgetGalleryPanel from '../components/dashboard/WidgetGalleryPanel'
 import { WIDGET_REGISTRY } from '../components/dashboard/WidgetRegistry'
+
+// Redux slices
+import { fetchDashboardSummary, selectDashboardSummary, selectDashboardLoading, selectDashboardError, selectIsSampleData } from '../store/slices/dashboardSlice'
+import { fetchRecommendations, selectOptimizationSummary, selectRightsizingRecommendations, selectTotalPotentialSavings } from '../store/slices/recommendationsSlice'
+import { selectActiveAlerts } from '../store/slices/alertsSlice'
+import { selectAllServerMetrics } from '../store/slices/metricsSlice'
+import DemoBanner from '../components/DemoBanner'
+// Cloud data still uses SWR via useMigrationData (provider breakdown doesn't need Redux)
 import { useMigrationData } from '../hooks/useMigrationData'
 
 // --- Grid config --------------------------------------------
@@ -357,39 +367,67 @@ function BudgetWidget({ budgetAlerts }) {
 }
 
 // --- Dashboard -----------------------------------------------
+// ── KPI card skeleton ───────────────────────────────────────────────────────
+function KPISkeleton() {
+  return (
+    <div className="h-full rounded-xl layer-raised p-4 animate-pulse">
+      <div className="h-3 w-24 rounded mb-3" style={{ background: 'var(--bg-elevated)' }} />
+      <div className="h-7 w-32 rounded mb-2" style={{ background: 'var(--bg-elevated)' }} />
+      <div className="h-2 w-20 rounded" style={{ background: 'var(--bg-elevated)' }} />
+    </div>
+  )
+}
+
 export default function Dashboard() {
-  const [sysMetrics, setSysMetrics] = useState(null)
-  
+  const dispatch = useDispatch()
+
+  // ── Redux: structured data ───────────────────────────────────────────────
+  const summary              = useSelector(selectDashboardSummary)
+  const dashboardLoading     = useSelector(selectDashboardLoading)
+  const dashboardError       = useSelector(selectDashboardError)
+  const optimizationSummary  = useSelector(selectOptimizationSummary)
+  const rightsizingRecs      = useSelector(selectRightsizingRecommendations)
+  const totalPotentialSavings = useSelector(selectTotalPotentialSavings)
+  const activeAlerts         = useSelector(selectActiveAlerts)
+  const allServerMetrics     = useSelector(selectAllServerMetrics)
+  const localMetrics         = allServerMetrics?.local  // 'local' = serverId from AppLayout
+
+  const isSampleData         = useSelector(selectIsSampleData)
+
+  // ── SWR: provider breakdown data (unchanged pattern) ────────────────────
+  const { data: aws }   = useMigrationData('/cloud/aws')
+  const { data: gcp }   = useMigrationData('/cloud/gcp')
+  const { data: azure } = useMigrationData('/cloud/azure')
+  const { data: alertsData } = useMigrationData('/alerts')
+
+  const { awsServiceBreakdown, awsAccounts, awsRegionBreakdown } = aws || {}
+  const { gcpServiceBreakdown, gcpProjects, gcpRegionBreakdown } = gcp || {}
+  const { azureServiceBreakdown, azureSubscriptions, azureRegionBreakdown } = azure || {}
+  const { budgetAlerts } = alertsData?.data || {}
+
+  // Use live socket alerts feed if populated, else fall back to SWR data
+  const anomalies = activeAlerts?.length > 0 ? activeAlerts : (alertsData?.data?.anomalies || [])
+
+  // Derive currentMonthStats shape from the /dashboard/summary response
+  const currentMonthStats = summary ? {
+    totalSpend:       summary.totalMonthSpend,
+    prevMonthSpend:   summary.lastMonthSpend,
+    changePercent:    summary.pctChangeVsLastMonth,
+    projectedMonthEnd: summary.totalMonthSpend ? summary.totalMonthSpend * 1.15 : 0,
+    budgetUsedPercent: 0, // Sprint 2: real budget tracking
+    savingsIdentified: totalPotentialSavings,
+  } : null
+
+  const dailySpend = null // Sprint 2: wire to /costs/daily-breakdown
+
+  const isLoading = dashboardLoading && !summary
+  const rightsizingRecommendations = rightsizingRecs
+
+  // ── Fetch on mount ───────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const res = await fetch('/api/v1/metrics')
-        if (res.ok) {
-          const data = await res.json()
-          setSysMetrics(data.data)
-        }
-      } catch (e) {}
-    }
-    fetchMetrics()
-    const int = setInterval(fetchMetrics, 10000)
-    return () => clearInterval(int)
-  }, [])
-
-  const { data: unified, isLoading: ls1, isError: e1, errorMessage: em1, mutate: m1 } = useMigrationData('/unified')
-  const { data: aws, isLoading: ls2 } = useMigrationData('/cloud/aws')
-  const { data: gcp, isLoading: ls3 } = useMigrationData('/cloud/gcp')
-  const { data: azure, isLoading: ls4 } = useMigrationData('/cloud/azure')
-  const { data: alerts, isLoading: ls5 } = useMigrationData('/alerts')
-  const { data: optimizations, isLoading: ls6 } = useMigrationData('/optimizations')
-
-  const isLoading = ls1 || ls2 || ls3 || ls4 || ls5 || ls6;
-
-  const { currentMonthStats, dailySpend } = unified || {};
-  const { awsServiceBreakdown, awsAccounts, awsRegionBreakdown } = aws || {};
-  const { gcpServiceBreakdown, gcpProjects, gcpRegionBreakdown } = gcp || {};
-  const { azureServiceBreakdown, azureSubscriptions, azureRegionBreakdown } = azure || {};
-  const { anomalies, budgetAlerts } = alerts?.data || {};
-  const { rightsizingRecommendations, optimizationSummary } = optimizations?.data || {};
+    dispatch(fetchDashboardSummary())
+    dispatch(fetchRecommendations())
+  }, [dispatch])
 
   const totalSpend = currentMonthStats?.totalSpend || 1;
 
@@ -526,7 +564,7 @@ export default function Dashboard() {
   function renderWidgetContent(id) {
     switch (id) {
       case 'kpi-total-spend':
-        return (
+        return dashboardLoading && !summary ? <KPISkeleton /> : (
           <MetricCard
             className="h-full"
             title="Total Spend"
@@ -542,7 +580,7 @@ export default function Dashboard() {
           />
         )
       case 'kpi-vs-last-month':
-        return (
+        return dashboardLoading && !summary ? <KPISkeleton /> : (
           <MetricCard
             className="h-full"
             title="vs Last Month"
@@ -558,7 +596,7 @@ export default function Dashboard() {
           />
         )
       case 'kpi-forecast':
-        return (
+        return dashboardLoading && !summary ? <KPISkeleton /> : (
           <MetricCard
             className="h-full"
             title="Month-End Forecast"
@@ -573,14 +611,14 @@ export default function Dashboard() {
           />
         )
       case 'kpi-savings':
-        return (
+        return dashboardLoading && !summary ? <KPISkeleton /> : (
           <MetricCard
             className="h-full"
             title="Savings Identified"
             value={fmt.format(currentMonthStats?.savingsIdentified || 0)}
             subtitle="Apply in Optimizer"
             trend="neutral"
-            trendValue={`${fmt.format(optimizationSummary?.totalPotentialSavings || 0)} available`}
+            trendValue={`${fmt.format(totalPotentialSavings || 0)} available`}
             icon={Zap}
             accentColor="#10B981"
             sparklineKey="savings"
@@ -616,8 +654,30 @@ export default function Dashboard() {
     return lg.map(l => l.i)
   }, [layouts])
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (e1 || (!unified && !ls1)) return <div className="h-screen flex items-center justify-center"><div className="text-center"><p className="text-red-400 font-semibold mb-1">Failed to load dashboard</p><p className="text-sm text-zinc-500 mb-3">{em1 || 'Please make sure the backend is running.'}</p><button onClick={() => m1()} className="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">Retry</button></div></div>;
+  if (isLoading) return (
+    <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent" />
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading dashboard…</p>
+      </div>
+    </div>
+  )
+
+  if (dashboardError && !summary) return (
+    <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+      <div className="text-center">
+        <p className="font-semibold mb-1" style={{ color: 'var(--accent-rose)' }}>Failed to load dashboard</p>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{dashboardError}</p>
+        <button
+          onClick={() => dispatch(fetchDashboardSummary())}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-colors"
+          style={{ background: 'var(--accent-blue)', color: '#fff' }}
+        >
+          <RefreshCw size={12} /> Retry
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <>
@@ -636,6 +696,9 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
+        {/* Demo data notice — shown when org has no connected cloud accounts */}
+        <DemoBanner show={isSampleData} />
+
         {/* -- Header ------------------------------------ */}
         <div
           className="relative mb-6 rounded-2xl overflow-hidden"
@@ -723,11 +786,11 @@ export default function Dashboard() {
             {/* Stats bar */}
             <div className="mt-4 pt-4 border-t grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-0" style={{ borderColor: 'var(--border-subtle)' }}>
               {[
-                { label: 'MTD Spend', value: fmt.format(totalSpend), color: 'var(--text-primary)' },
-                { label: 'Providers', value: String(providersData.length), color: 'var(--text-primary)' },
-                { label: 'CPU Usage', value: sysMetrics?.cpu?.usage ? `${Number(sysMetrics.cpu.usage).toFixed(1)}%` : '--', color: sysMetrics?.cpu?.usage > 80 ? 'var(--accent-rose)' : 'var(--text-primary)' },
-                { label: 'Memory', value: sysMetrics?.memory?.usedPercentage ? `${Number(sysMetrics.memory.usedPercentage).toFixed(1)}%` : '--', color: sysMetrics?.memory?.usedPercentage > 80 ? 'var(--accent-rose)' : 'var(--text-primary)' },
-                { label: 'Savings Avail.', value: `${fmt.format(optimizationSummary?.totalPotentialSavings || 0)}/mo`, color: 'var(--accent-emerald)' },
+                { label: 'MTD Spend', value: fmt.format(summary?.totalMonthSpend || totalSpend), color: 'var(--text-primary)' },
+                { label: 'Today', value: fmt.format(summary?.todaySpend || 0), color: 'var(--text-primary)' },
+                { label: 'Open Alerts', value: String(summary?.activeAlerts?.total ?? openAlerts.length), color: (summary?.activeAlerts?.total ?? openAlerts.length) > 0 ? 'var(--accent-rose)' : 'var(--accent-emerald)' },
+                { label: 'Savings Avail.', value: `${fmt.format(totalPotentialSavings || 0)}/mo`, color: 'var(--accent-emerald)' },
+                ...(localMetrics ? [{ label: `CPU`, value: `${localMetrics.cpu?.percent ?? 0}%`, color: localMetrics.cpu?.percent > 80 ? 'var(--accent-rose)' : 'var(--accent-cyan)' }] : []),
               ].map((stat, i) => (
                 <div key={i} className="flex items-center">
                   {i > 0 && <div className="hidden sm:block w-px h-7 mx-4" style={{ background: 'var(--border-subtle)' }} />}

@@ -20,51 +20,69 @@ const CustomTooltip = ({ active, payload }) => {
  * Props: data (array of {service, cost, percent}), title
  */
 export default function DonutAllocationChart({ data, title = 'Cost by Service' }) {
+  const safeData = Array.isArray(data) ? data : []
+  const total = safeData.reduce((sum, item) => sum + Number(item?.cost || 0), 0)
+
   return (
     <div className="rounded-xl flex flex-col group layer-raised p-5 h-full">
       <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>{title}</h3>
       <div className="flex items-center gap-4 flex-1 layer-recessed rounded-xl p-4 min-h-[0]">
         <div className="relative w-[120px] h-[120px] sm:w-[160px] sm:h-[160px] shrink-0" style={{ minWidth: 0, minHeight: 0 }}>
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-            <PieChart>
-              <Pie
-                data={data}
-                innerRadius="65%"
-                outerRadius="92%"
-                dataKey="cost"
-                paddingAngle={2}
-                startAngle={90}
-                endAngle={-270}
-              >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total</p>
-            <p className="text-sm font-bold font-mono" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-              {fmt.format(data.reduce((s, d) => s + d.cost, 0))}
-            </p>
-          </div>
+          {safeData.length === 0 ? (
+            <div className="h-full w-full flex items-center justify-center text-sm text-zinc-500" style={{ color: 'var(--text-muted)' }}>
+              No allocation data
+            </div>
+          ) : (
+            <>
+              <ResponsiveContainer width={160} height={160} minWidth={0} minHeight={0}>
+                <PieChart>
+                  <Pie
+                    data={safeData}
+                    innerRadius="65%"
+                    outerRadius="92%"
+                    dataKey="cost"
+                    paddingAngle={2}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    {safeData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Total</p>
+                <p className="text-sm font-bold font-mono" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+                  {fmt.format(total)}
+                </p>
+              </div>
+            </>
+          )}
         </div>
         <ul className="flex-1 space-y-2">
-          {data.map((d, i) => (
+          {safeData.map((d, i) => {
+            const cost = Number(d?.cost || 0)
+            const resolvedPercent = total > 0
+              ? +((cost / total) * 100).toFixed(1)
+              : 0
+
+            return (
             <li key={d.service}>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="w-2.5 h-2.5 rounded shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                 <span className="text-xs truncate flex-1" style={{ color: 'var(--text-secondary)' }}>{d.service}</span>
                 <span className="text-xs font-mono shrink-0 w-9 text-right" style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {d.percent}%
+                  {resolvedPercent}%
                 </span>
               </div>
               <div className="ml-[18px] h-[3px] rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
-                <div className="h-full rounded-full" style={{ width: `${d.percent}%`, background: COLORS[i % COLORS.length], opacity: 0.75 }} />
+                <div className="h-full rounded-full" style={{ width: `${resolvedPercent}%`, background: COLORS[i % COLORS.length], opacity: 0.75 }} />
               </div>
             </li>
-          ))}
+            )
+          })}
         </ul>
       </div>
     </div>

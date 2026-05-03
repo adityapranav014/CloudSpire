@@ -8,6 +8,7 @@
         "dev": "nodemon src/server.js",
         "start": "node src/server.js",
         "worker": "node src/worker.js",
+        "seed:demo": "node scripts/seedDemoData.js",
         "test": "vitest run",
         "test:watch": "vitest"
     },

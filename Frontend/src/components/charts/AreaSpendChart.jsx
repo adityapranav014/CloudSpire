@@ -88,8 +88,12 @@ export default function AreaSpendChart() {
       </div>
 
       <div className="flex-1 layer-recessed rounded-xl p-4 mt-2 min-h-[240px] w-full" style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 16, right: 16, bottom: 16, left: 16, minHeight: 0, minWidth: 0 }}>
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+        {(!data || data.length === 0) ? (
+          <div className="h-[220px] w-full flex items-center justify-center text-sm text-zinc-500" style={{ color: 'var(--text-muted)' }}>
+            No spend data available
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={0}>
             <AreaChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="awsGrad" x1="0" y1="0" x2="0" y2="1">
@@ -142,7 +146,7 @@ export default function AreaSpendChart() {
               <Area type="monotone" dataKey="azure" stackId="1" stroke="#0078D4" strokeWidth={2} fill="url(#azureGrad)" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        )}
       </div>
     </div>
   )

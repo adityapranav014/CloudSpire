@@ -260,8 +260,8 @@ function AlertsWidget({ anomalies }) {
         </span>
       </div>
       <div className="space-y-2 flex-1 overflow-y-auto no-scrollbar">
-        {openAlerts.slice(0, 5).map(a => (
-          <div key={a.id} className="flex items-start gap-2.5 p-2.5 rounded-lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
+        {openAlerts.slice(0, 5).map((a, index) => (
+          <div key={a.id || `${a.service}-${index}`} className="flex items-start gap-2.5 p-2.5 rounded-lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <SeverityBadge severity={a.severity} />
@@ -297,8 +297,8 @@ function SavingsWidget({ optimizationSummary, rightsizingRecommendations }) {
         </span>
       </div>
       <div className="space-y-2 flex-1 overflow-y-auto no-scrollbar">
-        {(rightsizingRecommendations || []).slice(0, 5).map(r => (
-          <div key={r.id} className="flex items-center gap-2.5 p-2.5 rounded-lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
+        {(rightsizingRecommendations || []).slice(0, 5).map((r, index) => (
+          <div key={r.id || `${r.resourceId}-${index}`} className="flex items-center gap-2.5 p-2.5 rounded-lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
             <ProviderBadge provider={r.provider} size="sm" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{r.resourceName}</p>
@@ -394,31 +394,41 @@ export default function Dashboard() {
 
   const isSampleData         = useSelector(selectIsSampleData)
 
-  // ── SWR: provider breakdown data (unchanged pattern) ────────────────────
+  // ── SWR: provider breakdown + unified cost data -----------------------
   const { data: aws }   = useMigrationData('/cloud/aws')
   const { data: gcp }   = useMigrationData('/cloud/gcp')
   const { data: azure } = useMigrationData('/cloud/azure')
   const { data: alertsData } = useMigrationData('/alerts')
+  const { data: unified } = useMigrationData('/unified')
 
   const { awsServiceBreakdown, awsAccounts, awsRegionBreakdown } = aws || {}
   const { gcpServiceBreakdown, gcpProjects, gcpRegionBreakdown } = gcp || {}
   const { azureServiceBreakdown, azureSubscriptions, azureRegionBreakdown } = azure || {}
   const { budgetAlerts } = alertsData?.data || {}
+  const { dailySpend: unifiedDaily = [], currentMonthStats: unifiedStats = {}, monthlySpend = [] } = unified || {}
 
   // Use live socket alerts feed if populated, else fall back to SWR data
   const anomalies = activeAlerts?.length > 0 ? activeAlerts : (alertsData?.data?.anomalies || [])
 
-  // Derive currentMonthStats shape from the /dashboard/summary response
-  const currentMonthStats = summary ? {
+  // Derive currentMonthStats shape from either dashboard summary or unified mock
+  const currentMonthStats = (summary ? {
     totalSpend:       summary.totalMonthSpend,
     prevMonthSpend:   summary.lastMonthSpend,
     changePercent:    summary.pctChangeVsLastMonth,
     projectedMonthEnd: summary.totalMonthSpend ? summary.totalMonthSpend * 1.15 : 0,
     budgetUsedPercent: 0, // Sprint 2: real budget tracking
     savingsIdentified: totalPotentialSavings,
-  } : null
+  } : null) || {
+    totalSpend: unifiedStats.totalSpend || 0,
+    prevMonthSpend: unifiedStats.prevMonthSpend || 0,
+    changePercent: unifiedStats.changePercent || 0,
+    projectedMonthEnd: unifiedStats.projectedMonthEnd || 0,
+    budgetUsedPercent: unifiedStats.budgetUsedPercent || 0,
+    savingsIdentified: unifiedStats.savingsIdentified || totalPotentialSavings || 0,
+  }
 
-  const dailySpend = null // Sprint 2: wire to /costs/daily-breakdown
+  // Use unified daily spend if available, otherwise keep safe default
+  const dailySpend = unifiedDaily || []
 
   const isLoading = dashboardLoading && !summary
   const rightsizingRecommendations = rightsizingRecs
@@ -432,12 +442,30 @@ export default function Dashboard() {
   const totalSpend = currentMonthStats?.totalSpend || 1;
 
   const providersData = useMemo(() => {
+    // Compute spend per provider and derive change% from monthlySpend if available
+    const awsSpendFromServices = awsServiceBreakdown?.reduce((s, p) => s + Number(p?.cost ?? p?.total ?? 0), 0) || 0
+    const gcpSpendFromServices = gcpServiceBreakdown?.reduce((s, p) => s + Number(p?.cost ?? p?.total ?? 0), 0) || 0
+    const azureSpendFromServices = azureServiceBreakdown?.reduce((s, p) => s + Number(p?.cost ?? p?.total ?? 0), 0) || 0
+
+    // monthlySpend is expected to be an array of months with { month, aws, gcp, azure }
+    const last = monthlySpend[monthlySpend.length - 1] || {}
+    const prev = monthlySpend[monthlySpend.length - 2] || {}
+    const pct = (curr, prevVal) => {
+      const c = Number(curr || 0)
+      const p = Number(prevVal || 1)
+      return p === 0 ? 0 : +(((c - p) / p) * 100).toFixed(1)
+    }
+
+    const awsSpend = awsSpendFromServices || Number(last.aws || 0)
+    const gcpSpend = gcpSpendFromServices || Number(last.gcp || 0)
+    const azureSpend = azureSpendFromServices || Number(last.azure || 0)
+
     return [
       {
         provider: 'aws',
         name: 'Amazon Web Services',
-        spend: awsServiceBreakdown?.reduce((s, p) => s + p.cost, 0) || 0,
-        change: 8.2, // mock metric since change per provider isn't unified yet
+        spend: awsSpend,
+        change: pct(last.aws, prev.aws),
         accounts: (awsAccounts || []).length,
         unit: 'accounts',
         color: '#FF9900'
@@ -445,8 +473,8 @@ export default function Dashboard() {
       {
         provider: 'gcp',
         name: 'Google Cloud',
-        spend: gcpServiceBreakdown?.reduce((s, p) => s + p.cost, 0) || 0,
-        change: 12.4, // mock metric
+        spend: gcpSpend,
+        change: pct(last.gcp, prev.gcp),
         accounts: (gcpProjects || []).length,
         unit: 'projects',
         color: '#4285F4'
@@ -454,8 +482,8 @@ export default function Dashboard() {
       {
         provider: 'azure',
         name: 'Microsoft Azure',
-        spend: azureServiceBreakdown?.reduce((s, p) => s + p.cost, 0) || 0,
-        change: 6.8, // mock metric
+        spend: azureSpend,
+        change: pct(last.azure, prev.azure),
         accounts: (azureSubscriptions || []).length,
         unit: 'subscriptions',
         color: '#0078D4'
@@ -465,9 +493,9 @@ export default function Dashboard() {
 
   const topRegionsData = useMemo(() => {
     return [
-      ...(awsRegionBreakdown || []).map(r => ({ label: r.region, cost: r.cost, provider: 'aws' })),
-      ...(gcpRegionBreakdown || []).map(r => ({ label: r.region, cost: r.cost, provider: 'gcp' })),
-      ...(azureRegionBreakdown || []).map(r => ({ label: r.region, cost: r.cost, provider: 'azure' }))
+      ...(awsRegionBreakdown || []).map(r => ({ label: r.region, cost: Number(r.cost ?? r.total ?? 0), provider: 'aws' })),
+      ...(gcpRegionBreakdown || []).map(r => ({ label: r.region, cost: Number(r.cost ?? r.total ?? 0), provider: 'gcp' })),
+      ...(azureRegionBreakdown || []).map(r => ({ label: r.region, cost: Number(r.cost ?? r.total ?? 0), provider: 'azure' }))
     ].sort((a, b) => b.cost - a.cost).slice(0, 5);
   }, [awsRegionBreakdown, gcpRegionBreakdown, azureRegionBreakdown]);
 
@@ -479,15 +507,26 @@ export default function Dashboard() {
       ...(azureServiceBreakdown || []).slice(0, 3),
     ].sort((a, b) => b.cost - a.cost)
       .slice(0, 8)
-      .map(s => ({ service: s.service, cost: s.cost, percent: +(s.cost / total * 100).toFixed(1) }))
+      .map(s => {
+        const cost = Number(s?.cost ?? s?.total ?? 0)
+        return {
+          service: s?.service || 'Unknown service',
+          cost,
+          percent: total > 0 ? +((cost / total) * 100).toFixed(1) : 0,
+        }
+      })
   }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown, currentMonthStats])
 
   const sparkData = useMemo(() => {
-    return (dailySpend || []).slice(-14).map(d => ({
-      ...d,
-      savings: d.total * 0.05 + Math.random() * 500,
-      budgetLine: d.total * 1.1 - Math.random() * 200,
-    }))
+    return (dailySpend || []).slice(-14).map(d => {
+      const total = Number(d?.total || 0)
+      return ({
+        ...d,
+        total,
+        savings: total * 0.05 + Math.random() * 500,
+        budgetLine: total * 1.1 - Math.random() * 200,
+      })
+    })
   }, [dailySpend])
 
   const [layouts, setLayouts] = useState(() => loadLayouts() || DEFAULT_LAYOUTS)

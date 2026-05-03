@@ -7,6 +7,45 @@ import { AppError } from '../utils/AppError.js';
 import { createSendToken, clearAuthCookie } from '../services/authService.js';
 import { logger } from '../utils/logger.js';
 
+async function ensureUserOrgScope(user) {
+    const hasValidOrg = user.orgId && await Org.exists({ _id: user.orgId });
+    const hasValidTeam = user.teamId && await Team.exists({ _id: user.teamId });
+
+    if (hasValidOrg && hasValidTeam) {
+        return user;
+    }
+
+    const fallbackOrgName = `${user.name?.trim() || 'CloudSpire'} Workspace`;
+    const fallbackTeamName = 'Platform';
+
+    const [org] = await Org.create([{
+        name: fallbackOrgName,
+        plan: 'starter',
+    }]);
+
+    const [team] = await Team.create([{
+        orgId: org._id,
+        name: fallbackTeamName,
+        isDefault: true,
+        members: [user._id],
+    }]);
+
+    user.orgId = org._id;
+    user.teamId = team._id;
+    user.onboardingCompleted = true;
+    await user.save();
+
+    org.ownerId = user._id;
+    await org.save();
+
+    team.ownerId = user._id;
+    await team.save();
+
+    logger.info({ userId: user._id, orgId: org._id, teamId: team._id }, 'Backfilled org scope for legacy user');
+
+    return user;
+}
+
 /**
  * POST /api/v1/auth/register
  *
@@ -135,12 +174,14 @@ export const login = catchAsync(async (req, res, next) => {
         return next(new AppError('Your account has been deactivated. Contact your admin.', 403, 'ACCOUNT_INACTIVE'));
     }
 
+    const scopedUser = await ensureUserOrgScope(user);
+
     // Update lastLogin — non-blocking, don't await
-    User.findByIdAndUpdate(user._id, { lastLogin: new Date() }).catch((err) =>
+    User.findByIdAndUpdate(scopedUser._id, { lastLogin: new Date() }).catch((err) =>
         logger.warn({ err, userId: user._id }, 'Failed to update lastLogin')
     );
 
-    createSendToken(user, 200, res);
+    createSendToken(scopedUser, 200, res);
 });
 
 /**
@@ -155,10 +196,9 @@ export const getMe = catchAsync(async (req, res, next) => {
         return next(new AppError('User account no longer exists.', 404, 'USER_NOT_FOUND'));
     }
 
-    res.status(200).json({
-        success: true,
-        data: { user: user.toPublic() },
-    });
+    const scopedUser = await ensureUserOrgScope(user);
+
+    createSendToken(scopedUser, 200, res);
 });
 
 /**
@@ -182,7 +222,8 @@ export const refreshToken = catchAsync(async (req, res, next) => {
     if (!user || !user.isActive) {
         return next(new AppError('User not found or inactive.', 401, 'USER_NOT_FOUND'));
     }
-    createSendToken(user, 200, res);
+    const scopedUser = await ensureUserOrgScope(user);
+    createSendToken(scopedUser, 200, res);
 });
 
 /**

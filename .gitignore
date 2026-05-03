@@ -46,3 +46,6 @@ __pycache__/
 # ─── Test / CI cache ──────────────────────────────────────
 .nyc_output/
 junit.xml
+.agents
+.github
+.vite

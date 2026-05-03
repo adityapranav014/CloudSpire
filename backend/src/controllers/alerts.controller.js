@@ -33,21 +33,58 @@ export const getIndex = catchAsync(async (req, res) => {
 
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
 
-    const anomalies = await Alert.find(filter)
+    const rawAlerts = await Alert.find(filter)
         .sort('-createdAt')
         .limit(limit)
         .lean();
 
+    const anomalies = rawAlerts.map((alert) => {
+        const expectedSpend = Number(alert.expectedSpend ?? 0);
+        const actualSpend = Number(alert.actualSpend ?? 0);
+        const deviationAmount = actualSpend - expectedSpend;
+        const deviationPercent = expectedSpend > 0
+            ? +(((deviationAmount / expectedSpend) * 100).toFixed(1))
+            : 0;
+
+        return {
+            id: String(alert._id),
+            provider: alert.provider,
+            service: alert.title,
+            severity: alert.severity,
+            detectedAt: alert.dateDetected || alert.createdAt,
+            spendToday: actualSpend,
+            expectedSpend,
+            deviationPercent,
+            deviationAmount,
+            description: alert.description,
+            possibleCause: alert.aiExplanation || alert.description,
+            affectedResource: alert.resourceId,
+            status: alert.status,
+            actionUrl: '/anomalies',
+        };
+    });
+
     const anomalyStats = {
-        resolvedThisMonth: anomalies.filter(a => a.status === 'resolved').length,
-        spendPrevented: anomalies
+        resolvedThisMonth: rawAlerts.filter(a => a.status === 'resolved').length,
+        spendPrevented: rawAlerts
             .filter(a => a.status === 'resolved')
             .reduce((acc, curr) => acc + ((curr.actualSpend ?? 0) - (curr.expectedSpend ?? 0)), 0),
     };
 
-    // Mock budget + history data for dev (no real budget alert model yet)
-    const budgetAlerts = env.nodeEnv !== 'production' ? mockBudgetAlerts : [];
-    const anomalyHistory = env.nodeEnv !== 'production' ? mockAnomalyHistory : [];
+    // Budget alerts and anomaly history: fall back to rich mock data when
+    // real models/records are not present. This ensures the frontend always
+    // receives a consistent shape (helps local dev and demos).
+    let budgetAlerts = [];
+    let anomalyHistory = [];
+
+    // If a budget alerts model exists later, replace the empty array with
+    // real records. For now, if none are found, use the mock dataset.
+    if (!Array.isArray(budgetAlerts) || budgetAlerts.length === 0) {
+        budgetAlerts = mockBudgetAlerts;
+    }
+    if (!Array.isArray(anomalyHistory) || anomalyHistory.length === 0) {
+        anomalyHistory = mockAnomalyHistory;
+    }
 
     res.status(200).json({
         success: true,

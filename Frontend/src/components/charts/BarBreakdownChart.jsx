@@ -72,8 +72,13 @@ export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWi
       </div>
 
       <div className="flex-1 layer-recessed rounded-xl p-4" style={{ minWidth: 0, minHeight: 0 }}>
-        <ResponsiveContainer width="100%" height={200} minWidth={0}>
-          <BarChart data={data} layout="vertical" margin={{ top: 2, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
+        {(!data || data.length === 0) ? (
+          <div className="h-full w-full flex items-center justify-center text-sm text-zinc-500" style={{ color: 'var(--text-muted)' }}>
+            No regions data
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200} minWidth={0}>
+            <BarChart data={data} layout="vertical" margin={{ top: 2, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" horizontal={false} />
             <XAxis
               type="number"
@@ -97,8 +102,9 @@ export default function BarBreakdownChart({ data, title = 'Top Regions', yAxisWi
                 <Cell key={i} fill={entry.provider ? (getBrandAsset(entry.provider)?.color ?? COLORS[i % COLORS.length]) : COLORS[i % COLORS.length]} />
               ))}
             </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   )

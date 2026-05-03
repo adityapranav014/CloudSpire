@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Cpu, HardDrive, Network, Clock, Server, Activity, ArrowUp, ArrowDown } from 'lucide-react'
 import MetricCard from '../components/ui/MetricCard'
-// removed useMigrationData
+import api from '../services/api'
 
 function formatBytes(bytes, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -32,25 +32,16 @@ export default function Metrics() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const token = localStorage.getItem('cloudspire_token');
-      const response = await fetch('http://localhost:4000/api/v1/metrics', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const json = await response.json();
-      // Assume backend returns { success: true, data: { ... } } or directly the data
+      const res = await api.get('/metrics');
+      const json = res.data;
       setData(json.data || json);
       setIsError(false);
       setErrorMessage('');
     } catch (err) {
       setIsError(true);
-      setErrorMessage(err.message || 'Failed to fetch metrics');
+      setErrorMessage(err?.message || 'Failed to fetch metrics');
     } finally {
-      setIsLoading(false); // Only true on initial load
+      setIsLoading(false);
     }
   }, []);
 

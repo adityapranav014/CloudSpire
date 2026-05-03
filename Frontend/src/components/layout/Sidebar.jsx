@@ -9,6 +9,7 @@ import {
 import { usePermissions } from '../../hooks/usePermissions'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { useMigrationData } from '../../hooks/useMigrationData'
+import logo from '../../assets/logo.png'
 
 /** Main sidebar navigation */
 export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () => { } }) {
@@ -61,7 +62,7 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
     <>
       {/* Logo */}
       <div className="h-14 flex items-center gap-2.5 px-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-        <img src="/favicon.svg" alt="CloudSpire" className="w-7 h-7" />
+        <img src={logo} alt="CloudSpire" className="w-7 h-7" />
         <span className="font-semibold text-[15px]" style={{ color: 'var(--text-primary)' }}>
           CloudSpire
         </span>

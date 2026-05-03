@@ -1,5 +1,5 @@
 import express from 'express';
-import * as optimizationsController from '../controllers/optimizations.js';
+import * as optimizationsController from '../controllers/optimizations.controller.js';
 import { protect } from '../middleware/auth.js';
 import { orgScope } from '../middleware/orgScope.js';
 

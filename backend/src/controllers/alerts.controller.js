@@ -1,4 +1,4 @@
-import Alert from '../models/Alert.js';
+import Alert from '../models/Alert.model.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { budgetAlerts as mockBudgetAlerts, anomalyHistory as mockAnomalyHistory } from '../data/mockAlerts.js';

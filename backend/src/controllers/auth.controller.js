@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import User from '../models/User.js';
-import Team from '../models/Team.js';
+import User from '../models/User.model.js';
+import Team from '../models/Team.model.js';
 import Org from '../models/Org.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';

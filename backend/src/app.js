@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 
 import { env } from './config/env.js';
-import apiRouter from './routes/index.js';
+import apiRouter from './routes/index.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
 

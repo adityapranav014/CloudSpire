@@ -1,6 +1,6 @@
 import { Parser } from 'json2csv';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import CostRecord from '../models/CostRecord.js';
+import CostRecord from '../models/CostRecord.model.js';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';

@@ -1,5 +1,5 @@
 import express from 'express';
-import * as cloudController from '../controllers/cloud.js';
+import * as cloudController from '../controllers/cloud.controller.js';
 import { protect } from '../middleware/auth.js';
 import { orgScope } from '../middleware/orgScope.js';
 

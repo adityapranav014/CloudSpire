@@ -1,5 +1,5 @@
 import express from 'express';
-import * as teamsController from '../controllers/teams.js';
+import * as teamsController from '../controllers/teams.controller.js';
 import { protect } from '../middleware/auth.js';
 import { orgScope } from '../middleware/orgScope.js';
 

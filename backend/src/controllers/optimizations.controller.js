@@ -1,4 +1,4 @@
-import Optimization from '../models/Optimization.js';
+import Optimization from '../models/Optimization.model.js';
 import CloudAccount from '../models/CloudAccount.js';
 import { executeAwsOptimization } from '../services/awsService.js';
 import { catchAsync } from '../middleware/asyncHandler.js';

@@ -1,6 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
-import * as usersController from '../controllers/users.js';
+import * as usersController from '../controllers/users.controller.js';
 import { validate } from '../middleware/validate.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 

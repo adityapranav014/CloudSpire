@@ -6,7 +6,7 @@ import {
     generatePDFDownload,
     getReportJobStatus,
     downloadReport,
-} from '../controllers/reports.js';
+} from '../controllers/reports.controller.js';
 import { protect } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {

@@ -1,4 +1,4 @@
-import Team from '../models/Team.js';
+import Team from '../models/Team.model.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { teams as mockTeams } from '../data/mockTeams.js';

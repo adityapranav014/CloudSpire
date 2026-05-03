@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import ApiKey from '../models/ApiKey.js';
-import Integration from '../models/Integration.js';
+import ApiKey from '../models/ApiKey.model.js';
+import Integration from '../models/Integration.model.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { logAction } from '../services/auditService.js';

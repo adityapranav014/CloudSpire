@@ -1,5 +1,5 @@
 import express from 'express';
-import * as alertsController from '../controllers/alerts.js';
+import * as alertsController from '../controllers/alerts.controller.js';
 import { protect } from '../middleware/auth.js';
 import { orgScope } from '../middleware/orgScope.js';
 

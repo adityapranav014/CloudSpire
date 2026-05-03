@@ -20,6 +20,8 @@ import { logger } from '../utils/logger.js';
  * Optional query param: ?teamId=<id> to filter within the org.
  */
 export const getIndex = catchAsync(async (req, res) => {
+    console.log('[OPTIMIZATIONS] GET /optimizations — User:', req.user, 'Query:', req.query, 'orgId:', req.orgId);
+
     const { orgId, teamId } = req; // injected by orgScope
 
     // Build filter — always include orgId, optionally narrow to teamId
@@ -29,10 +31,12 @@ export const getIndex = catchAsync(async (req, res) => {
     }
 
     const optimizations = await Optimization.find(filter).lean();
+    console.log('[OPTIMIZATIONS] getIndex — found optimizations:', optimizations.length);
 
     // If there are no optimizations in the DB, return a rich mock payload
     // so the frontend has a consistent experience during demos and local dev.
     if (optimizations.length === 0) {
+        console.log('[OPTIMIZATIONS] getIndex — no optimizations in DB, serving mock data');
         logger.warn({ orgId }, 'No optimizations found in DB — serving mock optimizations data');
         return res.status(200).json({
             success: true,
@@ -103,6 +107,8 @@ export const getIndex = catchAsync(async (req, res) => {
         opportunitiesFound: optimizations.filter(o => o.status === 'pending').length,
     };
 
+    console.log('[OPTIMIZATIONS] getIndex success — rightsize:', rightsizingRecommendations.length, 'reserved:', reservedInstanceOpportunities.length, 'shutdowns:', scheduledShutdowns.length, 'totalSavings:', optimizationSummary.totalSavings);
+
     res.status(200).json({
         success: true,
         data: {
@@ -121,6 +127,8 @@ export const getIndex = catchAsync(async (req, res) => {
  * Verifies the optimization belongs to the requester's org before any action.
  */
 export const updateSchedule = catchAsync(async (req, res, next) => {
+    console.log('[OPTIMIZATIONS] PUT /optimizations/:id — Params:', req.params, 'Body:', req.body, 'User:', req.user);
+
     const { id } = req.params;
     const { orgId, teamId } = req;
     const { enabled, targetStatus = 'pending' } = req.body;
@@ -129,6 +137,7 @@ export const updateSchedule = catchAsync(async (req, res, next) => {
     const schedule = await Optimization.findOne({ _id: id, orgId });
 
     if (!schedule) {
+        console.log('[OPTIMIZATIONS] updateSchedule error: Optimization not found — id:', id, 'orgId:', orgId);
         return next(new AppError('Optimization task not found.', 404, 'NOT_FOUND'));
     }
 
@@ -157,7 +166,9 @@ export const updateSchedule = catchAsync(async (req, res, next) => {
                         provider: schedule.provider,
                     },
                 });
+                console.log('[OPTIMIZATIONS] updateSchedule — executed cloud optimization for:', schedule.resourceId);
             } catch (err) {
+                console.error('[OPTIMIZATIONS] updateSchedule error — cloud execution failed:', err.message);
                 logger.error({ err, orgId, resourceId: schedule.resourceId }, 'Cloud optimization execution failed');
                 return next(
                     new AppError(
@@ -169,6 +180,7 @@ export const updateSchedule = catchAsync(async (req, res, next) => {
             }
         } else {
             // Mock mode success if no real credentials
+            console.log('[OPTIMIZATIONS] updateSchedule — mock mode, setting status to implemented');
             schedule.status = 'implemented';
         }
     } else {
@@ -177,5 +189,6 @@ export const updateSchedule = catchAsync(async (req, res, next) => {
 
     await schedule.save();
 
+    console.log('[OPTIMIZATIONS] updateSchedule success — id:', id, 'newStatus:', schedule.status);
     res.status(200).json({ success: true, data: { schedule } });
 });

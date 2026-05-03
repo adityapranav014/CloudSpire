@@ -50,10 +50,11 @@ export const protect = catchAsync(async (req, res, next) => {
 
     // Attach minimal identity — consistent shape for all downstream handlers
     req.user = {
-        id: decoded.id,
-        orgId: decoded.orgId,
+        id:     decoded.id,
+        email:  decoded.email,   // from JWT payload (set in signToken)
+        orgId:  decoded.orgId,
         teamId: decoded.teamId,
-        role: decoded.role,
+        role:   decoded.role,
     };
 
     next();

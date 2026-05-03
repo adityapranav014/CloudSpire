@@ -15,6 +15,8 @@ import { env } from '../config/env.js';
  *   ?limit=50      — max results (default 100, max 200)
  */
 export const getIndex = catchAsync(async (req, res) => {
+    console.log('[ALERTS] GET /alerts — User:', req.user, 'Query:', req.query);
+
     const { orgId } = req; // injected by orgScope — NEVER trust req.query.orgId
 
     // Build filter — orgId is always mandatory, other params are optional refinements
@@ -32,6 +34,8 @@ export const getIndex = catchAsync(async (req, res) => {
     }
 
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
+
+    console.log('[ALERTS] getIndex — filter:', filter, 'limit:', limit);
 
     const rawAlerts = await Alert.find(filter)
         .sort('-createdAt')
@@ -86,6 +90,8 @@ export const getIndex = catchAsync(async (req, res) => {
         anomalyHistory = mockAnomalyHistory;
     }
 
+    console.log('[ALERTS] getIndex success — anomalies:', anomalies.length, 'budgetAlerts:', budgetAlerts.length);
+
     res.status(200).json({
         success: true,
         data: { anomalies, budgetAlerts, anomalyHistory, anomalyStats },
@@ -99,11 +105,14 @@ export const getIndex = catchAsync(async (req, res) => {
  * before allowing the update — prevents cross-tenant status manipulation.
  */
 export const updateAnomaly = catchAsync(async (req, res, next) => {
+    console.log('[ALERTS] PUT /alerts/:id — Params:', req.params, 'Body:', req.body, 'User:', req.user);
+
     const { id } = req.params;
     const { orgId } = req;
     const { status } = req.body;
 
     if (!status) {
+        console.log('[ALERTS] updateAnomaly error: Missing status field');
         return next(new AppError('Status field is required.', 400, 'MISSING_FIELDS'));
     }
 
@@ -115,10 +124,12 @@ export const updateAnomaly = catchAsync(async (req, res, next) => {
     );
 
     if (!anomaly) {
+        console.log('[ALERTS] updateAnomaly error: Alert not found — id:', id, 'orgId:', orgId);
         // Return 404 regardless of whether the alert doesn't exist or belongs to another org
         // (don't reveal the existence of resources from other orgs)
         return next(new AppError('Alert not found.', 404, 'NOT_FOUND'));
     }
 
+    console.log('[ALERTS] updateAnomaly success — alertId:', id, 'newStatus:', status);
     res.status(200).json({ success: true, data: { anomaly } });
 });

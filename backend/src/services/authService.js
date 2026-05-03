@@ -15,13 +15,14 @@ const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 export const signToken = (user) => {
     return jwt.sign(
         {
-            id: user._id,
-            orgId: user.orgId,
+            id:     user._id,
+            email:  user.email,   // included so req.user.email is available without a DB hit
+            orgId:  user.orgId,
             teamId: user.teamId,
-            role: user.role,
+            role:   user.role,
         },
         env.jwtSecret,
-        { expiresIn: '7d' } // Must match COOKIE_MAX_AGE_MS
+        { expiresIn: env.jwtExpiresIn || '7d' }  // driven by JWT_EXPIRES_IN env var
     );
 };
 

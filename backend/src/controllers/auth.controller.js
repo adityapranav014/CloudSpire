@@ -38,7 +38,7 @@ async function ensureUserOrgScope(user) {
     org.ownerId = user._id;
     await org.save();
 
-    team.ownerId = user._id;
+    team.createdBy = user._id;
     await team.save();
 
     logger.info({ userId: user._id, orgId: org._id, teamId: team._id }, 'Backfilled org scope for legacy user');
@@ -61,19 +61,24 @@ async function ensureUserOrgScope(user) {
  * queries will never return empty due to a missing foreign key.
  */
 export const register = catchAsync(async (req, res, next) => {
+    console.log('[AUTH] POST /register — Request body:', { name: req.body.name, email: req.body.email, companyName: req.body.companyName });
+
     const { name, email, password, companyName, teamName } = req.body;
 
     if (!name || !email || !password) {
+        console.log('[AUTH] Register error: Missing required fields');
         return next(new AppError('Name, email, and password are required.', 400, 'MISSING_FIELDS'));
     }
 
     if (password.length < 8) {
+        console.log('[AUTH] Register error: Password too short');
         return next(new AppError('Password must be at least 8 characters.', 400, 'WEAK_PASSWORD'));
     }
 
     // Check email uniqueness outside the transaction — cheaper read
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
+        console.log('[AUTH] Register error: Duplicate email —', email);
         return next(
             new AppError(
                 'An account with this email already exists. Please log in instead.',
@@ -109,7 +114,7 @@ export const register = catchAsync(async (req, res, next) => {
                         orgId: newOrg._id,
                         name: resolvedTeamName,
                         isDefault: true,
-                        // ownerId set after User is created
+                        // createdBy set after User is created
                     },
                 ],
                 { session }
@@ -136,12 +141,13 @@ export const register = catchAsync(async (req, res, next) => {
                 Org.findByIdAndUpdate(newOrg._id, { ownerId: newUser._id }, { session }),
                 Team.findByIdAndUpdate(
                     newTeam._id,
-                    { ownerId: newUser._id, members: [newUser._id] },
+                    { createdBy: newUser._id, members: [newUser._id] },
                     { session }
                 ),
             ]);
         });
     } catch (err) {
+        console.error('[AUTH] Register transaction error:', err.message);
         logger.error({ err }, 'Registration transaction failed');
         // Let the transaction roll back (session.withTransaction handles this)
         throw err; // Re-throw so catchAsync → errorHandler can format it
@@ -149,6 +155,7 @@ export const register = catchAsync(async (req, res, next) => {
         session.endSession();
     }
 
+    console.log('[AUTH] Register success — userId:', newUser._id, 'orgId:', newUser.orgId);
     logger.info({ userId: newUser._id, orgId: newUser.orgId }, 'New user registered');
     createSendToken(newUser, 201, res);
 });
@@ -157,9 +164,12 @@ export const register = catchAsync(async (req, res, next) => {
  * POST /api/v1/auth/login
  */
 export const login = catchAsync(async (req, res, next) => {
+    console.log('[AUTH] POST /login — Request body:', { email: req.body.email });
+
     const { email, password } = req.body;
 
     if (!email || !password) {
+        console.log('[AUTH] Login error: Missing email or password');
         return next(new AppError('Please provide email and password.', 400, 'MISSING_FIELDS'));
     }
 
@@ -167,10 +177,13 @@ export const login = catchAsync(async (req, res, next) => {
     const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
 
     if (!user || !(await user.comparePassword(password))) {
+        // Do NOT log the email — prevents enumeration via log analysis
+        console.log('[AUTH] Login error: Invalid credentials (wrong email or password)');
         return next(new AppError('Incorrect email or password.', 401, 'INVALID_CREDENTIALS'));
     }
 
     if (!user.isActive) {
+        console.log('[AUTH] Login error: Account inactive for userId —', user._id);
         return next(new AppError('Your account has been deactivated. Contact your admin.', 403, 'ACCOUNT_INACTIVE'));
     }
 
@@ -181,6 +194,7 @@ export const login = catchAsync(async (req, res, next) => {
         logger.warn({ err, userId: user._id }, 'Failed to update lastLogin')
     );
 
+    console.log('[AUTH] Login success — userId:', scopedUser._id, 'orgId:', scopedUser.orgId, 'role:', scopedUser.role);
     createSendToken(scopedUser, 200, res);
 });
 
@@ -189,15 +203,19 @@ export const login = catchAsync(async (req, res, next) => {
  * Returns the currently authenticated user's public profile.
  */
 export const getMe = catchAsync(async (req, res, next) => {
+    console.log('[AUTH] GET /me — User:', req.user);
+
     // req.user is set by the protect middleware (only has _id at that point)
     const user = await User.findById(req.user.id).populate('orgId', 'name plan').populate('teamId', 'name');
 
     if (!user) {
+        console.log('[AUTH] getMe error: User not found for id —', req.user.id);
         return next(new AppError('User account no longer exists.', 404, 'USER_NOT_FOUND'));
     }
 
     const scopedUser = await ensureUserOrgScope(user);
 
+    console.log('[AUTH] getMe success — userId:', scopedUser._id, 'orgId:', scopedUser.orgId);
     createSendToken(scopedUser, 200, res);
 });
 
@@ -207,7 +225,9 @@ export const getMe = catchAsync(async (req, res, next) => {
  * The browser purges the cookie immediately on receiving this response.
  */
 export const logout = catchAsync(async (req, res) => {
+    console.log('[AUTH] POST /logout — User:', req.user);
     clearAuthCookie(res);
+    console.log('[AUTH] Logout success — cookie cleared');
     res.status(200).json({ success: true, data: null });
 });
 
@@ -218,11 +238,14 @@ export const logout = catchAsync(async (req, res) => {
  * The protect middleware has already verified the incoming token.
  */
 export const refreshToken = catchAsync(async (req, res, next) => {
+    console.log('[AUTH] POST /refresh — User:', req.user);
     const user = await User.findById(req.user.id);
     if (!user || !user.isActive) {
+        console.log('[AUTH] Refresh error: User not found or inactive —', req.user.id);
         return next(new AppError('User not found or inactive.', 401, 'USER_NOT_FOUND'));
     }
     const scopedUser = await ensureUserOrgScope(user);
+    console.log('[AUTH] Refresh success — userId:', scopedUser._id);
     createSendToken(scopedUser, 200, res);
 });
 
@@ -232,6 +255,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
  * Marks onboardingCompleted: true so the app stops redirecting to /onboarding.
  */
 export const completeOnboarding = catchAsync(async (req, res, next) => {
+    console.log('[AUTH] PATCH /complete-onboarding — User:', req.user);
     const user = await User.findByIdAndUpdate(
         req.user.id,
         { onboardingCompleted: true },
@@ -239,9 +263,11 @@ export const completeOnboarding = catchAsync(async (req, res, next) => {
     );
 
     if (!user) {
+        console.log('[AUTH] completeOnboarding error: User not found —', req.user.id);
         return next(new AppError('User not found.', 404, 'USER_NOT_FOUND'));
     }
 
+    console.log('[AUTH] completeOnboarding success — userId:', user._id);
     logger.info({ userId: user._id, orgId: user.orgId }, 'Onboarding completed');
 
     res.status(200).json({

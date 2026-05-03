@@ -4,6 +4,7 @@ import { FileText, Download, Loader2, CheckCircle2, AlertCircle } from 'lucide-r
 import PageHeader from '../components/layout/PageHeader';
 import { useToast } from '../context/ToastContext';
 import { usePermissions } from '../hooks/usePermissions';
+import api from '../services/api';
 
 export default function Reports() {
   const { addToast } = useToast();
@@ -19,23 +20,13 @@ export default function Reports() {
       setDownloadUrl(null);
       setStatus(null);
 
-      const token = localStorage.getItem('token');
       // Using generate-pdf/sync to get the file stream directly in the response
-      const res = await fetch('http://localhost:4000/api/v1/reports/generate-pdf/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({})
+      const res = await api.post('/reports/generate-pdf/sync', {}, {
+        responseType: 'blob'
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to generate report');
-      }
-
       // Read the PDF stream as a Blob
-      const blob = await res.blob();
+      const blob = res.data;
       const url = window.URL.createObjectURL(blob);
       
       setDownloadUrl(url);
@@ -44,7 +35,8 @@ export default function Reports() {
     } catch (err) {
       console.error(err);
       setStatus('failed');
-      addToast(err.message || 'Failed to generate report', 'error');
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate report';
+      addToast(errorMsg, 'error');
     } finally {
       setIsGenerating(false);
     }

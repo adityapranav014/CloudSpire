@@ -23,6 +23,8 @@ import { getCostData } from '../services/costService.js';
 import { generateDashboardNarrative } from '../services/openRouterService.js';
 
 export const getDashboardSummary = catchAsync(async (req, res) => {
+    console.log('[DASHBOARD] GET /summary — User:', req.user, 'orgId:', req.orgId);
+
     const { orgId } = req; // set by orgScope middleware
 
     const now              = new Date();
@@ -82,6 +84,8 @@ export const getDashboardSummary = catchAsync(async (req, res) => {
         savingsAvailable: potentialSavings,
         openAlerts: openAlerts.length,
     }).catch(() => null);
+
+    console.log('[DASHBOARD] getDashboardSummary success — totalMonthSpend:', totalMonthSpend, 'alerts:', alertCounts.total, 'recommendations:', openRecommendations.length, 'isSampleData:', isSampleData);
 
     res.status(200).json({
         success: true,

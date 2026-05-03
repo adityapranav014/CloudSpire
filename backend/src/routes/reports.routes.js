@@ -8,6 +8,7 @@ import {
     downloadReport,
 } from '../controllers/reports.controller.js';
 import { protect } from '../middleware/auth.js';
+import { authorize, WRITE_ROLES } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
 import {
     reportGenerationLimiter,
@@ -29,23 +30,26 @@ router.use(protect);
 // GET  /                     — list report templates
 router.get('/', getReports);
 
-// POST /generate             — CSV / JSON  (rate limited + validated)
+// POST /generate             — CSV / JSON  (write — rate limited + validated)
 router.post('/generate',
     reportGenerationLimiter,
+    authorize(...WRITE_ROLES),
     validate(generateReportSchema),
     triggerReportGeneration,
 );
 
-// POST /generate-pdf         — async BullMQ  (rate limited + validated)
+// POST /generate-pdf         — async BullMQ  (write — rate limited + validated)
 router.post('/generate-pdf',
     reportGenerationLimiter,
+    authorize(...WRITE_ROLES),
     validate(generatePDFSchema),
     generatePDFQueued,
 );
 
-// POST /generate-pdf/sync    — sync download  (rate limited + validated)
+// POST /generate-pdf/sync    — sync download  (write — rate limited + validated)
 router.post('/generate-pdf/sync',
     reportGenerationLimiter,
+    authorize(...WRITE_ROLES),
     validate(generatePDFSchema),
     generatePDFDownload,
 );

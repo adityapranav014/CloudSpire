@@ -7,20 +7,27 @@ import { logger } from '../utils/logger.js';
 
 const s3 = new S3Client({ region: env.awsRegion });
 
-export const generateStandardReport = async (teamId, format = 'csv') => {
+/**
+ * Generates a standard CSV/JSON cost report for a given org (and optionally team).
+ *
+ * @param {object}  opts
+ * @param {string}  opts.orgId   — organisation ObjectId (required for tenant scoping)
+ * @param {string}  [opts.teamId] — optional team filter
+ * @param {string}  [opts.format] — 'csv' or 'json' (default: 'csv')
+ * @param {object}  data         — data fetched from controller { costs, teams, alerts }
+ * @returns {Promise<string>}    — S3 key or 'in-memory' if S3 is not configured
+ */
+export const generateStandardReport = async (orgId, format = 'csv', data = {}) => {
+    const startTime = Date.now();
+    console.log('[REPORT_WORKER] generateStandardReport — START, orgId:', orgId, 'format:', format);
+
     try {
-        logger.info({ teamId, format }, 'Generating report');
-
-        const twelveMonthsAgo = new Date();
-        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-
-        const costs = await CostRecord.aggregate([
-            { $match: { teamId: teamId, date: { $gte: twelveMonthsAgo } } },
-            { $group: { _id: { svc: '$service', prov: '$provider' }, totalCost: { $sum: '$cost' } } },
-        ]);
+        const costs = data.costs || [];
+        const teams = data.teams || [];
+        const alerts = data.alerts || [];
 
         if (costs.length === 0) {
-            logger.info({ teamId }, 'No data available for report');
+            console.log('[REPORT_WORKER] No cost data found for orgId:', orgId, '— returning empty report indicator');
             return 'No data';
         }
 
@@ -28,13 +35,16 @@ export const generateStandardReport = async (teamId, format = 'csv') => {
         if (format === 'csv') {
             const parser = new Parser();
             fileContent = parser.parse(costs);
+            console.log('[REPORT_WORKER] CSV generated — size:', fileContent.length, 'bytes');
         } else if (format === 'json') {
             fileContent = JSON.stringify(costs, null, 2);
+            console.log('[REPORT_WORKER] JSON generated — size:', fileContent.length, 'bytes');
         } else {
-            throw new Error(`Unsupported format ${format}`);
+            console.error('[REPORT_WORKER] Unsupported format:', format);
+            throw new Error(`Unsupported format "${format}". Use "csv" or "json".`);
         }
 
-        const fileName = `reports/${teamId}-${Date.now()}.${format}`;
+        const fileName = `reports/${orgId}-${Date.now()}.${format}`;
         const params = {
             Bucket: env.s3BucketName,
             Key: fileName,
@@ -43,15 +53,24 @@ export const generateStandardReport = async (teamId, format = 'csv') => {
         };
 
         if (env.s3BucketName) {
+            console.log('[REPORT_WORKER] Uploading to S3 — bucket:', params.Bucket, 'key:', fileName);
+            const uploadStart = Date.now();
             await s3.send(new PutObjectCommand(params));
-            logger.info({ teamId, fileName, bucket: params.Bucket }, 'Report saved to S3');
+            console.log('[REPORT_WORKER] S3 upload completed in', Date.now() - uploadStart, 'ms');
+            logger.info({ orgId, fileName, bucket: params.Bucket }, 'Report saved to S3');
         } else {
-            logger.warn({ teamId }, 'S3_BUCKET_NAME not configured — report generated in memory only');
+            console.warn('[REPORT_WORKER] S3_BUCKET_NAME not configured — report generated in memory only');
         }
+
+        const elapsed = Date.now() - startTime;
+        console.log('[REPORT_WORKER] generateStandardReport — COMPLETE in', elapsed, 'ms, file:', fileName);
 
         return fileName;
     } catch (e) {
-        logger.error({ err: e, teamId }, 'Report generation failed');
+        const elapsed = Date.now() - startTime;
+        console.error('[REPORT_WORKER] generateStandardReport — FAILED after', elapsed, 'ms:', e.message);
+        console.error('[REPORT_WORKER] Stack:', e.stack);
+        logger.error({ err: e, orgId }, 'Report generation failed');
         throw e;
     }
 };

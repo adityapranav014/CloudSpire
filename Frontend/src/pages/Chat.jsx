@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     MessageSquare, Plus, Trash2, Pin, PinOff, Send, Square,
@@ -6,17 +6,10 @@ import {
     Sparkles, MoreHorizontal, Edit2, X, AlertCircle,
     TrendingDown, BarChart2, Zap, HelpCircle, Menu,
 } from 'lucide-react'
-import axios from 'axios'
+import api from '../services/api'
 
-const API_BASE = 'http://localhost:4000/api/v1'
-const STORAGE_KEY = 'cloudspire_token'
-
-const api = axios.create({ baseURL: API_BASE })
-api.interceptors.request.use((cfg) => {
-    const token = localStorage.getItem(STORAGE_KEY)
-    if (token) cfg.headers.Authorization = `Bearer ${token}`
-    return cfg
-})
+// Derive base URL from the shared api instance (respects VITE_API_URL / .env)
+const API_BASE = api.defaults.baseURL
 
 // ── Markdown-lite renderer ──────────────────────────────────────────────────
 function renderMarkdown(text) {
@@ -648,13 +641,39 @@ export default function Chat() {
         } catch { /* silent */ }
     }
 
+    // ── Fallback: simple POST /api/v1/chat (non-streaming, always works) ──
+    const sendSimpleMessage = async (userContent) => {
+        try {
+            const r = await api.post('/chat', { message: userContent })
+            return r.data?.reply || null
+        } catch (err) {
+            console.error('[Chat] simple fallback failed:', err.message)
+            return null
+        }
+    }
+
     const sendMessage = async () => {
         if (!input.trim() || isStreaming) return
         setError(null)
 
+        const userContent = input.trim()
+        const userMessage = { role: 'user', content: userContent, _id: Date.now().toString() }
+        setMessages((prev) => [...prev, userMessage])
+        setInput('')
+        setIsStreaming(true)
+        setStreamingContent('')
+
+        // Reset textarea height
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto'
+        }
+
         let sessionId = activeSessionId
-        if (!sessionId) {
-            try {
+
+        // ── Try streaming SSE approach first ──
+        try {
+            // Create session if needed
+            if (!sessionId) {
                 const r = await api.post('/chat/sessions', {
                     model: selectedModel,
                     systemPrompt: cloudContextRef.current || null,
@@ -663,30 +682,22 @@ export default function Chat() {
                 setSessions((prev) => [session, ...prev])
                 setActiveSessionId(session._id)
                 sessionId = session._id
-                setMessages([])
-            } catch (err) {
-                setError(err.response?.data?.error || 'Failed to create session.')
-                return
             }
-        }
 
-        const userMessage = { role: 'user', content: input.trim(), _id: Date.now().toString() }
-        setMessages((prev) => [...prev, userMessage])
-        setInput('')
-        setIsStreaming(true)
-        setStreamingContent('')
+            const controller = new AbortController()
+            abortRef.current = controller
 
-        const controller = new AbortController()
-        abortRef.current = controller
+            // Build auth headers — mirrors exactly what api.js interceptor does:
+            // Redux store token (in-memory) → sessionStorage token → cookie fallback
+            const sseHeaders = { 'Content-Type': 'application/json' }
+            const storedToken = sessionStorage.getItem('auth_token')
+            if (storedToken) sseHeaders['Authorization'] = `Bearer ${storedToken}`
 
-        try {
             const response = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem(STORAGE_KEY)}`,
-                },
-                body: JSON.stringify({ content: userMessage.content, model: selectedModel }),
+                headers: sseHeaders,
+                credentials: 'include',  // also send httpOnly cookie as fallback
+                body: JSON.stringify({ content: userContent, model: selectedModel }),
                 signal: controller.signal,
             })
 
@@ -729,7 +740,6 @@ export default function Chat() {
                         }
                         setMessages((prev) => [...prev, assistantMessage])
                         setStreamingContent('')
-                        // If the backend generated a new title, apply it immediately
                         if (parsed.sessionTitle) {
                             setSessions((prev) => prev.map((s) =>
                                 s._id === sessionId ? { ...s, title: parsed.sessionTitle } : s
@@ -739,20 +749,49 @@ export default function Chat() {
                     }
                 }
             }
+
+            // If streaming completed but no assistant message was added (edge case)
+            if (accumulated && !messages.find(m => m.content === accumulated)) {
+                setMessages((prev) => [...prev, {
+                    _id: Date.now().toString(),
+                    role: 'assistant',
+                    content: accumulated,
+                    model: selectedModel,
+                }])
+                setStreamingContent('')
+            }
+
         } catch (err) {
             if (err.name === 'AbortError') {
-                if (streamingContent) {
+                // User stopped generation
+                setStreamingContent((prev) => {
+                    if (prev) {
+                        setMessages((msgs) => [...msgs, {
+                            _id: Date.now().toString(),
+                            role: 'assistant',
+                            content: prev + ' _(stopped)_',
+                            model: selectedModel,
+                        }])
+                    }
+                    return ''
+                })
+            } else {
+                // ── Streaming failed — fall back to simple POST /api/v1/chat ──
+                console.warn('[Chat] Streaming failed, trying simple fallback:', err.message)
+                setStreamingContent('')
+
+                const fallbackReply = await sendSimpleMessage(userContent)
+
+                if (fallbackReply) {
                     setMessages((prev) => [...prev, {
                         _id: Date.now().toString(),
                         role: 'assistant',
-                        content: streamingContent + ' _(stopped)_',
-                        model: selectedModel,
+                        content: fallbackReply,
+                        model: 'cloudspire-ai',
                     }])
+                } else {
+                    setError(err.message || 'Failed to get a response. Please try again.')
                 }
-                setStreamingContent('')
-            } else {
-                setError(err.message || 'Something went wrong.')
-                setMessages((prev) => prev.filter((m) => m._id !== userMessage._id))
             }
         } finally {
             setIsStreaming(false)

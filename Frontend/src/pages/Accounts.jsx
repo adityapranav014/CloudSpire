@@ -1,7 +1,8 @@
 import { useMigrationData } from '../hooks/useMigrationData';
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { Plus, RefreshCw, CheckCircle, Link2, ExternalLink, Shield, Server, Box } from 'lucide-react'
+import { Plus, RefreshCw, CheckCircle, Link2, ExternalLink, Shield, Server, Box, Loader2 } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import ProviderBadge from '../components/ui/ProviderBadge'
 import TrendBadge from '../components/ui/TrendBadge'
@@ -14,9 +15,8 @@ import {
   SheetClose,
 } from "../components/ui/sheet"
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-
-
-
+import api from '../services/api'
+import { selectUser } from '../store/slices/authSlice'
 
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
@@ -29,6 +29,11 @@ const TABS = ['All Accounts', 'AWS', 'GCP', 'Azure']
 
 /** Accounts page — connected cloud accounts and per-account data */
 export default function Accounts() {
+  const currentUser = useSelector(selectUser);
+
+  // Real connected accounts list
+  const { data: accountsData, isLoading: accountsLoading, mutate: reloadAccounts } = useMigrationData('/cloud');
+  // Provider-scoped data (falls back to sample data on backend if no real accounts)
   const { data: d0, isLoading: l0 } = useMigrationData('/cloud/aws');
   const { awsAccounts = [], awsServiceBreakdown = [] } = d0 || {};
   const { data: d1, isLoading: l1 } = useMigrationData('/cloud/gcp');
@@ -40,23 +45,47 @@ export default function Accounts() {
   const { data: d4, isLoading: l4 } = useMigrationData('/roles');
   const { PERMISSIONS = {} } = d4 || {};
 
-  const isLoading = l0 || l1 || l2 || l3 || l4;
+  const isLoading = accountsLoading || l0 || l1 || l2 || l3 || l4;
 
   const [tab, setTab] = useState('All Accounts')
   const [connectOpen, setConnectOpen] = useState(false)
   const [connectTab, setConnectTab] = useState('aws')
   const [selectedAccount, setSelectedAccount] = useState(null)
+  const [isConnecting, setIsConnecting] = useState(false)
   const { addToast } = useToast()
   const { can } = usePermissions()
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (!d0 || !d1 || !d2 || !d3 || !d4) return <div className="h-screen flex items-center justify-center"><p className="text-red-500">Failed to load accounts data. Please make sure the backend is running.</p></div>;
+  // Form state for each provider
+  const [awsForm, setAwsForm] = useState({ accessKeyId: '', secretAccessKey: '', accountName: '' })
+  const [azureForm, setAzureForm] = useState({ tenantId: '', clientId: '', clientSecret: '', subscriptionId: '' })
+  const [gcpJsonText, setGcpJsonText] = useState('')
 
-  const allAccounts = [
-    ...awsAccounts.map(a => ({ ...a, provider: 'aws' })),
-    ...gcpProjects.map(p => ({ ...p, provider: 'gcp' })),
-    ...azureSubscriptions.map(s => ({ ...s, provider: 'azure' })),
-  ]
+  // Normalize real CloudAccount documents to display shape
+  const realAccounts = (accountsData?.data?.accounts || []).map(a => ({
+    id: a._id,
+    _id: a._id,
+    provider: a.provider,
+    name: a.name,
+    env: 'production',
+    spend: 0,
+    resources: '—',
+    lastSync: a.updatedAt ? new Date(a.updatedAt).toLocaleDateString() : '—',
+    region: '—',
+    trendData: [],
+    resourceList: [],
+    isReal: true,
+    isMock: false,
+  }));
+
+  // Mock accounts from provider API sample data — always shown alongside real accounts
+  const mockAccounts = [
+    ...awsAccounts.map(a => ({ ...a, provider: 'aws',   isMock: true, isReal: false })),
+    ...gcpProjects.map(p => ({ ...p, provider: 'gcp',   isMock: true, isReal: false })),
+    ...azureSubscriptions.map(s => ({ ...s, provider: 'azure', isMock: true, isReal: false })),
+  ];
+
+  // Real accounts first, then mock/sample accounts
+  const allAccounts = [...realAccounts, ...mockAccounts]
 
   const providerServiceBreakdowns = {
     aws: awsServiceBreakdown,
@@ -68,14 +97,57 @@ export default function Accounts() {
     ? allAccounts
     : allAccounts.filter(a => a.provider === tab.toLowerCase())
 
-  const selectedServices = selectedAccount ? providerServiceBreakdowns[selectedAccount.provider]?.slice(0, 5) : []
+  const selectedServices = selectedAccount ? (providerServiceBreakdowns[selectedAccount.provider] || []).slice(0, 5) : []
   const selectedTrend = selectedAccount ? (selectedAccount.trendData || []) : []
   const selectedResources = selectedAccount ? (selectedAccount.resourceList || []) : []
   const handleSync = () => addToast('Syncing all accounts...', 'info')
-  const handleConnect = () => {
-    setConnectOpen(false)
-    addToast('Connection test successful! Account added.', 'success')
-  }
+
+  const handleConnect = useCallback(async () => {
+    setIsConnecting(true)
+    try {
+      let payload = { provider: connectTab, name: '' }
+
+      if (connectTab === 'aws') {
+        if (!awsForm.accessKeyId || !awsForm.secretAccessKey) {
+          addToast('Please fill in AWS Access Key ID and Secret Access Key.', 'error'); setIsConnecting(false); return;
+        }
+        payload.name = awsForm.accountName || `AWS Account (${awsForm.accessKeyId.slice(0, 8)}...)`
+        payload.credentials = { accessKeyId: awsForm.accessKeyId, secretAccessKey: awsForm.secretAccessKey }
+      } else if (connectTab === 'azure') {
+        const { tenantId, clientId, clientSecret, subscriptionId } = azureForm;
+        if (!tenantId || !clientId || !clientSecret) {
+          addToast('Please fill in Tenant ID, Client ID, and Client Secret.', 'error'); setIsConnecting(false); return;
+        }
+        payload.name = `Azure (${subscriptionId || tenantId.slice(0, 8)}...)`
+        payload.credentials = { tenantId, clientId, clientSecret, subscriptionId }
+      } else if (connectTab === 'gcp') {
+        if (!gcpJsonText) {
+          addToast('Please provide a GCP service account JSON.', 'error'); setIsConnecting(false); return;
+        }
+        let parsed;
+        try { parsed = JSON.parse(gcpJsonText); } catch { addToast('Invalid JSON file.', 'error'); setIsConnecting(false); return; }
+        payload.name = parsed.project_id || 'GCP Project'
+        payload.credentials = { serviceAccountJson: gcpJsonText }
+      }
+
+      await api.post('/cloud/connect', payload)
+      addToast(`${connectTab.toUpperCase()} account connected successfully!`, 'success')
+      setConnectOpen(false)
+      // Reset forms
+      setAwsForm({ accessKeyId: '', secretAccessKey: '', accountName: '' })
+      setAzureForm({ tenantId: '', clientId: '', clientSecret: '', subscriptionId: '' })
+      setGcpJsonText('')
+      // Reload accounts list
+      reloadAccounts()
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Failed to connect account'
+      addToast(msg, 'error')
+    } finally {
+      setIsConnecting(false)
+    }
+  }, [connectTab, awsForm, azureForm, gcpJsonText, addToast, reloadAccounts])
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -98,9 +170,9 @@ export default function Accounts() {
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {[
-          { provider: 'aws', label: 'AWS', accounts: awsAccounts.length, spend: awsAccounts.reduce((s, a) => s + a.spend, 0) },
-          { provider: 'gcp', label: 'Google Cloud', accounts: gcpProjects.length, spend: gcpProjects.reduce((s, p) => s + p.spend, 0) },
-          { provider: 'azure', label: 'Microsoft Azure', accounts: azureSubscriptions.length, spend: azureSubscriptions.reduce((s, a) => s + a.spend, 0) },
+          { provider: 'aws', label: 'AWS', accounts: allAccounts.filter(a => a.provider === 'aws').length, spend: allAccounts.filter(a => a.provider === 'aws').reduce((s, a) => s + (a.spend || 0), 0) },
+          { provider: 'gcp', label: 'Google Cloud', accounts: allAccounts.filter(a => a.provider === 'gcp').length, spend: allAccounts.filter(a => a.provider === 'gcp').reduce((s, a) => s + (a.spend || 0), 0) },
+          { provider: 'azure', label: 'Microsoft Azure', accounts: allAccounts.filter(a => a.provider === 'azure').length, spend: allAccounts.filter(a => a.provider === 'azure').reduce((s, a) => s + (a.spend || 0), 0) },
         ].map(p => (
           <div key={p.provider} className="rounded-xl border p-4 flex items-center gap-4 shadow-depth-card"
             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
@@ -136,6 +208,14 @@ export default function Accounts() {
         })}
       </div>
 
+      {/* Legend — only shown when real + mock accounts coexist */}
+      {realAccounts.length > 0 && mockAccounts.length > 0 && (
+        <div className="flex items-center gap-4 mb-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span className="flex items-center gap-1.5"><CheckCircle size={11} style={{ color: 'var(--accent-emerald)' }} /> <span style={{ color: 'var(--accent-emerald)' }}>Live</span> — real connected account</span>
+          <span className="flex items-center gap-1.5"><Box size={11} style={{ color: 'var(--accent-amber)' }} /> <span style={{ color: 'var(--accent-amber)' }}>Demo</span> — sample data for reference</span>
+        </div>
+      )}
+
       {/* Accounts table */}
       <div className="rounded-xl border overflow-x-auto scrollbar-hide shadow-depth-inset" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
         <table className="w-full text-xs">
@@ -148,10 +228,15 @@ export default function Accounts() {
           </thead>
           <tbody>
             {filtered.map((acct, i) => (
-              <tr key={acct.id} className="border-b cursor-pointer hover:bg-[--bg-hover] transition-colors"
-                style={{ borderColor: 'var(--border-subtle)' }}
+              <tr key={acct.id || i}
+                className="border-b cursor-pointer hover:bg-[--bg-hover] transition-colors"
+                style={{
+                  borderColor: 'var(--border-subtle)',
+                  opacity: acct.isMock ? 0.82 : 1,
+                  borderLeft: acct.isMock ? '3px solid var(--accent-amber)' : '3px solid transparent',
+                }}
                 onClick={(e) => {
-                  if (e.target.closest('button')) return; // Ignore button clicks
+                  if (e.target.closest('button')) return;
                   setSelectedAccount(acct);
                 }}>
                 <td className="px-4 py-3"><ProviderBadge provider={acct.provider} size="sm" /></td>
@@ -173,9 +258,15 @@ export default function Accounts() {
                 </td>
                 <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{acct.resources}</td>
                 <td className="px-4 py-3">
-                  <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--accent-emerald)' }}>
-                    <CheckCircle size={11} /> Connected
-                  </span>
+                  {acct.isMock ? (
+                    <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--accent-amber)' }}>
+                      <Box size={11} /> Demo
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--accent-emerald)' }}>
+                      <CheckCircle size={11} /> Live
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{acct.lastSync}</td>
                 <td className="px-4 py-3">
@@ -234,13 +325,14 @@ export default function Accounts() {
             {connectTab === 'aws' && (
               <div className="space-y-3">
                 {[
-                  { label: 'AWS Access Key ID', placeholder: 'AKIAIOSFODNN7EXAMPLE' },
-                  { label: 'AWS Secret Access Key', placeholder: '••••••••••••••••••••' },
-                  { label: 'Account Name (optional)', placeholder: 'e.g. Production - Main' },
+                  { label: 'AWS Access Key ID', key: 'accessKeyId', placeholder: 'AKIAIOSFODNN7EXAMPLE', type: 'text' },
+                  { label: 'AWS Secret Access Key', key: 'secretAccessKey', placeholder: '••••••••••••••••••••', type: 'password' },
+                  { label: 'Account Name (optional)', key: 'accountName', placeholder: 'e.g. Production - Main', type: 'text' },
                 ].map(f => (
-                  <div key={f.label}>
+                  <div key={f.key}>
                     <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
-                    <input type={f.label.includes('Secret') ? 'password' : 'text'} placeholder={f.placeholder}
+                    <input type={f.type} placeholder={f.placeholder} value={awsForm[f.key]}
+                      onChange={e => setAwsForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 text-sm rounded-xl border outline-none shadow-depth-1"
                       style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                       onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
@@ -251,22 +343,27 @@ export default function Accounts() {
             )}
             {connectTab === 'gcp' && (
               <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>Upload Service Account JSON</label>
-                <div className="border-2 border-dashed rounded-xl p-8 text-center transition-colors shadow-depth-inset cursor-pointer hover:bg-[--bg-hover]"
-                  style={{ background: 'var(--bg-base)', borderColor: 'var(--border-default)' }}>
-                  <Link2 size={24} className="mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Drag & drop service-account.json here</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>or click to browse</p>
-                </div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>Paste or upload service-account.json</label>
+                <textarea rows={6} value={gcpJsonText} onChange={e => setGcpJsonText(e.target.value)}
+                  placeholder='{"type": "service_account", "project_id": "my-project", ...}'
+                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border outline-none shadow-depth-1 resize-none"
+                  style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+                  onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
+                  onBlur={e => { e.target.style.borderColor = 'var(--border-default)' }} />
               </div>
             )}
             {connectTab === 'azure' && (
               <div className="space-y-3">
-                {['Tenant ID', 'Client ID', 'Client Secret', 'Subscription ID'].map(f => (
-                  <div key={f}>
-                    <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>{f}</label>
-                    <input type={f === 'Client Secret' ? 'password' : 'text'}
-                      placeholder={f === 'Tenant ID' ? 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' : f}
+                {[
+                  { label: 'Tenant ID', key: 'tenantId', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', type: 'text' },
+                  { label: 'Client ID', key: 'clientId', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', type: 'text' },
+                  { label: 'Client Secret', key: 'clientSecret', placeholder: '••••••••••••••••••••', type: 'password' },
+                  { label: 'Subscription ID', key: 'subscriptionId', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', type: 'text' },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
+                    <input type={f.type} placeholder={f.placeholder} value={azureForm[f.key]}
+                      onChange={e => setAzureForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full px-3 py-2 text-sm rounded-xl border outline-none shadow-depth-1"
                       style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
                       onFocus={e => { e.target.style.borderColor = 'var(--accent-cyan)' }}
@@ -277,19 +374,14 @@ export default function Accounts() {
             )}
 
             <div className="flex gap-3 mt-5">
-              <button onClick={() => setConnectOpen(false)}
-                className="flex-1 py-2.5 text-sm rounded-xl border hover:bg-[--bg-hover] shadow-depth-1 transition-colors"
+              <button onClick={() => setConnectOpen(false)} disabled={isConnecting}
+                className="flex-1 py-2.5 text-sm rounded-xl border hover:bg-[--bg-hover] shadow-depth-1 transition-colors disabled:opacity-50"
                 style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}>
                 Cancel
               </button>
-              <button onClick={() => addToast('Testing connection...', 'info')}
-                className="px-4 py-2.5 text-sm rounded-xl border transition-colors shadow-depth-1 hover:bg-[--bg-hover]"
-                style={{ background: 'var(--bg-surface)', borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}>
-                Test Connection
-              </button>
-              <button onClick={handleConnect}
-                className="flex-1 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90">
-                Connect
+              <button onClick={handleConnect} disabled={isConnecting}
+                className="flex-1 py-2.5 text-sm font-semibold rounded-xl shiny-primary transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2">
+                {isConnecting ? <><Loader2 size={14} className="animate-spin" /> Connecting...</> : 'Connect Account'}
               </button>
             </div>
           </motion.div>

@@ -13,8 +13,11 @@ import { azureSubscriptions, azureServiceBreakdown, azureVMs, azureRegionBreakdo
 import { gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources } from '../data/mockGCP.js';
 
 export const getAws = catchAsync(async (req, res, next) => {
+    console.log('[CLOUD] GET /aws — User:', req.user, 'orgId:', req.orgId, 'teamId:', req.teamId);
+
     const { orgId, teamId } = req;
     const accounts = await CloudAccount.find({ orgId, provider: 'aws' });
+    console.log('[CLOUD] getAws — found accounts:', accounts.length);
 
     if (accounts?.length > 0) {
         const creds = accounts[0].getDecryptedCredentials();
@@ -31,6 +34,7 @@ export const getAws = catchAsync(async (req, res, next) => {
             // Persist to DB — non-blocking, passes orgId for proper scoping
             persistCostRecords(orgId, teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
 
+            console.log('[CLOUD] getAws success — live data from AWS');
             return res.status(200).json({
                 success: true,
                 data: {
@@ -42,6 +46,7 @@ export const getAws = catchAsync(async (req, res, next) => {
                 },
             });
         } catch (error) {
+            console.error('[CLOUD] getAws error — live AWS sync failed:', error.message);
             logger.warn({ err: error, orgId }, 'Failed real AWS sync, falling back to mock data');
         }
         } // Closing brace for if (creds.accessKey)
@@ -49,6 +54,7 @@ export const getAws = catchAsync(async (req, res, next) => {
 
     // No real account — serve AWS CUR sample data (or mock in dev)
     if (env.nodeEnv === 'production') {
+        console.log('[CLOUD] getAws error — no AWS accounts configured for orgId:', orgId);
         return next(new AppError('No AWS accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
     }
 
@@ -57,6 +63,7 @@ export const getAws = catchAsync(async (req, res, next) => {
     logger.warn({ orgId }, 'No real AWS account — serving sample/demo AWS CUR data');
     const costData = await getCostData(orgId, 'aws');
 
+    console.log('[CLOUD] getAws success — serving sample/mock data, isSampleData:', costData.isSampleData);
     return res.status(200).json({
         success: true,
         isSampleData: costData.isSampleData,
@@ -70,8 +77,11 @@ export const getAws = catchAsync(async (req, res, next) => {
 });
 
 export const getAzure = catchAsync(async (req, res, next) => {
+    console.log('[CLOUD] GET /azure — User:', req.user, 'orgId:', req.orgId, 'teamId:', req.teamId);
+
     const { orgId, teamId } = req;
     const accounts = await CloudAccount.find({ orgId, provider: 'azure' });
+    console.log('[CLOUD] getAzure — found accounts:', accounts.length);
 
     if (accounts?.length > 0) {
         const creds = accounts[0].getDecryptedCredentials();
@@ -91,6 +101,7 @@ export const getAzure = catchAsync(async (req, res, next) => {
             }));
             persistCostRecords(orgId, teamId, accounts[0]._id, 'azure', normalised);
 
+            console.log('[CLOUD] getAzure success — live data from Azure');
             return res.status(200).json({
                 success: true,
                 data: {
@@ -102,29 +113,36 @@ export const getAzure = catchAsync(async (req, res, next) => {
                 },
             });
         } catch (error) {
+            console.error('[CLOUD] getAzure error — live Azure sync failed:', error.message);
             logger.warn({ err: error, orgId }, 'Failed real Azure sync, falling back to mock data');
         }
         } // Closing brace for if (creds.tenantId)
     }
 
     if (env.nodeEnv === 'production') {
+        console.log('[CLOUD] getAzure error — no Azure accounts configured for orgId:', orgId);
         return next(new AppError('No Azure accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
     }
 
+    console.log('[CLOUD] getAzure success — serving mock data');
     logger.warn({ orgId }, 'Serving mock Azure data — not for production use');
     res.status(200).json({ azureSubscriptions, azureServiceBreakdown, azureVMs, azureRegionBreakdown, azureOrphanedResources });
 });
 
 export const getGcp = catchAsync(async (req, res, next) => {
+    console.log('[CLOUD] GET /gcp — User:', req.user, 'orgId:', req.orgId);
+
     const { orgId } = req;
 
     if (env.nodeEnv === 'production') {
         const accounts = await CloudAccount.find({ orgId, provider: 'gcp' });
         if (!accounts?.length) {
+            console.log('[CLOUD] getGcp error — no GCP accounts for orgId:', orgId);
             return next(new AppError('No GCP accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
         }
     }
 
+    console.log('[CLOUD] getGcp success — serving mock data');
     logger.warn({ orgId }, 'Serving mock GCP data — not for production use');
     res.status(200).json({ gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources });
 });
@@ -135,49 +153,46 @@ export const getGcp = catchAsync(async (req, res, next) => {
  * Connects a cloud account to the authenticated org.
  * orgId and teamId come from the JWT payload — never trust request body for these.
  */
+import { encrypt } from '../services/encryptionService.js';
+
 export const connectCloudAccount = catchAsync(async (req, res, next) => {
-    const { provider, name, accountId, credentials } = req.body;
-    const { orgId, teamId } = req;
+    const { provider, name, credentials } = req.body;
+    // Allow teamId from body OR from the JWT (orgScope middleware injects req.teamId)
+    const teamId = req.body.teamId || req.teamId;
+    const { orgId } = req;
 
     if (!provider || !name || !credentials) {
         return next(new AppError('Provider, name, and credentials are required.', 400, 'MISSING_FIELDS'));
     }
-    
-    // Validate credentials aren't empty strings
+
+    if (!teamId) {
+        return next(new AppError('Team context is required. Ensure your account is assigned to a team.', 400, 'MISSING_TEAM'));
+    }
+
+    // Encrypt all values in credentials object
+    const encryptedCredentials = {};
     for (const [key, value] of Object.entries(credentials)) {
-        if (typeof value === 'string' && value.trim() === '') {
-            return next(new AppError(`Credential field ${key} cannot be empty.`, 400, 'INVALID_CREDENTIALS'));
+        if (typeof value === 'string' && value.trim() !== '') {
+            encryptedCredentials[key] = encrypt(value);
         }
     }
 
-    const resolvedAccountId = accountId || name;
-
-    // Upsert within org scope — updating credentials if account already connected
-    let account = await CloudAccount.findOne({ orgId, provider, accountId: resolvedAccountId });
-
-    if (account) {
-        account.credentials = credentials;
-        account.name = name;
-        await account.save();
-    } else {
-        account = await CloudAccount.create({
-            orgId,
-            teamId,
-            provider,
-            name,
-            accountId: resolvedAccountId,
-            credentials,
-            status: 'active',
-        });
-    }
+    const account = await CloudAccount.create({
+        orgId,
+        team: teamId,
+        provider,
+        name,
+        credentials: encryptedCredentials,
+        addedBy: req.user.id,
+        isActive: true,
+    });
 
     await logAction({
         orgId,
-        teamId,
         userId: req.user?.id,
         action: 'cloud_account_connected',
         category: 'cloud',
-        details: { provider, name, accountId: resolvedAccountId },
+        details: { provider, name },
     });
 
     res.status(201).json({ 
@@ -185,10 +200,50 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
         data: {
             _id: account._id,
             provider: account.provider,
-            accountId: account.accountId,
-            status: account.status,
             name: account.name,
+            team: account.team,
+            isActive: account.isActive,
             connectedAt: account.createdAt,
         }
     });
+});
+
+export const getCloudAccounts = catchAsync(async (req, res, next) => {
+    const { orgId } = req;
+    
+    let query = { orgId, isActive: true };
+    // Filter by team if user is not admin/manager
+    if (req.user.role !== 'super_admin' && req.user.role !== 'finops_manager') {
+        query.team = req.teamId; // User's assigned team
+    }
+
+    // Fetch accounts, explicitly omitting credentials
+    const accounts = await CloudAccount.find(query).select('-credentials').populate('team', 'name').populate('addedBy', 'name email');
+
+    res.status(200).json({ success: true, data: { accounts } });
+});
+
+export const deleteCloudAccount = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const { orgId } = req;
+
+    const account = await CloudAccount.findOneAndUpdate(
+        { _id: id, orgId },
+        { isActive: false },
+        { new: true }
+    ).select('-credentials');
+
+    if (!account) {
+        return next(new AppError('Cloud account not found.', 404, 'NOT_FOUND'));
+    }
+
+    await logAction({
+        orgId,
+        userId: req.user?.id,
+        action: 'cloud_account_deleted',
+        category: 'cloud',
+        details: { provider: account.provider, name: account.name },
+    });
+
+    res.status(200).json({ success: true, data: { account } });
 });

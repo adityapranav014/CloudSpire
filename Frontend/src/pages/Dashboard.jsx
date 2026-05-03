@@ -505,9 +505,8 @@ export default function Dashboard() {
       ...(awsServiceBreakdown || []).slice(0, 4),
       ...(gcpServiceBreakdown || []).slice(0, 3),
       ...(azureServiceBreakdown || []).slice(0, 3),
-    ].sort((a, b) => b.cost - a.cost)
-      .slice(0, 8)
-      .map(s => {
+    ].map(s => {
+        // costService returns { service, total }; mock data returns { service, cost }
         const cost = Number(s?.cost ?? s?.total ?? 0)
         return {
           service: s?.service || 'Unknown service',
@@ -515,6 +514,8 @@ export default function Dashboard() {
           percent: total > 0 ? +((cost / total) * 100).toFixed(1) : 0,
         }
       })
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, 8)
   }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown, currentMonthStats])
 
   const sparkData = useMemo(() => {

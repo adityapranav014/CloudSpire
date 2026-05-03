@@ -9,9 +9,13 @@ const router = express.Router();
 // Define robust Zod schemas for input validation
 const createUserSchema = z.object({
     body: z.object({
-        name: z.string().min(2, 'Name must be at least 2 characters'),
+        name:  z.string().min(2, 'Name must be at least 2 characters'),
         email: z.string().email('Invalid email address'),
-        role: z.enum(['admin', 'user', 'viewer']).optional().default('user'),
+        // Must match User model enum — 'admin'/'user'/'viewer' are not valid values
+        role: z
+            .enum(['super_admin', 'finops_manager', 'cloud_engineer', 'team_lead', 'finance_analyst', 'read_only'])
+            .optional()
+            .default('read_only'),
     }),
 });
 

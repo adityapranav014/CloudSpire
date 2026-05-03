@@ -1,24 +1,20 @@
-import app from './app.js';
-import http from 'http';
-import { env } from './config/env.js';
-import { connectToDatabase } from './config/database.js';
-import { initSocket } from './services/socketService.js';
-
-const PORT = env.port || 4000;
-
-const server = http.createServer(app);
-
-// Initialize Socket.IO
-initSocket(server);
-
-connectToDatabase(env.mongoUri)
-    .then(() => {
-        console.log('MongoDB connected');
-        server.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-    })
-    .catch((err) => {
-        console.error('Failed to connect to MongoDB', err);
-        process.exit(1);
-    });
+/**
+ * src/server.js — Dev entry shim
+ *
+ * The canonical, production-grade server entry is `backend/server.js`
+ * (the file one directory above this one). That file owns ALL startup:
+ *   ✓ MongoDB connection
+ *   ✓ BullMQ report worker
+ *   ✓ Cron jobs (anomaly detection, report cleanup)
+ *   ✓ Sample data seeding
+ *   ✓ Socket.IO initialization
+ *   ✓ Graceful shutdown (SIGINT / SIGTERM)
+ *   ✓ Unhandled rejection + uncaught exception guards
+ *
+ * `npm run dev`  → nodemon src/server.js  (watches src/**)
+ * `npm start`    → node src/server.js
+ * Both are equivalent — all logic lives one level up.
+ *
+ * DO NOT duplicate startup logic here. Add everything to ../server.js.
+ */
+import '../server.js';

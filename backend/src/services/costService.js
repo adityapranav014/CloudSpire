@@ -56,7 +56,17 @@ export async function getCostData(orgId, provider = null, opts = {}) {
 
     // ── Gate: does this org have any connected cloud accounts? ─────────────────
     const accountCount = await CloudAccount.countDocuments({ orgId });
-    const isSampleData = accountCount === 0;
+
+    // If accounts exist, check whether any live CostRecords have been persisted yet.
+    // AWS Cost Explorer may not have synced — in that case fall back to sample data
+    // so the dashboard never shows all-zeros (critical for demo/hackathon).
+    let isSampleData = accountCount === 0;
+    if (!isSampleData) {
+        const liveCount = await CostRecord.countDocuments({ orgId, source: 'live' });
+        if (liveCount === 0) {
+            isSampleData = true; // no live records yet — serve sample data gracefully
+        }
+    }
 
     // Resolve the actual orgId to query against
     const queryOrgId = isSampleData ? SAMPLE_ORG_ID : orgId;

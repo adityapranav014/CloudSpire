@@ -10,6 +10,8 @@ import { env } from './config/env.js';
 import apiRouter from './routes/index.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/AppError.js';
+import { quickChat } from './controllers/chat.js';
+import { protect } from './middleware/auth.js';
 
 const app = express();
 
@@ -47,14 +49,20 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 
+
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_request, response) => {
     const dbReady = mongoose.connection.readyState === 1;
     if (!dbReady) {
-        return response.status(503).json({ status: 'unavailable', service: 'cloudpulse-backend' });
+        return response.status(503).json({ status: 'unavailable', service: 'cloudspire-backend' });
     }
-    response.status(200).json({ status: 'ok', service: 'cloudpulse-backend' });
+    response.status(200).json({ status: 'ok', service: 'cloudspire-backend' });
 });
+
+// ── Simple chat endpoint ──────────────────────────────────────────────────────
+// POST /api/chat — simple { message } → { reply } endpoint
+app.post('/api/chat', protect, quickChat);
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/v1', apiRouter);

@@ -11,6 +11,7 @@ import {
     deleteSession,
     clearAllSessions,
     sendMessage,
+    quickChat,
 } from '../controllers/chat.js';
 
 const router = Router();
@@ -34,5 +35,8 @@ router.patch('/sessions/:id/title', updateSessionTitle);
 router.patch('/sessions/:id/pin', togglePinSession);
 
 router.post('/sessions/:id/messages', sendMessage);
+
+// Simple non-streaming chat: POST /api/v1/chat
+router.post('/', quickChat);
 
 export default router;

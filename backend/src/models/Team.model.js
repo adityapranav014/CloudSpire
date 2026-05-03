@@ -27,7 +27,10 @@ const teamSchema = new mongoose.Schema(
             type: String,
             default: 'INR',
         },
-        ownerId: {
+        description: {
+            type: String,
+        },
+        createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
         },
@@ -61,7 +64,7 @@ const teamSchema = new mongoose.Schema(
 );
 
 // Compound indexes for all typical query patterns
-teamSchema.index({ orgId: 1, name: 1 });
+teamSchema.index({ orgId: 1, name: 1 }, { unique: true });
 teamSchema.index({ orgId: 1, isDefault: 1 });
 
 export default mongoose.model('Team', teamSchema);

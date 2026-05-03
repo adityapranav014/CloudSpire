@@ -5,8 +5,9 @@ export const injectStore = (_store) => {
     injectedStore = _store;
 };
 
-const DEFAULT_API_URL = 'https://cloudspire.onrender.com/api/v1';
-const apiBaseUrl = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
+// Dev default: localhost. Set VITE_API_URL in .env for staging/production.
+// Never hardcode a production URL here — it causes dev traffic to hit prod.
+const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1').replace(/\/$/, '');
 
 const api = axios.create({
     baseURL: apiBaseUrl,

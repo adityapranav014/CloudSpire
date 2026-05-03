@@ -7,6 +7,9 @@ const parsedClientUrls = (process.env.CLIENT_URLS || '')
     .map((url) => url.trim())
     .filter(Boolean);
 
+// Accept both CLIENT_URL (internal) and FRONTEND_URL (spec alias)
+const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+
 const defaultClientUrls = [
     'http://localhost:5173',
     'http://localhost:5174',
@@ -34,10 +37,11 @@ export const env = {
     nodeEnv: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT || 4000),
     mongoUri: process.env.MONGODB_URI,
-    clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    frontendUrl,
+    clientUrl: frontendUrl,
     clientUrls: Array.from(
         new Set([
-            process.env.CLIENT_URL || 'http://localhost:5173',
+            frontendUrl,
             ...parsedClientUrls,
             ...defaultClientUrls,
         ])

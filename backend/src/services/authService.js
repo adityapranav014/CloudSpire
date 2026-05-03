@@ -31,7 +31,7 @@ export const signToken = (user) => {
  * Cookie flags:
  *   httpOnly  — JavaScript cannot read this cookie (blocks XSS token theft)
  *   secure    — HTTPS only in production (false in dev so localhost works)
- *   sameSite  — 'strict' blocks CSRF by refusing cross-site cookie sends
+ *   sameSite  — 'lax' allows cross-site top-level navigation (safe for deployments)
  *   maxAge    — 7 days, matching the JWT expiry
  *
  * The token is NOT returned in the JSON body. The frontend never touches it.
@@ -43,7 +43,7 @@ export const createSendToken = (user, statusCode, res) => {
     res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
         secure: env.nodeEnv === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: COOKIE_MAX_AGE_MS,
         path: '/',
     });
@@ -66,7 +66,7 @@ export const clearAuthCookie = (res) => {
     res.cookie(COOKIE_NAME, '', {
         httpOnly: true,
         secure: env.nodeEnv === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 0,  // Expire immediately
         path: '/',
     });

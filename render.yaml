@@ -1,0 +1,40 @@
+services:
+  # ── Backend Node.js API ──
+  - type: web
+    name: cloudspire-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CLIENT_URL
+        fromService:
+          type: static
+          name: cloudspire-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: CLIENT_URLS
+        fromService:
+          type: static
+          name: cloudspire-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+      # Note: MONGODB_URI, JWT_SECRET, ENCRYPTION_KEY must be added manually in Render Dashboard
+
+  # ── Frontend React App (Vite) ──
+  - type: static
+    name: cloudspire-frontend
+    env: node
+    rootDir: Frontend
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        # We need to construct the API URL. Since it's tricky to append "/api/v1" dynamically in render.yaml,
+        # users will need to ensure the backend URL + "/api/v1" is set. 
+        # But we can try to automate it by pulling the backend URL.
+        # Actually, Render doesn't support appending strings in render.yaml fromService. 
+        # So we leave this empty, and the user must set it manually in the dashboard.
+        value: "REPLACE_WITH_BACKEND_URL/api/v1"

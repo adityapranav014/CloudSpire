@@ -6,6 +6,7 @@ import metricsReducer         from './slices/metricsSlice';
 import dashboardReducer       from './slices/dashboardSlice';
 import costsReducer           from './slices/costsSlice';
 import recommendationsReducer from './slices/recommendationsSlice';
+import { injectStore } from '../services/api';
 
 export const store = configureStore({
     reducer: {
@@ -18,3 +19,5 @@ export const store = configureStore({
         recommendations: recommendationsReducer,
     },
 });
+
+injectStore(store);

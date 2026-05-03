@@ -1,5 +1,9 @@
 import axios from 'axios';
-import { store } from '../store/index.js';
+
+let injectedStore;
+export const injectStore = (_store) => {
+    injectedStore = _store;
+};
 
 const DEFAULT_API_URL = 'https://cloudspire.onrender.com/api/v1';
 const apiBaseUrl = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
@@ -12,7 +16,7 @@ const api = axios.create({
 // Request interceptor: attach bearer token as fallback for cross-domain scenarios
 api.interceptors.request.use((config) => {
     // Try Redux token first (in-memory), then fall back to sessionStorage
-    const reduxToken = store.getState().auth.token;
+    const reduxToken = injectedStore ? injectedStore.getState().auth.token : null;
     const token = reduxToken || sessionStorage.getItem('auth_token');
     
     if (token) {

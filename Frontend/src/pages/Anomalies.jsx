@@ -1,19 +1,22 @@
-import { useMigrationData } from '../hooks/useMigrationData';
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle, CheckCircle, Clock, DollarSign,
   ExternalLink, X, ChevronDown, ChevronUp, Settings, Bell,
-  Layers, AlertCircle, CheckCircle2
+  Layers, AlertCircle, CheckCircle2, RefreshCw, Sparkles,
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import PageHeader from '../components/layout/PageHeader'
 import SeverityBadge from '../components/ui/SeverityBadge'
 import ProviderBadge from '../components/ui/ProviderBadge'
-
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
-
+import api from '../services/api'
+import {
+  selectActiveAlerts, setInitialAlerts, removeAlert,
+} from '../store/slices/alertsSlice'
+import { useMigrationData } from '../hooks/useMigrationData'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtDate = (iso) => {
@@ -27,58 +30,100 @@ const statusColor = { open: '#F43F5E', acknowledged: '#F59E0B', resolved: '#10B9
 
 /** Anomaly detection page — AI-powered spend deviation alerts */
 export default function Anomalies() {
-  const { data: d0, isLoading: l0, isError: e0, errorMessage: em0, mutate } = useMigrationData('/alerts');
-  const { anomalies = [], budgetAlerts, anomalyHistory, anomalyStats } = d0?.data || {};
-  const { data: d1, isLoading: l1 } = useMigrationData('/roles');
-  const { PERMISSIONS } = d1 || {};
-
-  const isLoading = l0 || l1;
-
-  const [filter, setFilter] = useState('all')
-  const [expandedId, setExpandedId] = useState(null)
-  const [configOpen, setConfigOpen] = useState(false)
-  const [threshold, setThreshold] = useState(20)
-  const [alertFrequency, setAlertFrequency] = useState('Immediate')
-  const [providerToggles, setProviderToggles] = useState({ aws: true, gcp: true, azure: true })
+  const dispatch   = useDispatch()
   const { addToast } = useToast()
   const { can } = usePermissions()
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
-  if (e0 || (!d0 && !l0)) return <div className="h-screen flex items-center justify-center"><div className="text-center"><p className="text-red-400 font-semibold mb-1">Failed to load anomalies</p><p className="text-sm text-zinc-500">{em0 || 'Please make sure the backend is running.'}</p><button onClick={() => mutate()} className="mt-3 px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">Retry</button></div></div>;
+  // Socket-driven live alerts from Redux (updated by useSocket → alert:new)
+  const liveAlerts = useSelector(selectActiveAlerts)
+
+  // SWR for initial load + stats data (budget alerts, history, anomalyStats)
+  const { data: d0, isLoading: l0, isError: e0, errorMessage: em0, mutate } = useMigrationData('/alerts')
+  const { anomalies: apiAnomalies = [], budgetAlerts, anomalyHistory, anomalyStats } = d0?.data || {}
+  const { data: d1, isLoading: l1 } = useMigrationData('/roles')
+  const { PERMISSIONS } = d1 || {}
+
+  // Seed Redux with API data on first load; after that, socket events update it
+  useEffect(() => {
+    if (apiAnomalies.length > 0 && liveAlerts.length === 0) {
+      dispatch(setInitialAlerts(apiAnomalies))
+    }
+  }, [apiAnomalies, liveAlerts.length, dispatch])
+
+  // Use live Redux alerts if available, else fall back to SWR data
+  const anomalies = liveAlerts.length > 0 ? liveAlerts : apiAnomalies
+
+  const isLoading = l0 || l1;
+
+
+  const [filter, setFilter]         = useState('all')
+  const [expandedId, setExpandedId] = useState(null)
+  const [configOpen, setConfigOpen] = useState(false)
+  const [threshold, setThreshold]   = useState(20)
+  const [alertFrequency, setAlertFrequency] = useState('Immediate')
+  const [providerToggles, setProviderToggles] = useState({ aws: true, gcp: true, azure: true })
+
+
+  if (isLoading) return (
+    <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent" />
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading alerts…</p>
+      </div>
+    </div>
+  )
+
+  if (e0 && anomalies.length === 0) return (
+    <div className="h-screen flex items-center justify-center">
+      <div className="text-center">
+        <p className="font-semibold mb-1" style={{ color: 'var(--accent-rose)' }}>Failed to load anomalies</p>
+        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>{em0}</p>
+        <button
+          onClick={() => mutate()}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg"
+          style={{ background: 'var(--accent-blue)', color: '#fff' }}
+        >
+          <RefreshCw size={12} /> Retry
+        </button>
+      </div>
+    </div>
+  )
+
 
   const filtered = anomalies.filter(a =>
     filter === 'all' || a.status === filter
   )
 
-  const updateStatus = async (id, status, successMsg) => {
+  const updateStatus = useCallback(async (id, status, successMsg) => {
     try {
-      const token = localStorage.getItem('cloudspire_token');
-      const response = await fetch(`http://localhost:4000/api/v1/alerts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ status })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to update');
+      // api.js already has withCredentials: true (Task 2)
+      await api.put(`/alerts/${id}`, { status })
+      // Optimistically update Redux state
+      if (status === 'dismissed') {
+        dispatch(removeAlert(id))
+      } else {
+        dispatch(setInitialAlerts(
+          anomalies.map(a => a._id === id || a.id === id ? { ...a, status } : a)
+        ))
       }
-      if (mutate) mutate()
       addToast(successMsg, 'success')
+      mutate() // revalidate SWR cache too
     } catch (err) {
-      addToast(err.message || 'Failed to update anomaly status', 'error')
+      addToast(err.response?.data?.error || err.message || 'Failed to update anomaly status', 'error')
     }
-  }
+  }, [anomalies, dispatch, addToast, mutate])
+
 
   const acknowledge = (id) => updateStatus(id, 'acknowledged', 'Anomaly acknowledged')
-  const resolve = (id) => updateStatus(id, 'resolved', 'Anomaly marked as resolved')
-  const dismiss = (id) => updateStatus(id, 'dismissed', 'Anomaly dismissed')
+  const resolve     = (id) => updateStatus(id, 'resolved', 'Anomaly marked as resolved')
+  const dismiss     = (id) => updateStatus(id, 'dismissed', 'Anomaly dismissed')
 
-  const createTicket = (anomaly) => addToast(`Ticket created for ${anomaly.service}`, 'success')
+  const createTicket = (anomaly) => addToast(`Ticket created for ${anomaly.title || anomaly.service}`, 'success')
 
   const counts = {
-    open: anomalies.filter(a => a.status === 'open').length,
+    open:         anomalies.filter(a => a.status === 'open').length,
     acknowledged: anomalies.filter(a => a.status === 'acknowledged').length,
-    resolved: anomalies.filter(a => a.status === 'resolved').length,
+    resolved:     anomalies.filter(a => a.status === 'resolved').length,
   }
 
   return (
@@ -143,14 +188,15 @@ export default function Anomalies() {
           </div>
         )}
         {filtered.map(a => {
-          const isExpanded = expandedId === a.id
+          const alertId = a._id || a.id
+          const isExpanded = expandedId === alertId
           const isResolved = a.status === 'resolved'
           const severityAccent = { critical: '#F43F5E', high: '#F59E0B', medium: '#3B82F6', low: '#8A9BB8' }
           const accent = severityAccent[a.severity] || '#8A9BB8'
           const deviationColor = a.deviationPercent >= 100 ? '#F43F5E' : a.deviationPercent >= 50 ? '#F59E0B' : '#8A9BB8'
           return (
             <motion.div
-              key={a.id}
+              key={alertId}
               layout
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: isResolved ? 0.6 : 1, y: 0 }}
@@ -192,9 +238,9 @@ export default function Anomalies() {
                     )}
                   </div>
                   <button
-                    onClick={() => dismiss(a.id)}
+                    onClick={() => dismiss(alertId)}
                     className="shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                    style={{ color: 'var(--text-muted)', display: can(PERMISSIONS.MANAGE_ANOMALIES) ? undefined : 'none' }}
+                    style={{ color: 'var(--text-muted)', display: can(PERMISSIONS?.MANAGE_ANOMALIES) ? undefined : 'none' }}
                   >
                     <X size={14} />
                   </button>
@@ -249,14 +295,24 @@ export default function Anomalies() {
                           <p className="text-[10px] font-semibold tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
                             Possible Cause
                           </p>
-                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>{a.possibleCause}</p>
+                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>{a.possibleCause || a.description}</p>
                         </div>
                         <div className="rounded-lg p-3 shadow-depth-inset border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-subtle)' }}>
                           <p className="text-[10px] font-semibold tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
                             Affected Resource
                           </p>
                           <p className="text-[10px] font-mono break-all leading-relaxed" style={{ color: 'var(--text-secondary)', fontFamily: "'JetBrains Mono', monospace" }}>
-                            {a.affectedResource}
+                            {a.affectedResource || a.resourceId || '—'}
+                          </p>
+                        </div>
+
+                        {/* AI Explanation — populated by Task 8 (Gemini integration) */}
+                        <div className="sm:col-span-2 rounded-lg p-3 border" style={{ background: 'color-mix(in srgb, var(--accent-primary) 5%, var(--bg-base))', borderColor: 'color-mix(in srgb, var(--accent-primary) 20%, var(--border-subtle))' }}>
+                          <p className="text-[10px] font-semibold tracking-wide mb-1.5 flex items-center gap-1" style={{ color: 'var(--accent-primary)' }}>
+                            <Sparkles size={10} /> AI Explanation
+                          </p>
+                          <p className="text-xs leading-relaxed" style={{ color: a.aiExplanation ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                            {a.aiExplanation || 'AI analysis pending — Gemini integration active in Task 8.'}
                           </p>
                         </div>
                       </div>
@@ -271,7 +327,7 @@ export default function Anomalies() {
                 style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)' }}
               >
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                  onClick={() => setExpandedId(isExpanded ? null : alertId)}
                   className="flex items-center gap-1 text-xs font-medium transition-colors"
                   style={{ color: 'var(--text-muted)' }}
                 >
@@ -280,31 +336,25 @@ export default function Anomalies() {
                     : <><ChevronDown size={12} /> View Details</>}
                 </button>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {a.status === 'open' && can(PERMISSIONS.ACKNOWLEDGE_ANOMALIES) && (
+                  {a.status === 'open' && can(PERMISSIONS?.ACKNOWLEDGE_ANOMALIES) && (
                     <button
-                      onClick={() => acknowledge(a.id)}
+                      onClick={() => acknowledge(alertId)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-80"
-                      style={{
-                        background: '#F59E0B',
-                        color: '#fff'
-                      }}
+                      style={{ background: '#F59E0B', color: '#fff' }}
                     >
                       Acknowledge
                     </button>
                   )}
-                  {a.status !== 'resolved' && can(PERMISSIONS.MANAGE_ANOMALIES) && (
+                  {a.status !== 'resolved' && can(PERMISSIONS?.MANAGE_ANOMALIES) && (
                     <button
-                      onClick={() => resolve(a.id)}
+                      onClick={() => resolve(alertId)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:opacity-80"
-                      style={{
-                        background: '#10B981',
-                        color: '#fff'
-                      }}
+                      style={{ background: '#10B981', color: '#fff' }}
                     >
                       Resolve
                     </button>
                   )}
-                  {a.status !== 'resolved' && can(PERMISSIONS.MANAGE_ANOMALIES) && (
+                  {a.status !== 'resolved' && can(PERMISSIONS?.MANAGE_ANOMALIES) && (
                     <button
                       onClick={() => createTicket(a)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all hover:opacity-80"

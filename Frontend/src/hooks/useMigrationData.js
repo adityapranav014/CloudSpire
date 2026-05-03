@@ -1,18 +1,5 @@
 import useSWR from 'swr';
-import axios from 'axios';
-
-const api = axios.create({
-    baseURL: 'http://localhost:4000/api/v1',
-    withCredentials: true // needed for JWT cookies or headers if used
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('cloudspire_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+import api from '../services/api';
 
 const fetcher = (url) => api.get(url).then(res => res.data);
 

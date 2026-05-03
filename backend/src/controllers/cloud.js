@@ -1,4 +1,5 @@
 import CloudAccount from '../models/CloudAccount.js';
+import { persistCostRecords, getCostData } from '../services/costService.js';
 import { fetchAwsCostAndUsage, fetchAwsInstances } from '../services/awsService.js';
 import { fetchAzureCostAndUsage, fetchAzureVMs } from '../services/azureService.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
@@ -7,21 +8,28 @@ import { logAction } from '../services/auditService.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
-import { awsAccounts, awsServiceBreakdown, awsEC2Instances, awsOrphanedResources, awsRegionBreakdown } from '../data/mockAWS.js';
+import { awsAccounts, awsEC2Instances, awsOrphanedResources } from '../data/mockAWS.js';
 import { azureSubscriptions, azureServiceBreakdown, azureVMs, azureRegionBreakdown, azureOrphanedResources } from '../data/mockAzure.js';
 import { gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources } from '../data/mockGCP.js';
 
 export const getAws = catchAsync(async (req, res, next) => {
-    const teamId = req.user.teamId;
-    const accounts = await CloudAccount.find({ teamId, provider: 'aws' });
+    const { orgId, teamId } = req;
+    const accounts = await CloudAccount.find({ orgId, provider: 'aws' });
 
-    if (accounts && accounts.length > 0 && accounts[0].credentials?.accessKey) {
-        try {
-            const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
-            const end = new Date().toISOString().split('T')[0];
+    if (accounts?.length > 0) {
+        const creds = accounts[0].getDecryptedCredentials();
+        if (creds.accessKey) {
+            try {
+                const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
+                const end   = new Date().toISOString().split('T')[0];
 
-            const liveCostData = await fetchAwsCostAndUsage(accounts[0].credentials, start, end);
-            const liveInstances = await fetchAwsInstances(accounts[0].credentials);
+                const [liveCostData, liveInstances] = await Promise.all([
+                    fetchAwsCostAndUsage(creds, start, end),
+                    fetchAwsInstances(creds),
+                ]);
+
+            // Persist to DB — non-blocking, passes orgId for proper scoping
+            persistCostRecords(orgId, teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
 
             return res.status(200).json({
                 success: true,
@@ -30,33 +38,58 @@ export const getAws = catchAsync(async (req, res, next) => {
                     awsServiceBreakdown: liveCostData.ResultsByTime,
                     awsEC2Instances: liveInstances,
                     awsOrphanedResources: [],
-                    awsRegionBreakdown: []
-                }
+                    awsRegionBreakdown: [],
+                },
             });
         } catch (error) {
-            logger.warn({ err: error, teamId }, 'Failed real AWS sync, falling back to mock data');
+            logger.warn({ err: error, orgId }, 'Failed real AWS sync, falling back to mock data');
         }
+        } // Closing brace for if (creds.accessKey)
     }
 
+    // No real account — serve AWS CUR sample data (or mock in dev)
     if (env.nodeEnv === 'production') {
-        return next(new AppError('No cloud accounts configured for this team.', 404, 'NO_CLOUD_ACCOUNTS'));
+        return next(new AppError('No AWS accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
     }
 
-    logger.warn({ teamId }, 'Serving mock AWS data — not for production use');
-    res.status(200).json({ awsAccounts, awsServiceBreakdown, awsEC2Instances, awsOrphanedResources, awsRegionBreakdown });
+    // In dev mode: use getCostData() which transparently serves sample data
+    // (if the CSV was downloaded) or falls back to empty data.
+    logger.warn({ orgId }, 'No real AWS account — serving sample/demo AWS CUR data');
+    const costData = await getCostData(orgId, 'aws');
+
+    return res.status(200).json({
+        success: true,
+        isSampleData: costData.isSampleData,
+        currency: costData.currency,
+        awsAccounts,                                      // UI still needs account list shape
+        awsServiceBreakdown: costData.serviceBreakdown,  // from real CUR CSV (not mocked)
+        awsRegionBreakdown:  costData.regionBreakdown,
+        awsEC2Instances:     awsEC2Instances,             // instance data stays mocked until connector built
+        awsOrphanedResources: awsOrphanedResources,
+    });
 });
 
 export const getAzure = catchAsync(async (req, res, next) => {
-    const teamId = req.user.teamId;
-    const accounts = await CloudAccount.find({ teamId, provider: 'azure' });
+    const { orgId, teamId } = req;
+    const accounts = await CloudAccount.find({ orgId, provider: 'azure' });
 
-    if (accounts && accounts.length > 0 && accounts[0].credentials?.tenantId) {
-        try {
-            const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
-            const end = new Date().toISOString().split('T')[0];
+    if (accounts?.length > 0) {
+        const creds = accounts[0].getDecryptedCredentials();
+        if (creds.tenantId) {
+            try {
+                const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
+                const end   = new Date().toISOString().split('T')[0];
 
-            const liveCostData = await fetchAzureCostAndUsage(accounts[0].credentials, start, end);
-            const liveVMs = await fetchAzureVMs(accounts[0].credentials);
+                const [liveCostData, liveVMs] = await Promise.all([
+                    fetchAzureCostAndUsage(creds, start, end),
+                    fetchAzureVMs(creds),
+                ]);
+
+            const normalised = (liveCostData || []).map(row => ({
+                TimePeriod: { Start: row[1] || new Date().toISOString().split('T')[0] },
+                Groups: [{ Keys: [row[2] || 'Unknown'], Metrics: { UnblendedCost: { Amount: row[0] || 0, Unit: 'USD' } } }],
+            }));
+            persistCostRecords(orgId, teamId, accounts[0]._id, 'azure', normalised);
 
             return res.status(200).json({
                 success: true,
@@ -65,77 +98,97 @@ export const getAzure = catchAsync(async (req, res, next) => {
                     azureServiceBreakdown: liveCostData,
                     azureVMs: liveVMs,
                     azureRegionBreakdown: [],
-                    azureOrphanedResources: []
-                }
+                    azureOrphanedResources: [],
+                },
             });
         } catch (error) {
-            logger.warn({ err: error, teamId }, 'Failed real Azure sync, falling back to mock data');
+            logger.warn({ err: error, orgId }, 'Failed real Azure sync, falling back to mock data');
         }
+        } // Closing brace for if (creds.tenantId)
     }
 
     if (env.nodeEnv === 'production') {
-        return next(new AppError('No cloud accounts configured for this team.', 404, 'NO_CLOUD_ACCOUNTS'));
+        return next(new AppError('No Azure accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
     }
 
-    logger.warn({ teamId }, 'Serving mock Azure data — not for production use');
+    logger.warn({ orgId }, 'Serving mock Azure data — not for production use');
     res.status(200).json({ azureSubscriptions, azureServiceBreakdown, azureVMs, azureRegionBreakdown, azureOrphanedResources });
 });
 
 export const getGcp = catchAsync(async (req, res, next) => {
+    const { orgId } = req;
+
     if (env.nodeEnv === 'production') {
-        const teamId = req.user.teamId;
-        const accounts = await CloudAccount.find({ teamId, provider: 'gcp' });
-        if (!accounts || accounts.length === 0) {
-            return next(new AppError('No cloud accounts configured for this team.', 404, 'NO_CLOUD_ACCOUNTS'));
+        const accounts = await CloudAccount.find({ orgId, provider: 'gcp' });
+        if (!accounts?.length) {
+            return next(new AppError('No GCP accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
         }
     }
-    if (env.nodeEnv !== 'production') {
-        logger.warn({ teamId: req.user.teamId }, 'Serving mock GCP data — not for production use');
-    }
+
+    logger.warn({ orgId }, 'Serving mock GCP data — not for production use');
     res.status(200).json({ gcpProjects, gcpServiceBreakdown, gcpRegionBreakdown, gcpCommittedUseDiscounts, gcpOrphanedResources });
 });
 
+/**
+ * POST /api/v1/cloud/connect
+ *
+ * Connects a cloud account to the authenticated org.
+ * orgId and teamId come from the JWT payload — never trust request body for these.
+ */
 export const connectCloudAccount = catchAsync(async (req, res, next) => {
     const { provider, name, accountId, credentials } = req.body;
-    const teamId = req.user.teamId;
+    const { orgId, teamId } = req;
 
-    // Validation via AppError
     if (!provider || !name || !credentials) {
         return next(new AppError('Provider, name, and credentials are required.', 400, 'MISSING_FIELDS'));
     }
+    
+    // Validate credentials aren't empty strings
+    for (const [key, value] of Object.entries(credentials)) {
+        if (typeof value === 'string' && value.trim() === '') {
+            return next(new AppError(`Credential field ${key} cannot be empty.`, 400, 'INVALID_CREDENTIALS'));
+        }
+    }
 
-    // Ideally, validate credentials via SDK here before saving
-    // Example: fetchAwsInstances(credentials) to verify keys. Or just save and wait for sync.
+    const resolvedAccountId = accountId || name;
 
-    // Check if account already exists
-    let existingAccount = await CloudAccount.findOne({ teamId, provider, accountId: accountId || name });
+    // Upsert within org scope — updating credentials if account already connected
+    let account = await CloudAccount.findOne({ orgId, provider, accountId: resolvedAccountId });
 
-    if (existingAccount) {
-        existingAccount.credentials = credentials;
-        existingAccount.name = name;
-        await existingAccount.save();
+    if (account) {
+        account.credentials = credentials;
+        account.name = name;
+        await account.save();
     } else {
-        existingAccount = await CloudAccount.create({
+        account = await CloudAccount.create({
+            orgId,
             teamId,
             provider,
             name,
-            accountId: accountId || name, // Fallback account ID if not provided explicitly
+            accountId: resolvedAccountId,
             credentials,
-            status: 'active'
+            status: 'active',
         });
     }
 
-    // Add Audit Log
     await logAction({
+        orgId,
         teamId,
         userId: req.user?.id,
         action: 'cloud_account_connected',
         category: 'cloud',
-        details: { provider, name, accountId }
+        details: { provider, name, accountId: resolvedAccountId },
     });
 
-    res.status(201).json({
-        success: true,
-        data: existingAccount
+    res.status(201).json({ 
+        success: true, 
+        data: {
+            _id: account._id,
+            provider: account.provider,
+            accountId: account.accountId,
+            status: account.status,
+            name: account.name,
+            connectedAt: account.createdAt,
+        }
     });
 });

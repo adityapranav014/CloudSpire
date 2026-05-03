@@ -1,28 +1,18 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, ArrowRight, X, Upload, ShieldCheck, AlertCircle } from 'lucide-react'
 import { BrandLogo } from '../constants/brandAssets'
-import axios from 'axios'
-import { useAuth } from '../context/AuthContext'
+import api from '../services/api'
+import { completeOnboarding } from '../store/slices/authSlice'
 
-const api = axios.create({ baseURL: 'http://localhost:4000/api/v1' })
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('cloudspire_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const PROVIDER_META = {
   aws: {
-    key: 'aws',
-    name: 'Amazon Web Services',
-    short: 'AWS',
-    color: '#FF9900',
-    bg: 'rgba(255,153,0,0.07)',
-    border: 'rgba(255,153,0,0.3)',
+    key: 'aws', name: 'Amazon Web Services', short: 'AWS', color: '#FF9900',
+    bg: 'rgba(255,153,0,0.07)', border: 'rgba(255,153,0,0.3)',
     desc: 'EC2, RDS, S3, Lambda, and 200+ services',
     fields: [
       { label: 'Access Key ID', placeholder: 'AKIAIOSFODNN7EXAMPLE', type: 'text' },
@@ -32,23 +22,15 @@ const PROVIDER_META = {
     connected: { accounts: '4 AWS accounts found', spend: '$82,400/mo detected' },
   },
   gcp: {
-    key: 'gcp',
-    name: 'Google Cloud Platform',
-    short: 'GCP',
-    color: '#4285F4',
-    bg: 'rgba(66,133,244,0.07)',
-    border: 'rgba(66,133,244,0.3)',
+    key: 'gcp', name: 'Google Cloud Platform', short: 'GCP', color: '#4285F4',
+    bg: 'rgba(66,133,244,0.07)', border: 'rgba(66,133,244,0.3)',
     desc: 'Compute Engine, BigQuery, Cloud Run, GKE',
     fields: null,
     connected: { accounts: '4 GCP projects found', spend: '$39,100/mo detected' },
   },
   azure: {
-    key: 'azure',
-    name: 'Microsoft Azure',
-    short: 'Azure',
-    color: '#0078D4',
-    bg: 'rgba(0,120,212,0.07)',
-    border: 'rgba(0,120,212,0.3)',
+    key: 'azure', name: 'Microsoft Azure', short: 'Azure', color: '#0078D4',
+    bg: 'rgba(0,120,212,0.07)', border: 'rgba(0,120,212,0.3)',
     desc: 'VMs, Azure SQL, Blob Storage, Functions',
     fields: [
       { label: 'Tenant ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', type: 'text' },
@@ -68,16 +50,40 @@ const SYNC_STEPS = [
   'Building your dashboard',
 ]
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const Spinner = ({ color = '#2563eb' }) => (
+  <span className="w-4 h-4 rounded-full border-2 animate-spin inline-block shrink-0"
+    style={{ borderColor: color, borderTopColor: 'transparent' }} />
+)
+
+const Field = ({ label, placeholder, type = 'text', value, onChange }) => (
+  <div>
+    <label className="block text-xs font-medium mb-1.5 text-slate-600">{label}</label>
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={value || ''}
+      onChange={(e) => onChange(label, e.target.value)}
+      className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+    />
+  </div>
+)
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function Onboarding() {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+
   const [phase, setPhase] = useState('account')
   const [selectedProviders, setSelectedProviders] = useState([])
   const [connectedProviders, setConnectedProviders] = useState({})
   const [testingProvider, setTestingProvider] = useState(null)
   const [syncProgress, setSyncProgress] = useState(-1)
   const [connectionError, setConnectionError] = useState(null)
+  const [formData, setFormData] = useState({})
 
-  // Dynamic step list based on selected providers
   const steps = useMemo(() => [
     'account',
     'providers',
@@ -94,21 +100,26 @@ export default function Onboarding() {
     return 'Syncing'
   })
 
+  // Sync phase: animate steps then call completeOnboarding and redirect
   useEffect(() => {
-    if (phase === 'sync') {
-      setSyncProgress(0)
-      let current = 0
-      const timer = setInterval(() => {
-        current++
-        setSyncProgress(current)
-        if (current >= SYNC_STEPS.length - 1) {
-          clearInterval(timer)
-          setTimeout(() => navigate('/dashboard'), 1400)
-        }
-      }, 900)
-      return () => clearInterval(timer)
-    }
-  }, [phase])
+    if (phase !== 'sync') return
+
+    setSyncProgress(0)
+    let current = 0
+
+    const timer = setInterval(() => {
+      current++
+      setSyncProgress(current)
+      if (current >= SYNC_STEPS.length - 1) {
+        clearInterval(timer)
+        // Fire-and-forget: mark onboarding complete on the server
+        dispatch(completeOnboarding())
+        setTimeout(() => navigate('/dashboard'), 1400)
+      }
+    }, 900)
+
+    return () => clearInterval(timer)
+  }, [phase, dispatch, navigate])
 
   const goNext = () => {
     const next = steps[currentStepIndex + 1]
@@ -120,71 +131,52 @@ export default function Onboarding() {
     if (prev) setPhase(prev)
   }
 
-  const toggleProvider = key => {
+  const toggleProvider = (key) => {
     setSelectedProviders(prev =>
       prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key]
     )
-  }
-
-  const [formData, setFormData] = useState({})
-
-  const handleTestConnection = async (providerKey) => {
-    setTestingProvider(providerKey)
-    setConnectionError(null)
-    try {
-      if (providerKey === 'aws' || providerKey === 'azure') {
-        const payload = {
-          provider: providerKey,
-          name: `${PROVIDER_META[providerKey].short} Environment`,
-          accountId: formData['Account alias (optional)'] || `acc-${Date.now()}`,
-          credentials: {
-            accessKey: formData['Access Key ID'],
-            secretKey: formData['Secret Access Key'],
-            tenantId: formData['Tenant ID'],
-            clientId: formData['Client ID'],
-            clientSecret: formData['Client Secret'],
-            subscriptionId: formData['Subscription ID']
-          }
-        }
-        await api.post('/cloud/connect', payload)
-      } else if (providerKey === 'gcp') {
-        await api.post('/cloud/connect', {
-          provider: 'gcp',
-          name: 'GCP Environment',
-          credentials: { serviceAccountJson: "mock-for-now" }
-        })
-      }
-
-      setTestingProvider(null)
-      setConnectedProviders(p => ({ ...p, [providerKey]: true }))
-    } catch (err) {
-      console.error(err)
-      setTestingProvider(null)
-      setConnectionError(err.response?.data?.error || err.message || 'Connection failed. Please check your credentials and try again.')
-    }
   }
 
   const handleInputChange = (fieldLabel, value) => {
     setFormData(prev => ({ ...prev, [fieldLabel]: value }))
   }
 
-  const Spinner = ({ color = '#2563eb' }) => (
-    <span className="w-4 h-4 rounded-full border-2 animate-spin inline-block shrink-0"
-      style={{ borderColor: color, borderTopColor: 'transparent' }} />
-  )
+  /**
+   * Connects a cloud provider account via the real API.
+   * Uses the central api.js instance (includes the Bearer token automatically).
+   */
+  const handleTestConnection = async (providerKey) => {
+    setTestingProvider(providerKey)
+    setConnectionError(null)
 
-  const Field = ({ label, placeholder, type = 'text', value, onChange }) => (
-    <div>
-      <label className="block text-xs font-medium mb-1.5 text-slate-600">{label}</label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={value || ''}
-        onChange={(e) => onChange(label, e.target.value)}
-        className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-      />
-    </div>
-  )
+    try {
+      const payload = {
+        provider: providerKey,
+        name: `${PROVIDER_META[providerKey].short} Environment`,
+        accountId: formData['Account alias (optional)'] || `acc-${Date.now()}`,
+        credentials: {
+          // AWS fields
+          accessKey: formData['Access Key ID'],
+          secretKey: formData['Secret Access Key'],
+          // Azure fields
+          tenantId: formData['Tenant ID'],
+          clientId: formData['Client ID'],
+          clientSecret: formData['Client Secret'],
+          subscriptionId: formData['Subscription ID'],
+          // GCP (placeholder until real connector ships)
+          serviceAccountJson: providerKey === 'gcp' ? 'pending' : undefined,
+        },
+      }
+
+      await api.post('/cloud/connect', payload)
+      setConnectedProviders(p => ({ ...p, [providerKey]: true }))
+    } catch (err) {
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Connection failed. Check your credentials.'
+      setConnectionError(msg)
+    } finally {
+      setTestingProvider(null)
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -193,8 +185,8 @@ export default function Onboarding() {
       <header className="shrink-0 bg-white border-b border-slate-200 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <div className="flex items-center gap-2.5">
-            <img src="/favicon.svg" alt="CloudSpire" className="w-7 h-7" />
-            <span className="font-bold text-sm text-slate-900 tracking-tight">CloudSpire</span>
+            <img src="/favicon.svg" alt="CloudPulse" className="w-7 h-7" />
+            <span className="font-bold text-sm text-slate-900 tracking-tight">CloudPulse</span>
           </div>
           <button
             onClick={() => navigate('/')}
@@ -206,14 +198,13 @@ export default function Onboarding() {
 
       {/* ── Stepper ── */}
       <div className="shrink-0 bg-white border-b border-slate-200">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-4 pb-8 sm:pb-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-4 pb-8">
           <div className="flex items-center gap-0">
             {stepLabels.map((label, i) => {
               const done = i < currentStepIndex
               const active = i === currentStepIndex
               return (
                 <div key={i} className={`flex items-center ${i < stepLabels.length - 1 ? 'flex-1' : ''}`}>
-                  {/* Step node */}
                   <div className="flex flex-col items-center relative z-10 shrink-0">
                     <div
                       className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300 shadow-sm"
@@ -224,13 +215,10 @@ export default function Onboarding() {
                       }}>
                       {done ? <CheckCircle size={14} /> : i + 1}
                     </div>
-                    <span
-                      className={`absolute top-full mt-2 text-[10px] sm:text-xs font-medium whitespace-nowrap transition-colors duration-200 ${active ? 'text-slate-900' : done ? 'text-slate-500' : 'text-slate-400'
-                        } ${active ? 'block' : 'hidden sm:block'}`}>
+                    <span className={`absolute top-full mt-2 text-[10px] sm:text-xs font-medium whitespace-nowrap transition-colors duration-200 ${active ? 'text-slate-900' : done ? 'text-slate-500' : 'text-slate-400'} ${active ? 'block' : 'hidden sm:block'}`}>
                       {label}
                     </span>
                   </div>
-                  {/* Connector line */}
                   {i < stepLabels.length - 1 && (
                     <div className="flex-1 h-0.5 mx-2 sm:mx-3 rounded-full transition-all duration-500"
                       style={{ background: done ? '#16a34a' : '#e2e8f0' }} />
@@ -269,6 +257,7 @@ export default function Onboarding() {
                     <div className="space-y-4 mb-7">
                       <Field label="Your name" placeholder="Alex Johnson" value={formData['Your name']} onChange={handleInputChange} />
                       <Field label="Work email" placeholder="alex@company.com" type="email" value={formData['Work email']} onChange={handleInputChange} />
+                      {/* Company name → sent as companyName to /auth/register → becomes Org.name */}
                       <Field label="Company name" placeholder="Acme Inc." value={formData['Company name']} onChange={handleInputChange} />
                     </div>
 
@@ -280,9 +269,9 @@ export default function Onboarding() {
 
                     <p className="text-center mt-5 text-xs text-slate-400">
                       Already set up?{' '}
-                      <button onClick={() => navigate('/dashboard')}
+                      <button onClick={() => navigate('/login')}
                         className="font-medium text-blue-600 hover:underline">
-                        Go to dashboard
+                        Log in
                       </button>
                     </p>
                   </div>
@@ -296,7 +285,7 @@ export default function Onboarding() {
                         Which clouds do you use?
                       </h1>
                       <p className="text-sm text-slate-500">
-                        Select all that apply. You can add more later in Settings.
+                        Select all that apply. Add more later in Settings.
                       </p>
                     </div>
 
@@ -342,7 +331,10 @@ export default function Onboarding() {
                     <div className="flex items-center justify-center gap-4 mt-4">
                       <button onClick={goBack} className="text-xs text-slate-400 hover:text-slate-600 hover:underline transition-colors">Back</button>
                       <span className="text-slate-200">|</span>
-                      <button onClick={() => navigate('/dashboard')} className="text-xs text-slate-400 hover:text-slate-600 hover:underline transition-colors">
+                      <button onClick={() => {
+                        dispatch(completeOnboarding())
+                        navigate('/dashboard')
+                      }} className="text-xs text-slate-400 hover:text-slate-600 hover:underline transition-colors">
                         Skip — explore demo
                       </button>
                     </div>
@@ -376,18 +368,11 @@ export default function Onboarding() {
                         </div>
                       </div>
 
-                      {/* Fields or file upload */}
                       {provider.fields ? (
                         <div className="space-y-4 mb-5">
                           {provider.fields.map(f => (
-                            <Field
-                              key={f.label}
-                              label={f.label}
-                              placeholder={f.placeholder}
-                              type={f.type}
-                              value={formData[f.label]}
-                              onChange={handleInputChange}
-                            />
+                            <Field key={f.label} label={f.label} placeholder={f.placeholder}
+                              type={f.type} value={formData[f.label]} onChange={handleInputChange} />
                           ))}
                         </div>
                       ) : (
@@ -419,7 +404,6 @@ export default function Onboarding() {
                         </button>
                       )}
 
-                      {/* Connected banner */}
                       <AnimatePresence>
                         {isConnected && (
                           <motion.div
@@ -434,21 +418,20 @@ export default function Onboarding() {
                         )}
                       </AnimatePresence>
 
-                      {/* Read-only note */}
                       {connectionError && (
                         <div className="flex items-start gap-2.5 mb-3 px-3.5 py-3 rounded-xl border border-red-200 bg-red-50">
                           <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-500" />
                           <p className="text-xs leading-relaxed text-red-600">{connectionError}</p>
                         </div>
                       )}
+
                       <div className="flex items-start gap-2.5 mb-5 px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-100">
                         <ShieldCheck size={14} className="shrink-0 mt-0.5 text-slate-400" />
                         <p className="text-xs leading-relaxed text-slate-500">
-                          CloudSpire uses <strong className="text-slate-700">read-only</strong> access. We never write to or modify your cloud infrastructure.
+                          CloudPulse uses <strong className="text-slate-700">read-only</strong> access. We never write to your cloud infrastructure.
                         </p>
                       </div>
 
-                      {/* Action row */}
                       <div className="flex gap-2.5">
                         <button onClick={goBack}
                           className="px-4 py-2.5 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
@@ -485,8 +468,7 @@ export default function Onboarding() {
                   <div>
                     <div className="text-center mb-8">
                       <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-blue-50">
-                        <motion.svg
-                          width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        <motion.svg width="24" height="24" viewBox="0 0 24 24" fill="none"
                           stroke="#2563eb" strokeWidth="2" strokeLinecap="round"
                           animate={{ rotate: 360 }}
                           transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}>
@@ -496,9 +478,7 @@ export default function Onboarding() {
                       <h2 className="text-xl sm:text-2xl font-bold mb-1.5 text-slate-900">
                         Setting up your workspace
                       </h2>
-                      <p className="text-sm text-slate-500">
-                        Pulling in billing data. Takes about 30 seconds.
-                      </p>
+                      <p className="text-sm text-slate-500">Pulling in billing data. Takes about 30 seconds.</p>
                     </div>
 
                     <div className="w-full h-1.5 rounded-full mb-7 overflow-hidden bg-slate-100">
@@ -517,8 +497,7 @@ export default function Onboarding() {
                             initial={{ opacity: 0.35 }}
                             animate={{ opacity: done || active ? 1 : 0.35 }}
                             className="flex items-center gap-3">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${done ? 'bg-green-500' : active ? 'bg-blue-50' : 'bg-slate-100'
-                              }`}>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${done ? 'bg-green-500' : active ? 'bg-blue-50' : 'bg-slate-100'}`}>
                               {done
                                 ? <CheckCircle size={12} className="text-white" />
                                 : active
@@ -536,12 +515,10 @@ export default function Onboarding() {
                       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-7">
                         <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-green-200 bg-green-50 mb-4">
                           <CheckCircle size={15} className="text-green-600 shrink-0" />
-                          <p className="text-sm font-semibold text-green-700">
-                            Workspace ready! Redirecting…
-                          </p>
+                          <p className="text-sm font-semibold text-green-700">Workspace ready! Redirecting…</p>
                         </div>
                         <button onClick={() => navigate('/dashboard')}
-                          className="w-full py-3.5 font-semibold text-sm rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white flex items-center justify-center gap-2 transition-colors shadow-sm">
+                          className="w-full py-3.5 font-semibold text-sm rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 transition-colors shadow-sm">
                           Open my dashboard <ArrowRight size={15} />
                         </button>
                       </motion.div>
@@ -554,7 +531,6 @@ export default function Onboarding() {
           </div>
         </div>
       </div>
-
     </div>
   )
 }

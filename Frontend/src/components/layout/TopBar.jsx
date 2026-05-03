@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLeftOpen } from 'lucide-react'
-
+import { useDispatch, useSelector } from 'react-redux'
 
 import { usePermissions } from '../../hooks/usePermissions'
-import { useAuth } from '../../context/AuthContext'
+import { logout, selectUser } from '../../store/slices/authSlice'
 
 import UserAvatar from '../ui/UserAvatar'
 import { useMigrationData } from '../../hooks/useMigrationData'
@@ -55,15 +55,17 @@ export default function TopBar({ onOpenMenu = () => { } }) {
   const [backendStatus, setBackendStatus] = useState('checking')
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
-  const { user: personaUser, logout: performLogout } = useAuth()
+  const dispatch = useDispatch()
+  const reduxUser = useSelector(selectUser)
   const { persona: mockPersona } = usePermissions()
 
-  // Use session user if available, fallback to mock persona for demo purposes
-  const user = personaUser || mockPersona
+  // Use Redux user if session exists, fall back to mock persona for demo
+  const user = reduxUser || mockPersona
   const meta = ROLE_META[user?.role || 'finops_manager'] || { color: 'text-primary' }
 
   const handleSignOut = async () => {
-    performLogout()
+    setUserMenuOpen(false)
+    await dispatch(logout())   // hits server → clears httpOnly cookie → wipes Redux state
     navigate('/login')
   }
 

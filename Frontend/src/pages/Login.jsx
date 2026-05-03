@@ -1,11 +1,13 @@
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch } from 'react-redux';
+import { login } from '../store/slices/authSlice';
+
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -15,23 +17,23 @@ const schema = z.object({
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const from = location.state?.from || '/dashboard';
   const [isLoading, setIsLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data) => {
     setIsLoading(true);
     setError('');
-    try {
-      await login(data.email, data.password);
+    const result = await dispatch(login({ email: data.email, password: data.password }));
+    setIsLoading(false);
+    if (login.fulfilled.match(result)) {
       navigate(from, { replace: true });
-    } catch (err) {
-      setError(err.message || 'Invalid email or password. Please try again.');
-      setIsLoading(false);
+    } else {
+      setError(result.payload || 'Invalid email or password. Please try again.');
     }
   };
 

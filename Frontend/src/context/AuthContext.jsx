@@ -1,153 +1,101 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { useMigrationData } from '../hooks/useMigrationData'
-import axios from 'axios'
-
-const AuthContext = createContext(null)
-const STORAGE_KEY = 'cloudspire_token'
-
-const api = axios.create({
-  baseURL: 'http://localhost:4000/api/v1',
-})
-
-// Attach token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(STORAGE_KEY)
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-// ── Response interceptor: auto-logout on 401 ──
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // If the server says token is expired/invalid, force logout
-    if (error.response?.status === 401) {
-      const errorCode = error.response?.data?.errorCode
-      if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'INVALID_TOKEN') {
-        localStorage.removeItem(STORAGE_KEY)
-        // Redirect to login only if we're not already there
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
-        }
-      }
-    }
-    return Promise.reject(error)
-  }
-)
+import { useEffect, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+    loadUser, fetchRoles, login as loginAction, registerUser as registerUserAction,
+    logout as logoutAction, switchRole as switchRoleAction, setAuthLoading,
+    selectIsAuthenticated, selectUser, selectRolesData, selectIsLoadingAuth,
+} from '../store/slices/authSlice';
+import { clearDashboard } from '../store/slices/dashboardSlice';
+import { clearCosts } from '../store/slices/costsSlice';
+import { clearRecommendations } from '../store/slices/recommendationsSlice';
+import { clearAllMetrics } from '../store/slices/metricsSlice';
 
 /**
- * Extracts a user-friendly error message from an Axios error.
- * Backend sends: { success: false, error: "...", errorCode: "..." }
+ * useAuth — thin convenience hook over Redux auth state.
+ *
+ * Still used by: ProtectedRoute → usePermissions → can/canAccessPage
+ * Will be deprecated once RBAC is moved fully to Redux selectors (Sprint 2).
+ * Do NOT read `token` from this hook — it does not exist (Task 2: httpOnly cookie).
  */
-const extractErrorMessage = (err, fallback = 'An unexpected error occurred. Please try again.') => {
-  // Network error (backend is down)
-  if (err.code === 'ERR_NETWORK' || !err.response) {
-    return 'Unable to reach the server. Please check your connection and try again.'
-  }
-  // Backend returned a standardized error
-  return err.response?.data?.error || err.response?.data?.message || fallback
-}
-
-export function AuthProvider({ children }) {
-  const { data: rolesData } = useMigrationData('/roles')
-  const { ROLE_PERMISSIONS = {}, PAGE_ACCESS = {} } = rolesData || {}
-
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(localStorage.getItem(STORAGE_KEY) || null)
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
-
-  // persona maps mostly to user for the frontend backward compatibility
-  const persona = user;
-
-  const loadUser = useCallback(async () => {
-    try {
-      if (!token) return;
-      const res = await api.get('/auth/me');
-      setUser(res.data.data.user);
-    } catch (error) {
-      console.error('Failed to authenticate:', extractErrorMessage(error));
-      logout()
-    } finally {
-      setIsLoadingAuth(false)
-    }
-  }, [token])
-
-  useEffect(() => {
-    if (token) loadUser();
-    else setIsLoadingAuth(false);
-  }, [token, loadUser])
-
-  const login = async (email, password) => {
-    try {
-      const res = await api.post('/auth/login', { email, password });
-      const newToken = res.data.token;
-      localStorage.setItem(STORAGE_KEY, newToken);
-      setToken(newToken);
-      setUser(res.data.data.user);
-    } catch (err) {
-      // Re-throw with a clean user-friendly message so Login.jsx can display it
-      const message = extractErrorMessage(err, 'Invalid email or password. Please try again.')
-      throw new Error(message)
-    }
-  };
-
-  const registerUser = async (data) => {
-    try {
-      const res = await api.post('/auth/register', data);
-      const newToken = res.data.token;
-      localStorage.setItem(STORAGE_KEY, newToken);
-      setToken(newToken);
-      setUser(res.data.data.user);
-    } catch (err) {
-      const message = extractErrorMessage(err, 'Registration failed. Please try again.')
-      throw new Error(message)
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setToken(null);
-    setUser(null);
-  }
-
-  // Preserve legacy demo role switch for testing if needed
-  const switchRole = useCallback((roleId) => {
-    console.warn("switchRole is mocked in Production mode");
-    setUser((prev) => prev ? { ...prev, role: roleId } : null);
-  }, []);
-
-  /** Returns true if the current role has the given permission key */
-  const can = useCallback((permission) => {
-    if (!user) return false
-    return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false
-  }, [user, ROLE_PERMISSIONS])
-
-  /** Returns true if the current role is allowed to navigate to `route` (e.g. '/accounts') */
-  const canAccessPage = useCallback((route) => {
-    if (!user) return false
-    const allowed = PAGE_ACCESS[route]
-    if (!allowed) return true  // unknown routes are open (public)
-    return allowed.includes(user.role)
-  }, [user, PAGE_ACCESS])
-
-  /** Returns true if the current role matches the given roleId */
-  const isRole = useCallback((roleId) => user?.role === roleId, [user])
-
-  if (isLoadingAuth) {
-    return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>
-  }
-
-  return (
-    <AuthContext.Provider value={{ persona, user, token, login, registerUser, logout, switchRole, can, canAccessPage, isRole }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
 export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
-  return ctx
+    const dispatch        = useDispatch();
+    const user            = useSelector(selectUser);
+    const isAuthenticated = useSelector(selectIsAuthenticated);
+    const isLoadingAuth   = useSelector(selectIsLoadingAuth);
+    const rolesData       = useSelector(selectRolesData);
+
+    const persona = user;
+
+    const login = async (email, password) =>
+        dispatch(loginAction({ email, password })).unwrap();
+
+    const registerUserFn = async (data) =>
+        dispatch(registerUserAction(data)).unwrap();
+
+    const logout = () => {
+        dispatch(logoutAction());
+        // Clear all org-scoped data so next login starts clean
+        dispatch(clearDashboard());
+        dispatch(clearCosts());
+        dispatch(clearRecommendations());
+        dispatch(clearAllMetrics());
+    };
+
+    const switchRole = useCallback((roleId) => {
+        console.warn('switchRole is mocked in production mode');
+        dispatch(switchRoleAction(roleId));
+    }, [dispatch]);
+
+    const can = useCallback((permission) => {
+        if (!user) return false;
+        return rolesData?.ROLE_PERMISSIONS?.[user.role]?.includes(permission) ?? false;
+    }, [user, rolesData]);
+
+    const canAccessPage = useCallback((route) => {
+        if (!user) return false;
+        const allowed = rolesData?.PAGE_ACCESS?.[route];
+        if (!allowed) return true;
+        return allowed.includes(user.role);
+    }, [user, rolesData]);
+
+    const isRole = useCallback((roleId) => user?.role === roleId, [user]);
+
+    return {
+        persona, user, isAuthenticated, isLoadingAuth,
+        login, registerUser: registerUserFn, logout, switchRole,
+        can, canAccessPage, isRole,
+    };
+}
+
+/**
+ * AuthInitializer — runs once on app boot.
+ * Calls GET /auth/me to restore session from the httpOnly cookie.
+ * If the cookie is missing or expired, loadUser rejects → user stays logged out.
+ * Does NOT check localStorage or Redux token (both removed in Task 2).
+ */
+export function AuthInitializer({ children }) {
+    const dispatch    = useDispatch();
+    const isLoading   = useSelector(selectIsLoadingAuth);
+
+    useEffect(() => {
+        // Always try to restore session from cookie — the server will 401 if none exists
+        dispatch(fetchRoles());
+        dispatch(loadUser()).catch(() => {
+            // 401 is expected when not logged in — not an error
+            dispatch(setAuthLoading(false));
+        });
+    }, [dispatch]);
+
+    if (isLoading) {
+        return (
+            <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent" />
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading session…</p>
+                </div>
+            </div>
+        );
+    }
+
+    return children;
 }

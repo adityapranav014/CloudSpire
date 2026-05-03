@@ -12,7 +12,7 @@ import { gcpProjects, gcpServiceBreakdown, gcpCommittedUseDiscounts, gcpOrphaned
 import { monthlySpend, currentMonthStats, tagBreakdown } from '../data/mockUnified.js';
 import { optimizationSummary, rightsizingRecommendations, reservedInstanceOpportunities } from '../data/mockOptimizations.js';
 import { budgetAlerts, anomalyHistory } from '../data/mockAlerts.js';
-import Alert from '../models/Alert.js';
+import Alert from '../models/Alert.model.js';
 import CloudAccount from '../models/CloudAccount.js';
 
 const fmt = (n) => `$${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;

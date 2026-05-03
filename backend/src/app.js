@@ -22,10 +22,20 @@ app.use(helmet());
 // credentials are enabled — wildcards are rejected by the browser spec.
 app.use(
     cors({
-        origin: env.clientUrl,      // e.g. http://localhost:5173 or https://app.cloudpulse.in
+        origin: (origin, callback) => {
+            // Allow requests from any configured client URL or localhost dev ports
+            const allowed = [
+                env.clientUrl,
+                'http://localhost:5173',
+                'http://localhost:5174',
+                'http://localhost:5175',
+            ].filter(Boolean);
+            if (!origin || allowed.includes(origin)) return callback(null, true);
+            callback(new Error(`CORS: ${origin} not allowed`));
+        },
         credentials: true,          // allows browser to send/receive cookies
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type'],   // Authorization header removed — token is now in cookie
+        allowedHeaders: ['Content-Type', 'Authorization'],
     })
 );
 

@@ -3,10 +3,10 @@ import { createRedisConnection, isRedisAvailable, QUEUE_NAME } from "../config/q
 import { generatePDFReport } from "./reportWorker.js";
 import { saveReport, generateFilename } from "../services/storageService.js";
 
-import CostRecord from "../models/CostRecord.js";
-import Team from "../models/Team.js";
-import Alert from "../models/Alert.js";
-import Optimization from "../models/Optimization.js";
+import CostRecord from "../models/CostRecord.model.js";
+import Team from "../models/Team.model.js";
+import Alert from "../models/Alert.model.js";
+import Optimization from "../models/Optimization.model.js";
 
 // ---------------------------------------------------------------------------
 // BullMQ Worker — processes "report-generation" jobs off the queue.

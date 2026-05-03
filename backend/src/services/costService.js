@@ -16,7 +16,7 @@
  */
 
 import mongoose from 'mongoose';
-import CostRecord from '../models/CostRecord.js';
+import CostRecord from '../models/CostRecord.model.js';
 import CloudAccount from '../models/CloudAccount.js';
 import { logger } from '../utils/logger.js';
 import { SAMPLE_ORG_ID, SAMPLE_TEAM_ID } from './sampleDataService.js';

@@ -40,7 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'csv-parse';
 import mongoose from 'mongoose';
 
-import CostRecord from '../models/CostRecord.js';
+import CostRecord from '../models/CostRecord.model.js';
 import { logger } from '../utils/logger.js';
 
 // ── Sentinel IDs ───────────────────────────────────────────────────────────────

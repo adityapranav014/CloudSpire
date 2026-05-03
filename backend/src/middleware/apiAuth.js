@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import ApiKey from '../models/ApiKey.js';
+import ApiKey from '../models/ApiKey.model.js';
 import { asyncHandler } from './asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 

@@ -14,8 +14,8 @@
  *   getCostData() internally handles the sample → real data gate.
  */
 
-import Alert from '../models/Alert.js';
-import Optimization from '../models/Optimization.js';
+import Alert from '../models/Alert.model.js';
+import Optimization from '../models/Optimization.model.js';
 import CloudAccount from '../models/CloudAccount.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { logger } from '../utils/logger.js';

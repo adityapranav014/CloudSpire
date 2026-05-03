@@ -11,6 +11,7 @@ import settingsRouter from './settings.routes.js';
 import reportsRouter from './reports.routes.js';
 import authRouter from './auth.routes.js';
 import metricsRouter from './metricsRoutes.js';
+import chatRouter from './chat.js';
 
 const router = Router();
 
@@ -39,5 +40,6 @@ router.use('/settings', settingsRouter);
 router.use('/reports', reportsRouter);
 router.use('/auth', authRouter);
 router.use('/metrics', metricsRouter);
+router.use('/chat', chatRouter);
 
 export default router;

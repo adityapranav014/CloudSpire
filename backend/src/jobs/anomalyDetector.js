@@ -6,6 +6,7 @@ import Integration from '../models/Integration.model.js';
 import { sendAnomalyAlertEmail } from '../services/emailService.js';
 import { notifySlack } from '../services/integrationService.js';
 import { emitToOrg } from '../services/socketService.js';
+import { generateAnomalyExplanation } from '../services/openRouterService.js';
 import { logger } from '../utils/logger.js';
 import mongoose from 'mongoose';
 
@@ -106,6 +107,19 @@ export const analyzeAnomalies = async () => {
                 });
 
                 logger.info({ orgId, teamId, alertId: newAlert._id, service: stat._id }, 'Anomaly alert created');
+
+                // Enrich alert with AI explanation (fire-and-forget — does not block alert creation)
+                generateAnomalyExplanation({
+                    service: stat._id,
+                    provider: latest.provider,
+                    actualSpend: latest.latestCost,
+                    expectedSpend: stat.avgCost,
+                    deviationPercent: ((latest.latestCost - stat.avgCost) / stat.avgCost) * 100,
+                }).then((explanation) => {
+                    if (explanation) {
+                        Alert.findByIdAndUpdate(newAlert._id, { aiExplanation: explanation }).catch(() => {});
+                    }
+                }).catch(() => {});
 
                 // Emit to org-scoped socket room (Task 4 fixes: teamId → org:${orgId})
                 emitToOrg(orgId, 'alert:new', newAlert);

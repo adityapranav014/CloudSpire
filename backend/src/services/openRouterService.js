@@ -320,3 +320,125 @@ export async function generateSessionTitle(userMessage) {
         return 'New Chat';
     }
 }
+
+// ── Dashboard narrative ───────────────────────────────────────────────────────
+/**
+ * Generate a 2-3 sentence plain-English AI narrative for the dashboard header.
+ * Uses a fast, cheap model — latency budget: < 3 s.
+ *
+ * @param {{ totalMonthSpend: number, changePercent: number, topService: string,
+ *           savingsAvailable: number, openAlerts: number }} summaryData
+ * @returns {Promise<string>} The narrative text, or a safe fallback string.
+ */
+export async function generateDashboardNarrative(summaryData) {
+    if (!env.openRouterApiKey) {
+        return 'Connect your OpenRouter API key to enable AI-powered cost insights.';
+    }
+
+    const {
+        totalMonthSpend = 0,
+        changePercent = 0,
+        topService = 'unknown service',
+        savingsAvailable = 0,
+        openAlerts = 0,
+    } = summaryData;
+
+    const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+    const direction = changePercent >= 0 ? 'up' : 'down';
+
+    const prompt = `You are a FinOps AI assistant. Write a 2-3 sentence plain-English executive summary of the following cloud cost data. Be specific, concise, and actionable. Do not use bullet points or markdown — plain prose only.
+
+Data:
+- Month-to-date spend: ${fmt(totalMonthSpend)}
+- Change vs last month: ${direction} ${Math.abs(changePercent).toFixed(1)}%
+- Top cost driver: ${topService}
+- Potential monthly savings identified: ${fmt(savingsAvailable)}
+- Open anomaly alerts: ${openAlerts}
+
+Write the summary now:`;
+
+    const payload = {
+        model: DEFAULT_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 120,
+        temperature: 0.4,
+    };
+
+    try {
+        const res = await fetchWithRetry(
+            `${OPENROUTER_BASE}/chat/completions`,
+            {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(10_000),
+            },
+            2
+        );
+        if (!res.ok) return 'AI narrative temporarily unavailable.';
+        const json = await res.json();
+        return json.choices?.[0]?.message?.content?.trim() || 'AI narrative temporarily unavailable.';
+    } catch (err) {
+        logger.warn({ err: err.message }, 'generateDashboardNarrative failed');
+        return 'AI narrative temporarily unavailable.';
+    }
+}
+
+// ── Anomaly explanation ───────────────────────────────────────────────────────
+/**
+ * Generate a one-paragraph AI explanation for a detected cost anomaly.
+ * Called from the anomaly detector when a new alert is created.
+ *
+ * @param {{ service: string, provider: string, actualSpend: number,
+ *           expectedSpend: number, deviationPercent: number }} anomalyData
+ * @returns {Promise<string>} Human-readable explanation, or empty string on failure.
+ */
+export async function generateAnomalyExplanation(anomalyData) {
+    if (!env.openRouterApiKey) return '';
+
+    const {
+        service = 'Unknown service',
+        provider = 'cloud provider',
+        actualSpend = 0,
+        expectedSpend = 0,
+        deviationPercent = 0,
+    } = anomalyData;
+
+    const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
+
+    const prompt = `You are a FinOps AI assistant. A cost anomaly was detected. Explain in 1-2 sentences what might have caused this spike and what action the team should take. Be specific and practical. No markdown.
+
+Anomaly:
+- Service: ${service} (${provider.toUpperCase()})
+- Actual spend: ${fmt(actualSpend)}
+- Expected spend (30-day avg): ${fmt(expectedSpend)}
+- Deviation: +${deviationPercent.toFixed(1)}% above normal
+
+Explanation:`;
+
+    const payload = {
+        model: DEFAULT_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 80,
+        temperature: 0.3,
+    };
+
+    try {
+        const res = await fetchWithRetry(
+            `${OPENROUTER_BASE}/chat/completions`,
+            {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(8_000),
+            },
+            1
+        );
+        if (!res.ok) return '';
+        const json = await res.json();
+        return json.choices?.[0]?.message?.content?.trim() || '';
+    } catch (err) {
+        logger.warn({ err: err.message, service }, 'generateAnomalyExplanation failed');
+        return '';
+    }
+}

@@ -36,18 +36,26 @@ export const signToken = (user) => {
  * Cookie flags:
  *   httpOnly  — JavaScript cannot read this cookie (blocks XSS token theft)
  *   secure    — HTTPS only in production (false in dev so localhost works)
- *   sameSite  — 'lax' allows cross-site top-level navigation (safe for deployments)
+ *   sameSite  — 'none' is REQUIRED for cross-domain deployments (Vercel → Render).
+ *               'lax' or 'strict' cause browsers to silently drop the cookie on
+ *               cross-origin requests. 'none' requires secure:true to take effect.
+ *   domain    — not set; let the browser handle it per-origin for cross-domain safety
  *   maxAge    — 7 days, matching the JWT expiry
  *
  * Frontend uses cookie if available (same-domain), falls back to bearer token if not.
  */
 export const createSendToken = (user, statusCode, res) => {
     const token = signToken(user);
+    const isProduction = env.nodeEnv === 'production';
 
     res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        secure: env.nodeEnv === 'production',
-        sameSite: 'lax',
+        // sameSite:'none' requires secure:true — only enforced in production
+        // so localhost dev (http) still works with secure:false
+        secure: isProduction,
+        // 'none' is required for cross-domain cookie delivery (Vercel frontend → Render backend).
+        // 'lax' silently drops the cookie on cross-origin POST requests.
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: COOKIE_MAX_AGE_MS,
         path: '/',
     });
@@ -64,14 +72,15 @@ export const createSendToken = (user, statusCode, res) => {
 
 /**
  * Clears the auth cookie. Called by the logout controller.
- * Must use the same options as the set call (path, sameSite, secure) so
+ * Must use the EXACT same options as the set call (path, sameSite, secure) so
  * the browser recognises it as the same cookie to delete.
  */
 export const clearAuthCookie = (res) => {
+    const isProduction = env.nodeEnv === 'production';
     res.cookie(COOKIE_NAME, '', {
         httpOnly: true,
-        secure: env.nodeEnv === 'production',
-        sameSite: 'lax',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 0,  // Expire immediately
         path: '/',
     });

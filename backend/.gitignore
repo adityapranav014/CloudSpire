@@ -2,4 +2,27 @@ node_modules/
 dist/
 coverage/
 generated-reports/
+
+# ── Environment / secrets ────────────────────────────────────────────
+# NEVER commit real credentials. Use .env.example as the template.
 .env
+.env.local
+.env.production
+.env.*.local
+.env.development
+.env.test
+
+# .env.shared contains team dev config and should NOT be committed
+# (it may contain non-public service URLs or semi-sensitive defaults)
+.env.shared
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Temp / scratch ───────────────────────────────────────────────────
+# Root-level diagnostic scripts (test-api.js, test-mongo.js, test-frontend.js)
+# are not part of the test suite and should not be committed.
+test-*.js
+*.tmp
+*.bak

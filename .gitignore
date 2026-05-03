@@ -21,6 +21,10 @@ coverage/
 .env.test
 .env.production
 
+# .env.shared contains team dev config and should NOT be committed
+# (it may contain non-public service URLs or semi-sensitive defaults)
+.env.shared
+
 # ─── Editor / IDE ─────────────────────────────────────────
 .vscode/
 .idea/

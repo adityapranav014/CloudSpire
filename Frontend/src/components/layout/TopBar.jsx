@@ -20,8 +20,10 @@ import {
 
 const backendBaseUrl = (
   import.meta.env.VITE_API_BASE_URL
+  || import.meta.env.VITE_SOCKET_URL
   || import.meta.env.VITE_API_URL?.replace('/api/v1', '')
-  || (import.meta.env.DEV ? 'http://localhost:4000' : 'https://cloudspire.onrender.com')
+  // Final fallback: localhost in dev, env var MUST be set in production
+  || (import.meta.env.DEV ? 'http://localhost:4000' : '')
 ).replace(/\/$/, '')
 const backendHealthUrl = `${backendBaseUrl}/health`
 

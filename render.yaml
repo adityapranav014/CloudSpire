@@ -21,7 +21,17 @@ services:
           type: static
           name: cloudspire-frontend
           envVarKey: RENDER_EXTERNAL_URL
-      # Note: MONGODB_URI, JWT_SECRET, ENCRYPTION_KEY must be added manually in Render Dashboard
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cloudspire-redis
+          property: connectionString
+      # ── Secrets: Set these manually in the Render Dashboard ──────────────────
+      # MONGODB_URI     — MongoDB Atlas connection string
+      # JWT_SECRET      — min 32-char random string (ROTATE if previously exposed)
+      # BETTER_AUTH_SECRET — min 32-char random string (ROTATE if previously exposed)
+      # ENCRYPTION_KEY  — 64-character hex string (ROTATE if previously exposed)
+      # OPENROUTER_API_KEY — real key from openrouter.ai (not the sk-or-xxxx placeholder)
 
   # ── Frontend React App (Vite) ──
   - type: static
@@ -31,10 +41,22 @@ services:
     buildCommand: npm install && npm run build
     publishPath: dist
     envVars:
+      # ── IMPORTANT: Set these manually in the Render Dashboard ────────────────
+      # Render cannot append strings to fromService URLs, so these must be set
+      # manually AFTER the backend service is deployed and its URL is known.
+      #
+      # VITE_API_URL    — https://<cloudspire-backend>.onrender.com/api/v1
+      # VITE_SOCKET_URL — https://<cloudspire-backend>.onrender.com
+      #
+      # If using Vercel for the frontend instead of Render, set these in
+      # the Vercel dashboard under Project → Settings → Environment Variables.
       - key: VITE_API_URL
-        # We need to construct the API URL. Since it's tricky to append "/api/v1" dynamically in render.yaml,
-        # users will need to ensure the backend URL + "/api/v1" is set. 
-        # But we can try to automate it by pulling the backend URL.
-        # Actually, Render doesn't support appending strings in render.yaml fromService. 
-        # So we leave this empty, and the user must set it manually in the dashboard.
-        value: "REPLACE_WITH_BACKEND_URL/api/v1"
+        value: "https://REPLACE_WITH_YOUR_BACKEND_SERVICE_NAME.onrender.com/api/v1"
+      - key: VITE_SOCKET_URL
+        value: "https://REPLACE_WITH_YOUR_BACKEND_SERVICE_NAME.onrender.com"
+
+  # ── Redis (required for BullMQ report generation queue) ──
+  - type: redis
+    name: cloudspire-redis
+    plan: free
+    ipAllowList: []   # Only allow internal Render network access

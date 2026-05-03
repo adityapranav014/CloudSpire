@@ -22,5 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env 
+
+# ── Environment / secrets ────────────────────────────────────────────
+# NEVER commit real credentials. Use .env.example as the template.
+.env
+.env.local
 .env.production
+.env.*.local
+.env.development
+.env.test
+
+# .env.shared contains team dev config and should NOT be committed
+.env.shared
+
+# ── Temp / scratch files ─────────────────────────────────────────────
+temp.css
+*.tmp
+*.bak

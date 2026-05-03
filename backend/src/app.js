@@ -22,17 +22,27 @@ app.use(helmet());
 // credentials: true is required for the browser to send httpOnly cookies
 // cross-origin. The origin MUST be an exact string (not wildcard) when
 // credentials are enabled — wildcards are rejected by the browser spec.
+//
+// Origins are built from CLIENT_URL, CLIENT_URLS (comma-separated), and
+// localhost fallbacks. In production, set CLIENT_URLS in the Render dashboard
+// to include the Vercel frontend URL, e.g.:
+//   CLIENT_URLS=https://cloudspire-app.vercel.app
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (!origin || env.clientUrls.includes(origin)) return callback(null, true);
-            callback(new Error(`CORS: ${origin} not allowed`));
+            // Allow server-to-server requests with no Origin header (e.g. Render health checks)
+            if (!origin) return callback(null, true);
+            if (env.clientUrls.includes(origin)) return callback(null, true);
+            callback(new Error(`CORS: ${origin} not in allowlist`));
         },
         credentials: true,          // allows browser to send/receive cookies
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
     })
 );
+
+// Startup log — visible in Render logs to confirm the allowlist loaded correctly
+console.info('[CORS] Active origin allowlist:', env.clientUrls);
 
 // ── Cookie parser ─────────────────────────────────────────────────────────────
 // Must be registered before any route handler that reads req.cookies.
@@ -75,4 +85,4 @@ app.use((req, _res, next) => {
 // ── Centralised error handler ─────────────────────────────────────────────────
 app.use(errorHandler);
 
-export default app;
+export default app;

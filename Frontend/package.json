@@ -11,13 +11,13 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
-    "axios": "^1.15.2",
     "postcss": "^8.5.12",
     "swr": "^2.4.1",
     "tailwindcss": "^3.4.19",
     "vite": "^8.0.10"
   },
   "dependencies": {
+    "axios": "^1.15.2",
     "@base-ui/react": "^1.4.1",
     "@better-auth/infra": "^0.2.5",
     "@fontsource-variable/geist": "^5.2.8",

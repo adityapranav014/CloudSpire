@@ -49,7 +49,8 @@ export const getAws = catchAsync(async (req, res, next) => {
                     liveInstances = await fetchAwsInstances(normalizedCreds);
                     console.log('[CLOUD] getAws — EC2 instances fetch succeeded, count:', liveInstances?.length);
                 } catch (ec2Err) {
-                    console.warn('[CLOUD] getAws — EC2 describe failed:', ec2Err.message);
+                    console.warn('[CLOUD] getAws — EC2 describe failed (using mock instances):', ec2Err.message);
+                    liveInstances = awsEC2Instances; // fall back to mock EC2 data
                 }
 
                 // If we got at least some real data, return a hybrid response

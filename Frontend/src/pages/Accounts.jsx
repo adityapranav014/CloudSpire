@@ -97,12 +97,12 @@ export default function Accounts() {
     };
   });
 
-  // Mock accounts from provider API sample data — always shown alongside real accounts
+  // Mock accounts from provider API sample data — filter out any locally hidden ones
   const mockAccounts = [
     ...awsAccounts.map(a => ({ ...a, provider: 'aws', isMock: true, isReal: false })),
     ...gcpProjects.map(p => ({ ...p, provider: 'gcp', isMock: true, isReal: false })),
     ...azureSubscriptions.map(s => ({ ...s, provider: 'azure', isMock: true, isReal: false })),
-  ];
+  ].filter(a => !hiddenMockIds.includes(a.id));
 
   // Real accounts first, then mock/sample accounts
   const allAccounts = [...realAccounts, ...mockAccounts]
@@ -123,9 +123,19 @@ export default function Accounts() {
   const handleSync = () => addToast('Syncing all accounts...', 'info')
 
   const [deletingId, setDeletingId] = useState(null)
+  const [hiddenMockIds, setHiddenMockIds] = useState([])
+
   const handleDelete = useCallback(async (acct, e) => {
     e.stopPropagation()
-    if (!window.confirm(`Remove "${acct.name}" from CloudSpire? This does NOT delete anything in AWS.`)) return
+    if (!window.confirm(`Remove "${acct.name}"? ${acct.isReal ? 'This disconnects the account from CloudSpire (does NOT delete anything in AWS).' : 'Demo accounts will reappear on page refresh.'}`)) return
+
+    if (acct.isMock) {
+      // Mock/demo accounts aren't in the DB — just hide them locally
+      setHiddenMockIds(prev => [...prev, acct.id])
+      addToast(`${acct.name} hidden. Demo accounts reappear on refresh.`, 'info')
+      return
+    }
+
     setDeletingId(acct._id || acct.id)
     try {
       await api.delete(`/cloud/${acct._id || acct.id}`)
@@ -318,19 +328,17 @@ export default function Accounts() {
                       className="p-1.5 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }} title="Open in console">
                       <ExternalLink size={12} />
                     </button>
-                    {/* Delete button — only for real connected accounts, not mock/demo rows */}
-                    {acct.isReal && (
-                      <button
-                        onClick={(e) => handleDelete(acct, e)}
-                        disabled={deletingId === (acct._id || acct.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
-                        style={{ color: deletingId === (acct._id || acct.id) ? 'var(--text-muted)' : '#f87171' }}
-                        title="Disconnect account">
-                        {deletingId === (acct._id || acct.id)
-                          ? <Loader2 size={12} className="animate-spin" />
-                          : <Trash2 size={12} />}
-                      </button>
-                    )}
+                    {/* Delete button — shown on ALL accounts */}
+                    <button
+                      onClick={(e) => handleDelete(acct, e)}
+                      disabled={deletingId === (acct._id || acct.id)}
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                      style={{ color: deletingId === (acct._id || acct.id) ? 'var(--text-muted)' : '#f87171' }}
+                      title={acct.isReal ? 'Disconnect account' : 'Hide demo account'}>
+                      {deletingId === (acct._id || acct.id)
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <Trash2 size={12} />}
+                    </button>
                   </div>
                 </td>
               </tr>

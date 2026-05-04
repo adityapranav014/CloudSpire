@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLeftOpen } from 'lucide-react'
+import { Bell, Search, User, ChevronDown, LogOut, Settings, HelpCircle, PanelLeftOpen, UserCheck, ChevronRight, X } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { usePermissions } from '../../hooks/usePermissions'
@@ -35,6 +35,7 @@ export default function TopBar({ onOpenMenu = () => { } }) {
   const awsAccounts = d1?.awsAccounts || [];
   const { data: d2 } = useMigrationData('/roles');
   const ROLE_META = d2?.ROLE_META || {};
+  const DEMO_PERSONAS = d2?.DEMO_PERSONAS || [];
 
   const openCount = anomalies.filter(a => a.status === 'open').length
 
@@ -58,6 +59,7 @@ export default function TopBar({ onOpenMenu = () => { } }) {
 
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false)
   const [backendStatus, setBackendStatus] = useState('checking')
   const userMenuRef = useRef(null)
   const navigate = useNavigate()
@@ -71,8 +73,23 @@ export default function TopBar({ onOpenMenu = () => { } }) {
 
   const handleSignOut = async () => {
     setUserMenuOpen(false)
-    await dispatch(logout())   // hits server → clears httpOnly cookie → wipes Redux state
+    await dispatch(logout())
     navigate('/login')
+  }
+
+  const handleSwitchRole = (persona) => {
+    // Store demo persona in localStorage so usePermissions picks it up
+    localStorage.setItem('demo_persona', JSON.stringify(persona))
+    setUserMenuOpen(false)
+    setRoleSwitcherOpen(false)
+    window.location.reload()
+  }
+
+  const handleClearDemoRole = () => {
+    localStorage.removeItem('demo_persona')
+    setUserMenuOpen(false)
+    setRoleSwitcherOpen(false)
+    window.location.reload()
   }
 
   useEffect(() => {
@@ -231,8 +248,8 @@ export default function TopBar({ onOpenMenu = () => { } }) {
 
           {userMenuOpen && (
             <div
-              className="absolute right-0 top-full mt-2 w-52 rounded-xl border shadow-depth-3 py-1 z-50 bg-surface"
-              style={{ borderColor: 'var(--border-default)' }}
+              className="absolute right-0 top-full mt-2 w-56 rounded-xl border shadow-depth-3 py-1 z-50 bg-surface"
+              style={{ borderColor: 'var(--border-default)', background: 'var(--bg-elevated)' }}
             >
               <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center gap-2.5 mb-1.5">
@@ -249,31 +266,90 @@ export default function TopBar({ onOpenMenu = () => { } }) {
                   {meta?.label || user?.role}
                 </span>
               </div>
-              {[
-                { icon: User, label: 'Profile' },
-                { icon: Settings, label: 'Settings', action: () => navigate('/settings') },
-                { icon: HelpCircle, label: 'Help & Docs' },
-              ].map(({ icon: Icon, label, action }) => (
-                <button
-                  key={label}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
-                  style={{ color: 'var(--text-secondary)' }}
-                  onClick={() => { action?.(); setUserMenuOpen(false) }}
-                >
-                  <Icon size={14} />
-                  {label}
-                </button>
-              ))}
-              <div className="border-t mt-1 pt-1" style={{ borderColor: 'var(--border-subtle)' }}>
-                <button
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
-                  style={{ color: 'var(--accent-rose)' }}
-                  onClick={handleSignOut}
-                >
-                  <LogOut size={14} />
-                  Sign out
-                </button>
-              </div>
+
+              {/* Switch Role — Demo Mode */}
+              {!roleSwitcherOpen ? (
+                <>
+                  {[
+                    { icon: User, label: 'Profile' },
+                    { icon: Settings, label: 'Settings', action: () => navigate('/settings') },
+                    { icon: HelpCircle, label: 'Help & Docs' },
+                  ].map(({ icon: Icon, label, action }) => (
+                    <button
+                      key={label}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
+                      style={{ color: 'var(--text-secondary)' }}
+                      onClick={() => { action?.(); setUserMenuOpen(false) }}
+                    >
+                      <Icon size={14} />
+                      {label}
+                    </button>
+                  ))}
+
+                  {/* Switch Role button */}
+                  <button
+                    className="w-full flex items-center justify-between gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onClick={() => setRoleSwitcherOpen(true)}
+                  >
+                    <span className="flex items-center gap-2.5"><UserCheck size={14} /> Switch Role</span>
+                    <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />
+                  </button>
+
+                  {/* Clear demo role if one is active */}
+                  {localStorage.getItem('demo_persona') && (
+                    <button
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors hover:bg-[--bg-hover]"
+                      style={{ color: 'var(--accent-amber)' }}
+                      onClick={handleClearDemoRole}
+                    >
+                      <X size={12} /> Reset to real account
+                    </button>
+                  )}
+
+                  <div className="border-t mt-1 pt-1" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <button
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
+                      style={{ color: 'var(--accent-rose)' }}
+                      onClick={handleSignOut}
+                    >
+                      <LogOut size={14} />
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Role switcher panel */
+                <>
+                  <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <button onClick={() => setRoleSwitcherOpen(false)} className="p-0.5 rounded hover:bg-[--bg-hover]">
+                      <ChevronRight size={12} style={{ transform: 'rotate(180deg)', color: 'var(--text-muted)' }} />
+                    </button>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Switch Demo Role</span>
+                  </div>
+                  <div className="py-1 max-h-64 overflow-y-auto">
+                    {DEMO_PERSONAS.map((p) => {
+                      const m = ROLE_META[p.role] || {}
+                      return (
+                        <button
+                          key={p.role}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-[--bg-hover]"
+                          onClick={() => handleSwitchRole(p)}
+                        >
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                            style={{ background: m.bg || '#eee', color: m.color || '#000' }}>
+                            {p.initials}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{p.name}</p>
+                            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{m.label || p.role}</p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

@@ -397,22 +397,29 @@ const generatePDFDownloadInternal = async (req, res, next) => {
         ));
     }
 
-    if (!pdfBuffer || pdfBuffer.length === 0) {
+    if (!pdfBuffer || (pdfBuffer.length === 0 && !pdfBuffer._isHtmlFallback)) {
         console.error('[REPORTS] generatePDFDownload — PDF generation returned empty buffer');
         return next(new AppError('PDF generation produced an empty file.', 500, 'PDF_EMPTY'));
     }
 
-    // 5. Stream download directly without storing to disk
-    const filename = `CloudSpire_Report_${rangeStart.toISOString().slice(0, 10)}.pdf`;
-    console.log('[REPORTS] generatePDFDownload — streaming PDF to client, filename:', filename,
-                'isSampleData:', !hasLiveData);
+    // 5. Stream download — detect HTML fallback (Puppeteer/Chrome unavailable on Render free tier)
+    const isHtmlFallback = pdfBuffer._isHtmlFallback === true;
+    const ext = isHtmlFallback ? 'html' : 'pdf';
+    const contentType = isHtmlFallback ? 'text/html' : 'application/pdf';
+    const filename = `CloudSpire_Report_${rangeStart.toISOString().slice(0, 10)}.${ext}`;
 
-    res.setHeader('Content-Type', 'application/pdf');
+    console.log('[REPORTS] generatePDFDownload — streaming to client, filename:', filename,
+                'isSampleData:', !hasLiveData, 'isHtmlFallback:', isHtmlFallback);
+
+    if (isHtmlFallback) {
+        console.warn('[REPORTS] generatePDFDownload — Chrome unavailable, sending HTML report instead of PDF');
+    }
+
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pdfBuffer.length);
-    if (!hasLiveData) {
-        res.setHeader('X-CloudSpire-Sample-Data', 'true');
-    }
+    if (!hasLiveData) res.setHeader('X-CloudSpire-Sample-Data', 'true');
+    if (isHtmlFallback) res.setHeader('X-CloudSpire-Format', 'html-fallback');
     res.status(200).end(pdfBuffer);
 };
 

@@ -1,38 +1,23 @@
-import puppeteer from "puppeteer";
 import { writeFile, mkdir } from "fs/promises";
 import { dirname } from "path";
 
 // ---------------------------------------------------------------------------
-// Reusable Puppeteer PDF generator.
+// Reusable PDF generator — CloudSpire
 //
-//   • Returns a Buffer by default
-//   • If `outputPath` is provided, also writes to disk and returns the path
+//   • Tries Puppeteer (headless Chrome) first
+//   • If Chrome is unavailable (e.g. Render free tier), gracefully falls back
+//     to returning the styled HTML buffer directly. The controller will send
+//     it as an .html attachment; users can Ctrl+P → Save as PDF in the browser.
+//   • Returns a Buffer. Buffer._isHtmlFallback = true when using the fallback.
 //   • Browser is ALWAYS closed — even on error (finally block)
-//   • Sandbox flags make it safe for Docker / CI environments
 // ---------------------------------------------------------------------------
-
-/** @typedef {import('puppeteer').PDFOptions} PDFOptions */
 
 /**
  * Converts an HTML string into a PDF.
  *
- * @param {string}  html                  — Full HTML document to render
- * @param {object}  [options]             — Generation options
- * @param {string}  [options.outputPath]  — If set, writes the PDF to this absolute path
- *                                           and returns the path string instead of a Buffer
- * @param {"A4"|"Letter"|"Legal"|"Tabloid"} [options.format="A4"]
- * @param {object}  [options.margin]      — Page margins
- * @param {string}  [options.margin.top="20mm"]
- * @param {string}  [options.margin.right="15mm"]
- * @param {string}  [options.margin.bottom="20mm"]
- * @param {string}  [options.margin.left="15mm"]
- * @param {boolean} [options.printBackground=true]
- * @param {boolean} [options.landscape=false]
- * @param {string}  [options.headerTemplate]  — Puppeteer header HTML
- * @param {string}  [options.footerTemplate]  — Puppeteer footer HTML
- * @param {boolean} [options.displayHeaderFooter=false]
- *
- * @returns {Promise<Buffer|string>}  PDF Buffer, or the outputPath if a file was saved
+ * @param {string}  html         — Full HTML document to render
+ * @param {object}  [options]    — Generation options
+ * @returns {Promise<Buffer>}      PDF Buffer, or HTML Buffer as graceful fallback
  */
 export const generatePDF = async (html, options = {}) => {
     const {
@@ -46,10 +31,12 @@ export const generatePDF = async (html, options = {}) => {
         displayHeaderFooter = false,
     } = options;
 
-    // ---- 1. Launch headless browser -----------------------------------
     let browser = null;
 
     try {
+        // Dynamic import so missing module doesn't crash the whole server
+        const puppeteer = await import("puppeteer").then(m => m.default || m);
+
         browser = await puppeteer.launch({
             headless: "new",
             args: [
@@ -59,23 +46,13 @@ export const generatePDF = async (html, options = {}) => {
                 "--disable-gpu",
                 "--font-render-hinting=none",
             ],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         });
 
-        // ---- 2. Create new page ---------------------------------------
         const page = await browser.newPage();
-
-        // ---- 3. Set HTML content --------------------------------------
         await page.setContent(html, { waitUntil: "domcontentloaded" });
 
-        // ---- 4. Generate PDF ------------------------------------------
-        /** @type {PDFOptions} */
-        const pdfOptions = {
-            format,
-            margin,
-            printBackground,
-            landscape,
-        };
-
+        const pdfOptions = { format, margin, printBackground, landscape };
         if (displayHeaderFooter) {
             pdfOptions.displayHeaderFooter = true;
             pdfOptions.headerTemplate = headerTemplate;
@@ -85,7 +62,6 @@ export const generatePDF = async (html, options = {}) => {
         const pdfUint8 = await page.pdf(pdfOptions);
         const buffer = Buffer.from(pdfUint8);
 
-        // ---- 5. Optionally save to disk -------------------------------
         if (outputPath) {
             await mkdir(dirname(outputPath), { recursive: true });
             await writeFile(outputPath, buffer);
@@ -93,8 +69,27 @@ export const generatePDF = async (html, options = {}) => {
         }
 
         return buffer;
+    } catch (puppeteerErr) {
+        // ---- Graceful fallback: return styled HTML buffer ----
+        // Render free tier has no Chrome. We return the HTML so the controller
+        // can send it as a downloadable .html file. Users open it and Ctrl+P → PDF.
+        console.warn("[pdfGenerator] Puppeteer/Chrome unavailable, using HTML fallback:", puppeteerErr.message);
+
+        const htmlBuffer = Buffer.from(html, "utf-8");
+        // Tag the buffer so the controller can set the correct Content-Type/filename
+        htmlBuffer._isHtmlFallback = true;
+
+        if (outputPath) {
+            const htmlPath = outputPath.replace(/\.pdf$/i, ".html");
+            await mkdir(dirname(htmlPath), { recursive: true });
+            await writeFile(htmlPath, htmlBuffer);
+            return htmlPath;
+        }
+
+        return htmlBuffer;
     } finally {
-        // Always close the browser — no leaked Chrome processes
-        if (browser) await browser.close();
+        if (browser) {
+            try { await browser.close(); } catch (_) {}
+        }
     }
 };

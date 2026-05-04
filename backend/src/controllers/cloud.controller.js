@@ -27,32 +27,47 @@ export const getAws = catchAsync(async (req, res, next) => {
             // Frontend sends accessKeyId/secretAccessKey — normalize both naming conventions
             const accessKey = creds.accessKeyId || creds.accessKey;
             const secretKey = creds.secretAccessKey || creds.secretKey;
+
             if (accessKey) {
+                const normalizedCreds = { accessKey, secretKey };
+                let liveCostData = null;
+                let liveInstances = null;
+
+                // Try Cost Explorer (requires ce:GetCostAndUsage permission)
                 try {
                     const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
                     const end   = new Date().toISOString().split('T')[0];
+                    liveCostData = await fetchAwsCostAndUsage(normalizedCreds, start, end);
+                    console.log('[CLOUD] getAws — Cost Explorer fetch succeeded');
+                } catch (ceErr) {
+                    console.warn('[CLOUD] getAws — Cost Explorer failed (likely missing ce:* permission):', ceErr.message);
+                    // Not fatal — we'll use mock cost data below
+                }
 
-                    const [liveCostData, liveInstances] = await Promise.all([
-                        fetchAwsCostAndUsage({ accessKey, secretKey }, start, end),
-                        fetchAwsInstances({ accessKey, secretKey }),
-                    ]);
+                // Try EC2 Describe (requires ec2:DescribeInstances permission)
+                try {
+                    liveInstances = await fetchAwsInstances(normalizedCreds);
+                    console.log('[CLOUD] getAws — EC2 instances fetch succeeded, count:', liveInstances?.length);
+                } catch (ec2Err) {
+                    console.warn('[CLOUD] getAws — EC2 describe failed:', ec2Err.message);
+                }
 
-                    persistCostRecords(orgId, teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
-
-                    console.log('[CLOUD] getAws success — live data from AWS');
+                // If we got at least some real data, return a hybrid response
+                if (liveCostData || liveInstances) {
+                    if (liveCostData) {
+                        persistCostRecords(orgId, teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
+                    }
+                    console.log('[CLOUD] getAws success — hybrid data (liveCost:', !!liveCostData, ', liveEC2:', !!liveInstances, ')');
                     return res.status(200).json({
                         success: true,
-                        data: {
-                            awsAccounts: accounts,
-                            awsServiceBreakdown: liveCostData.ResultsByTime,
-                            awsEC2Instances: liveInstances,
-                            awsOrphanedResources: [],
-                            awsRegionBreakdown: [],
-                        },
+                        isSampleData: !liveCostData,      // cost data is sample if CE failed
+                        isLiveInstances: !!liveInstances,  // EC2 data is real if it succeeded
+                        awsAccounts: accounts,
+                        awsServiceBreakdown: liveCostData?.ResultsByTime || awsEC2Instances,
+                        awsEC2Instances: liveInstances || awsEC2Instances,
+                        awsOrphanedResources: awsOrphanedResources,
+                        awsRegionBreakdown: [],
                     });
-                } catch (error) {
-                    console.error('[CLOUD] getAws error — live AWS sync failed:', error.message);
-                    logger.warn({ err: error, orgId }, 'Failed real AWS sync, falling back to mock data');
                 }
             }
         }

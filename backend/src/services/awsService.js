@@ -4,19 +4,21 @@ import { logger } from "../utils/logger.js";
 
 // Helper to instantiate clients
 const getAwsClients = (credentials) => {
-    if (!credentials || !credentials.accessKey || !credentials.secretKey) {
-        throw new Error("Missing AWS credentials");
+    // Accept both naming conventions from frontend and backend
+    const accessKeyId     = credentials.accessKeyId     || credentials.accessKey;
+    const secretAccessKey = credentials.secretAccessKey || credentials.secretKey;
+    const region          = credentials.region          || 'us-east-1';
+
+    if (!accessKeyId || !secretAccessKey) {
+        throw new Error("Missing AWS credentials (accessKeyId/secretAccessKey required)");
     }
     const config = {
-        region: "us-east-1", // Default region or configure dynamically
-        credentials: {
-            accessKeyId: credentials.accessKey,
-            secretAccessKey: credentials.secretKey,
-        }
+        region,
+        credentials: { accessKeyId, secretAccessKey },
     };
     return {
-        ceClient: new CostExplorerClient(config),
-        ec2Client: new EC2Client(config)
+        ceClient:  new CostExplorerClient(config),
+        ec2Client: new EC2Client(config),
     };
 };
 

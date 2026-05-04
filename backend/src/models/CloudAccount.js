@@ -19,7 +19,7 @@ const cloudAccountSchema = new mongoose.Schema(
         team: { 
             type: mongoose.Schema.Types.ObjectId, 
             ref: 'Team', 
-            required: [true, 'Team is required'] 
+            required: false   // Optional — teamId may be null in demo mode
         },
         addedBy: { 
             type: mongoose.Schema.Types.ObjectId, 

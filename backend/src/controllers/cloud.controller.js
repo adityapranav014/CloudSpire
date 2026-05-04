@@ -24,14 +24,17 @@ export const getAws = catchAsync(async (req, res, next) => {
 
         if (accounts?.length > 0) {
             const creds = accounts[0].getDecryptedCredentials();
-            if (creds.accessKey) {
+            // Frontend sends accessKeyId/secretAccessKey — normalize both naming conventions
+            const accessKey = creds.accessKeyId || creds.accessKey;
+            const secretKey = creds.secretAccessKey || creds.secretKey;
+            if (accessKey) {
                 try {
                     const start = new Date(new Date().setDate(1)).toISOString().split('T')[0];
                     const end   = new Date().toISOString().split('T')[0];
 
                     const [liveCostData, liveInstances] = await Promise.all([
-                        fetchAwsCostAndUsage(creds, start, end),
-                        fetchAwsInstances(creds),
+                        fetchAwsCostAndUsage({ accessKey, secretKey }, start, end),
+                        fetchAwsInstances({ accessKey, secretKey }),
                     ]);
 
                     persistCostRecords(orgId, teamId, accounts[0]._id, 'aws', liveCostData.ResultsByTime);
@@ -153,18 +156,18 @@ export const getGcp = catchAsync(async (req, res, next) => {
 import { encrypt } from '../services/encryptionService.js';
 
 export const connectCloudAccount = catchAsync(async (req, res, next) => {
-    const { provider, name, credentials } = req.body;
-    // Allow teamId from body OR from the JWT (orgScope middleware injects req.teamId)
-    const teamId = req.body.teamId || req.teamId;
+    // Prefer teamId from body, then from JWT, then skip (demo mode)
+    const teamId = req.body.teamId || req.teamId || null;
     const { orgId } = req;
 
     if (!provider || !name || !credentials) {
         return next(new AppError('Provider, name, and credentials are required.', 400, 'MISSING_FIELDS'));
     }
 
-    if (!teamId) {
-        return next(new AppError('Team context is required. Ensure your account is assigned to a team.', 400, 'MISSING_TEAM'));
+    if (!orgId) {
+        return next(new AppError('Your account is not linked to an organisation. Please re-login.', 400, 'MISSING_ORG'));
     }
+
 
     // Encrypt all values in credentials object
     const encryptedCredentials = {};

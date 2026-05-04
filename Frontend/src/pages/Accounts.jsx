@@ -17,6 +17,7 @@ import {
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import api from '../services/api'
 import { selectUser } from '../store/slices/authSlice'
+import { selectDashboardSummary } from '../store/slices/dashboardSlice'
 
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
@@ -60,10 +61,16 @@ export default function Accounts() {
   const [awsForm, setAwsForm] = useState({ accessKeyId: '', secretAccessKey: '', accountName: '' })
   const [azureForm, setAzureForm] = useState({ tenantId: '', clientId: '', clientSecret: '', subscriptionId: '' })
   const [gcpJsonText, setGcpJsonText] = useState('')
+  // Track which mock accounts have been manually hidden (when user has real account for same provider)
+  const [hiddenMockIds, setHiddenMockIds] = useState([])
+  const [deletingId, setDeletingId] = useState(null)
 
 
   // Helper: sum up total spend from service breakdown array
-  const sumBreakdown = (arr) => (arr || []).reduce((s, item) => s + (item.total || item.amount || 0), 0);
+  const sumBreakdown = (arr) => (arr || []).reduce((s, item) => s + Number(item.total ?? item.cost ?? item.amount ?? 0), 0);
+
+  // Dashboard summary for fallback spend on real accounts
+  const dashSummary = useSelector(selectDashboardSummary)
 
   // Normalize real CloudAccount documents to display shape
   const realAccounts = (accountsData?.data?.accounts || []).map(a => {
@@ -72,6 +79,8 @@ export default function Accounts() {
     let resources = '—';
     if (a.provider === 'aws') {
       spend = sumBreakdown(awsServiceBreakdown);
+      // Fallback: use dashboard totalMonthSpend if CE data isn't available yet
+      if (spend === 0 && dashSummary?.totalMonthSpend > 0) spend = dashSummary.totalMonthSpend;
       resources = (d0?.awsEC2Instances?.length || 0) + ' instances';
     } else if (a.provider === 'azure') {
       spend = sumBreakdown(azureServiceBreakdown);
@@ -97,12 +106,14 @@ export default function Accounts() {
     };
   });
 
-  // Mock accounts from provider API sample data — filter out any locally hidden ones
+  // Mock accounts from provider API sample data
+  // If there's already a real account for a provider, hide that provider's mock rows automatically
+  const realProviders = new Set(realAccounts.map(a => a.provider));
   const mockAccounts = [
     ...awsAccounts.map(a => ({ ...a, provider: 'aws', isMock: true, isReal: false })),
     ...gcpProjects.map(p => ({ ...p, provider: 'gcp', isMock: true, isReal: false })),
     ...azureSubscriptions.map(s => ({ ...s, provider: 'azure', isMock: true, isReal: false })),
-  ].filter(a => !hiddenMockIds.includes(a.id));
+  ].filter(a => !realProviders.has(a.provider) && !hiddenMockIds.includes(a.id));
 
   // Real accounts first, then mock/sample accounts
   const allAccounts = [...realAccounts, ...mockAccounts]
@@ -122,8 +133,7 @@ export default function Accounts() {
   const selectedResources = selectedAccount ? (selectedAccount.resourceList || []) : []
   const handleSync = () => addToast('Syncing all accounts...', 'info')
 
-  const [deletingId, setDeletingId] = useState(null)
-  const [hiddenMockIds, setHiddenMockIds] = useState([])
+
 
   const handleDelete = useCallback(async (acct, e) => {
     e.stopPropagation()

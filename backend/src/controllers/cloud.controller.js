@@ -172,6 +172,10 @@ export const getGcp = catchAsync(async (req, res, next) => {
 import { encrypt } from '../services/encryptionService.js';
 
 export const connectCloudAccount = catchAsync(async (req, res, next) => {
+    console.log('[CLOUD] POST /connect — body:', { provider: req.body.provider, name: req.body.name, hasCredentials: !!req.body.credentials });
+    console.log('[CLOUD] POST /connect — orgId:', req.orgId, 'teamId:', req.teamId, 'userId:', req.user?.id);
+
+    const { provider, name, credentials } = req.body;
     // Prefer teamId from body, then from JWT, then skip (demo mode)
     const teamId = req.body.teamId || req.teamId || null;
     const { orgId } = req;
@@ -184,14 +188,24 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
         return next(new AppError('Your account is not linked to an organisation. Please re-login.', 400, 'MISSING_ORG'));
     }
 
+    // Check for duplicate — prevent same provider being connected twice with same key
+    const existingAccounts = await CloudAccount.find({ orgId, provider, isActive: true });
+    console.log('[CLOUD] POST /connect — existing accounts for provider:', existingAccounts.length);
 
     // Encrypt all values in credentials object
     const encryptedCredentials = {};
     for (const [key, value] of Object.entries(credentials)) {
         if (typeof value === 'string' && value.trim() !== '') {
-            encryptedCredentials[key] = encrypt(value);
+            try {
+                encryptedCredentials[key] = encrypt(value);
+            } catch (encErr) {
+                console.error('[CLOUD] POST /connect — encryption failed for key:', key, encErr.message);
+                return next(new AppError('Failed to securely store credentials. Check ENCRYPTION_KEY configuration.', 500, 'ENCRYPTION_FAILED'));
+            }
         }
     }
+
+    console.log('[CLOUD] POST /connect — creating CloudAccount with orgId:', orgId, 'teamId:', teamId, 'provider:', provider);
 
     const account = await CloudAccount.create({
         orgId,
@@ -202,6 +216,8 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
         addedBy: req.user.id,
         isActive: true,
     });
+
+    console.log('[CLOUD] POST /connect — account created:', account._id);
 
     await logAction({
         orgId,
@@ -223,6 +239,7 @@ export const connectCloudAccount = catchAsync(async (req, res, next) => {
         }
     });
 });
+
 
 export const getCloudAccounts = catchAsync(async (req, res, next) => {
     const { orgId } = req;

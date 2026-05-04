@@ -2,7 +2,7 @@ import { useMigrationData } from '../hooks/useMigrationData';
 import { useState, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { Plus, RefreshCw, CheckCircle, Link2, ExternalLink, Shield, Server, Box, Loader2 } from 'lucide-react'
+import { Plus, RefreshCw, CheckCircle, Link2, ExternalLink, Shield, Server, Box, Loader2, Trash2, AlertTriangle } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import ProviderBadge from '../components/ui/ProviderBadge'
 import TrendBadge from '../components/ui/TrendBadge'
@@ -121,6 +121,23 @@ export default function Accounts() {
   const selectedTrend = selectedAccount ? (selectedAccount.trendData || []) : []
   const selectedResources = selectedAccount ? (selectedAccount.resourceList || []) : []
   const handleSync = () => addToast('Syncing all accounts...', 'info')
+
+  const [deletingId, setDeletingId] = useState(null)
+  const handleDelete = useCallback(async (acct, e) => {
+    e.stopPropagation()
+    if (!window.confirm(`Remove "${acct.name}" from CloudSpire? This does NOT delete anything in AWS.`)) return
+    setDeletingId(acct._id || acct.id)
+    try {
+      await api.delete(`/cloud/${acct._id || acct.id}`)
+      addToast(`${acct.name} disconnected successfully.`, 'success')
+      reloadAccounts()
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Failed to disconnect account'
+      addToast(msg, 'error')
+    } finally {
+      setDeletingId(null)
+    }
+  }, [addToast, reloadAccounts])
 
   const handleConnect = useCallback(async () => {
     setIsConnecting(true)
@@ -290,7 +307,7 @@ export default function Accounts() {
                 </td>
                 <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{acct.lastSync}</td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 items-center">
                     {can(PERMISSIONS.SYNC_ACCOUNTS) && (
                       <button onClick={(e) => { e.stopPropagation(); addToast(`Syncing ${acct.name}...`, 'info'); }}
                         className="p-1.5 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }} title="Sync now">
@@ -301,6 +318,19 @@ export default function Accounts() {
                       className="p-1.5 rounded-lg hover:bg-[--bg-hover] transition-colors" style={{ color: 'var(--text-muted)' }} title="Open in console">
                       <ExternalLink size={12} />
                     </button>
+                    {/* Delete button — only for real connected accounts, not mock/demo rows */}
+                    {acct.isReal && (
+                      <button
+                        onClick={(e) => handleDelete(acct, e)}
+                        disabled={deletingId === (acct._id || acct.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                        style={{ color: deletingId === (acct._id || acct.id) ? 'var(--text-muted)' : '#f87171' }}
+                        title="Disconnect account">
+                        {deletingId === (acct._id || acct.id)
+                          ? <Loader2 size={12} className="animate-spin" />
+                          : <Trash2 size={12} />}
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -61,22 +61,41 @@ export default function Accounts() {
   const [azureForm, setAzureForm] = useState({ tenantId: '', clientId: '', clientSecret: '', subscriptionId: '' })
   const [gcpJsonText, setGcpJsonText] = useState('')
 
+
+  // Helper: sum up total spend from service breakdown array
+  const sumBreakdown = (arr) => (arr || []).reduce((s, item) => s + (item.total || item.amount || 0), 0);
+
   // Normalize real CloudAccount documents to display shape
-  const realAccounts = (accountsData?.data?.accounts || []).map(a => ({
-    id: a._id,
-    _id: a._id,
-    provider: a.provider,
-    name: a.name,
-    env: 'production',
-    spend: 0,
-    resources: '—',
-    lastSync: a.updatedAt ? new Date(a.updatedAt).toLocaleDateString() : '—',
-    region: '—',
-    trendData: [],
-    resourceList: [],
-    isReal: true,
-    isMock: false,
-  }));
+  const realAccounts = (accountsData?.data?.accounts || []).map(a => {
+    // Pull spend from the provider-specific data we already fetched
+    let spend = 0;
+    let resources = '—';
+    if (a.provider === 'aws') {
+      spend = sumBreakdown(awsServiceBreakdown);
+      resources = (d0?.awsEC2Instances?.length || 0) + ' instances';
+    } else if (a.provider === 'azure') {
+      spend = sumBreakdown(azureServiceBreakdown);
+      resources = (d2?.azureVMs?.length || 0) + ' VMs';
+    } else if (a.provider === 'gcp') {
+      spend = sumBreakdown(gcpServiceBreakdown);
+      resources = (d1?.gcpProjects?.length || 0) + ' projects';
+    }
+    return {
+      id: a._id,
+      _id: a._id,
+      provider: a.provider,
+      name: a.name,
+      env: 'production',
+      spend,
+      resources,
+      lastSync: a.updatedAt ? new Date(a.updatedAt).toLocaleDateString() : '—',
+      region: '—',
+      trendData: [],
+      resourceList: [],
+      isReal: true,
+      isMock: false,
+    };
+  });
 
   // Mock accounts from provider API sample data — always shown alongside real accounts
   const mockAccounts = [

@@ -55,16 +55,20 @@ export async function getCostData(orgId, provider = null, opts = {}) {
     const { from = defaultFrom, to = now } = opts;
 
     // ── Gate: does this org have any connected cloud accounts? ─────────────────
-    const accountCount = await CloudAccount.countDocuments({ orgId });
+    // Handle null orgId (demo mode) — go straight to sample data
+    const accountCount = orgId
+        ? await CloudAccount.countDocuments({ orgId })
+        : 0;
 
     // If accounts exist, check whether any live CostRecords have been persisted yet.
-    // AWS Cost Explorer may not have synced — in that case fall back to sample data
-    // so the dashboard never shows all-zeros (critical for demo/hackathon).
     let isSampleData = accountCount === 0;
+    let liveCount = 0;
     if (!isSampleData) {
-        const liveCount = await CostRecord.countDocuments({ orgId, source: 'live' });
+        liveCount = await CostRecord.countDocuments({ orgId, source: 'live' });
         if (liveCount === 0) {
-            isSampleData = true; // no live records yet — serve sample data gracefully
+            // Account connected but Cost Explorer hasn't synced yet (e.g. missing ce:* permission).
+            // Return mock/demo data so the dashboard isn't all zeros.
+            isSampleData = true;
         }
     }
 
@@ -81,36 +85,27 @@ export async function getCostData(orgId, provider = null, opts = {}) {
 
     // ── Run aggregations in parallel ──────────────────────────────────────────
     const [serviceBreakdown, regionBreakdown, dailyTrend, rawRecords] = await Promise.all([
-        // Service breakdown: { _id: 'AmazonEC2', total: 1234.56 }
         CostRecord.aggregate([
             { $match: matchFilter },
             { $group: { _id: '$service', total: { $sum: '$cost' } } },
             { $sort: { total: -1 } },
             { $limit: 20 },
         ]),
-
-        // Region breakdown
         CostRecord.aggregate([
             { $match: matchFilter },
             { $group: { _id: '$region', total: { $sum: '$cost' } } },
             { $sort: { total: -1 } },
         ]),
-
-        // Daily trend — group by calendar day
         CostRecord.aggregate([
             { $match: matchFilter },
             {
                 $group: {
-                    _id: {
-                        $dateToString: { format: '%Y-%m-%d', date: '$date' },
-                    },
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
                     total: { $sum: '$cost' },
                 },
             },
             { $sort: { _id: 1 } },
         ]),
-
-        // Raw records for drilldown (capped at 1000 for API safety)
         CostRecord.find(matchFilter)
             .select('service region date cost currency resourceId provider')
             .sort({ date: -1 })
@@ -118,7 +113,7 @@ export async function getCostData(orgId, provider = null, opts = {}) {
             .lean(),
     ]);
 
-    // Team breakdown — only meaningful for live data (sample has a single sentinel teamId)
+    // Team breakdown — only meaningful for live data
     let teamBreakdown = [];
     if (!isSampleData) {
         teamBreakdown = await CostRecord.aggregate([
@@ -128,11 +123,51 @@ export async function getCostData(orgId, provider = null, opts = {}) {
         ]);
     }
 
-    const totalSpend = serviceBreakdown.reduce((s, r) => s + r.total, 0);
+    let totalSpend = serviceBreakdown.reduce((s, r) => s + r.total, 0);
+
+    // ── Hardcoded demo fallback when DB sample data is also empty ─────────────
+    // This guarantees the dashboard ALWAYS has meaningful numbers to show,
+    // even on a fresh deploy with no seeded CostRecords in the DB.
+    if (totalSpend === 0 && isSampleData) {
+        logger.warn({ orgId }, 'DB sample data empty — using hardcoded demo totals for dashboard');
+        return {
+            isSampleData: true,
+            currency: 'USD',
+            totalSpend: 142380,
+            lastMonthSpend: 128900,
+            serviceBreakdown: [
+                { service: 'Amazon EC2',          total: 52400 },
+                { service: 'Amazon RDS',          total: 28600 },
+                { service: 'Amazon S3',           total: 18900 },
+                { service: 'AWS Lambda',          total: 12300 },
+                { service: 'Amazon CloudFront',   total: 9800 },
+                { service: 'Azure Virtual Machines', total: 11200 },
+                { service: 'Azure SQL Database',  total: 5100 },
+                { service: 'Google Compute Engine', total: 4080 },
+            ],
+            regionBreakdown: [
+                { region: 'us-east-1',    total: 58400 },
+                { region: 'us-west-2',    total: 31200 },
+                { region: 'eu-west-1',    total: 24600 },
+                { region: 'ap-south-1',   total: 18100 },
+                { region: 'eastus',       total: 10080 },
+            ],
+            dailyTrend: Array.from({ length: 30 }, (_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (29 - i));
+                return {
+                    date:  d.toISOString().split('T')[0],
+                    total: 3800 + Math.floor(Math.random() * 2000),
+                };
+            }),
+            teamBreakdown: [],
+            records: [],
+        };
+    }
 
     // Apply INR multiplier for sample data (stored in USD, but new orgs expect INR)
     const multiplier = isSampleData ? USD_TO_INR : 1;
-    const currency   = isSampleData ? 'INR' : 'USD'; // real orgs: use their account currency
+    const currency   = isSampleData ? 'INR' : 'USD';
 
     return {
         isSampleData,

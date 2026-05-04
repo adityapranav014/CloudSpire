@@ -53,10 +53,11 @@ export const getAws = catchAsync(async (req, res, next) => {
     }
 
     // No real account — serve AWS CUR sample data (or mock in dev)
-    if (env.nodeEnv === 'production') {
-        console.log('[CLOUD] getAws error — no AWS accounts configured for orgId:', orgId);
-        return next(new AppError('No AWS accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
-    }
+    // Hackathon mode: We disabled the production block so mock data shows up on Render!
+    // if (env.nodeEnv === 'production') {
+    //     console.log('[CLOUD] getAws error — no AWS accounts configured for orgId:', orgId);
+    //     return next(new AppError('No AWS accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
+    // }
 
     // In dev mode: use getCostData() which transparently serves sample data
     // (if the CSV was downloaded) or falls back to empty data.
@@ -119,10 +120,11 @@ export const getAzure = catchAsync(async (req, res, next) => {
         } // Closing brace for if (creds.tenantId)
     }
 
-    if (env.nodeEnv === 'production') {
-        console.log('[CLOUD] getAzure error — no Azure accounts configured for orgId:', orgId);
-        return next(new AppError('No Azure accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
-    }
+    // Hackathon mode: allow mock data in production
+    // if (env.nodeEnv === 'production') {
+    //     console.log('[CLOUD] getAzure error — no Azure accounts configured for orgId:', orgId);
+    //     return next(new AppError('No Azure accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
+    // }
 
     console.log('[CLOUD] getAzure success — serving mock data');
     logger.warn({ orgId }, 'Serving mock Azure data — not for production use');
@@ -134,13 +136,14 @@ export const getGcp = catchAsync(async (req, res, next) => {
 
     const { orgId } = req;
 
-    if (env.nodeEnv === 'production') {
-        const accounts = await CloudAccount.find({ orgId, provider: 'gcp' });
-        if (!accounts?.length) {
-            console.log('[CLOUD] getGcp error — no GCP accounts for orgId:', orgId);
-            return next(new AppError('No GCP accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
-        }
-    }
+    // Hackathon mode: allow mock data in production
+    // if (env.nodeEnv === 'production') {
+    //     const accounts = await CloudAccount.find({ orgId, provider: 'gcp' });
+    //     if (!accounts?.length) {
+    //         console.log('[CLOUD] getGcp error — no GCP accounts for orgId:', orgId);
+    //         return next(new AppError('No GCP accounts configured for this organisation.', 404, 'NO_CLOUD_ACCOUNTS'));
+    //     }
+    // }
 
     console.log('[CLOUD] getGcp success — serving mock data');
     logger.warn({ orgId }, 'Serving mock GCP data — not for production use');

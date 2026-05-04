@@ -75,12 +75,12 @@ export const rateLimiter = ({
 // Pre-built limiters for the report endpoints
 // ---------------------------------------------------------------------------
 
-/** PDF generation: max 3 per 5 minutes per user. */
+/** PDF generation: max 20 per 5 minutes per user (relaxed for demo). */
 export const reportGenerationLimiter = rateLimiter({
     windowMs: 5 * 60 * 1000,
-    max: 3,
+    max: 20,
     keyPrefix: 'report-gen',
-    message: 'Report generation rate limit exceeded. You can generate up to 3 reports every 5 minutes.',
+    message: 'Report generation rate limit exceeded. Please wait a moment.',
 });
 
 /** Status polling: max 60 per minute per user (generous for polling). */

@@ -23,19 +23,20 @@ export const orgScope = (req, _res, next) => {
     const orgId = req.user?.orgId;
     const teamId = req.user?.teamId;
 
+    // ── HACKATHON MODE ────────────────────────────────────────────────────────
+    // In a strict multi-tenant setup we'd block here with a 403. For the demo,
+    // if a user has no orgId in their JWT (e.g., registered on Render without
+    // running the seed script), we allow the request through with orgId=null.
+    // Controllers will fall through to mock/demo data when CloudAccount queries
+    // return empty results.
+    // ──────────────────────────────────────────────────────────────────────────
     if (!orgId) {
-        return next(
-            new AppError(
-                'Your account is not associated with an organisation. Please contact support.',
-                403,
-                'NO_ORG_SCOPE'
-            )
-        );
+        console.warn('[orgScope] No orgId on req.user — demo mode passthrough for:', req.user?.email);
     }
 
     // Convenience aliases — controllers use req.orgId, req.teamId
-    req.orgId = orgId;
-    req.teamId = teamId;
+    req.orgId = orgId || null;
+    req.teamId = teamId || null;
 
     next();
 };

@@ -100,14 +100,39 @@ export const getIndex = catchAsync(async (req, res) => {
             estimatedSavings: Number(item.potentialSavings || 0),
         }));
 
+    // Calculate savings breakdown by type
+    const savingsBreakdown = {
+        idleInstances: optimizations
+            .filter(o => o.type === 'idle-instance')
+            .reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
+        orphanedStorage: optimizations
+            .filter(o => o.type === 'orphaned-resource')
+            .reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
+        rightSizing: optimizations
+            .filter(o => o.type === 'rightsize')
+            .reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
+        reservedInstances: optimizations
+            .filter(o => o.type === 'reserved-instance')
+            .reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
+        scheduledShutdowns: optimizations
+            .filter(o => o.type === 'shutdown')
+            .reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
+    };
+
+    const totalPotentialSavings = optimizations.reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0);
+    const implementedThisMonth = optimizations
+        .filter(o => o.status === 'implemented')
+        .reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0);
+
     const optimizationSummary = {
-        totalSavings: optimizations.reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
-        totalPotentialSavings: optimizations.reduce((acc, curr) => acc + Number(curr.potentialSavings || 0), 0),
-        implementedThisMonth: optimizations.filter(o => o.status === 'implemented').length,
+        totalPotentialSavings,
+        implementedThisMonth,
+        savingsImplementedPercent: totalPotentialSavings > 0 ? Math.round((implementedThisMonth / totalPotentialSavings) * 100) : 0,
+        savingsBreakdown,
         opportunitiesFound: optimizations.filter(o => o.status === 'pending').length,
     };
 
-    console.log('[OPTIMIZATIONS] getIndex success — rightsize:', rightsizingRecommendations.length, 'reserved:', reservedInstanceOpportunities.length, 'shutdowns:', scheduledShutdowns.length, 'totalSavings:', optimizationSummary.totalSavings);
+    console.log('[OPTIMIZATIONS] getIndex success — rightsize:', rightsizingRecommendations.length, 'reserved:', reservedInstanceOpportunities.length, 'shutdowns:', scheduledShutdowns.length, 'totalSavings:', optimizationSummary.totalPotentialSavings);
 
     res.status(200).json({
         success: true,

@@ -9,6 +9,7 @@ import PageHeader from '../components/layout/PageHeader'
 import { BrandLogo, getBrandAsset } from '../constants/brandAssets'
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
+import { SettingsSkeleton } from '../components/ui/PageSkeleton'
 
 
 import UserAvatar from '../components/ui/UserAvatar'
@@ -91,7 +92,7 @@ export default function Settings() {
   const visibleTabs = TABS.filter(tab => !TAB_PERMISSIONS[tab] || can(TAB_PERMISSIONS[tab]))
 
   const isLoading = l0 || l1 || l2 || l3;
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (isLoading) return <SettingsSkeleton />;
   if (e0 || (!d0 && !l0) || (!d1 && !l1) || (!d2 && !l2)) return <div className="h-screen flex items-center justify-center"><div className="text-center"><p className="text-red-400 font-semibold mb-1">Failed to load settings</p><p className="text-sm text-zinc-500">{em0 || 'Please make sure the backend is running.'}</p></div></div>;
 
   const toggleNotif = (key) => setNotifSettings(prev => ({ ...prev, [key]: !prev[key] }))

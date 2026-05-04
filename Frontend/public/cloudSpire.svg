@@ -1,0 +1,29 @@
+<svg width="440" height="100" viewBox="0 0 440 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="spireGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#56BFFF"/>
+      <stop offset="100%" stop-color="#0058D6"/>
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EBF4FF"/>
+      <stop offset="100%" stop-color="#C8DFF7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cloud -->
+  <path d="M76,90 C57,90 47,76 62,69 C60,52 79,40 101,50 C115,37 144,42 146,61 C165,60 167,90 145,90 Z"
+        fill="url(#cloudGrad)"/>
+
+  <!-- Spire -->
+  <path d="M101,8 L133,85 L69,85 Z" fill="url(#spireGrad)"/>
+  <!-- Depth shadow -->
+  <path d="M101,8 L101,85 L69,85 Z" fill="#000" opacity="0.08"/>
+
+  <!-- Wordmark -->
+  <text x="172" y="68"
+    font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    font-weight="700"
+    font-size="46"
+    fill="#0F172A"
+    letter-spacing="-1.5">Cloud<tspan fill="#0070F3">Spire</tspan></text>
+</svg>

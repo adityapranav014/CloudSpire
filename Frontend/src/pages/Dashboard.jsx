@@ -31,6 +31,7 @@ import { selectAllServerMetrics } from '../store/slices/metricsSlice'
 import DemoBanner from '../components/DemoBanner'
 // Cloud data still uses SWR via useMigrationData (provider breakdown doesn't need Redux)
 import { useMigrationData } from '../hooks/useMigrationData'
+import { DashboardSkeleton } from '../components/ui/PageSkeleton'
 
 // --- Grid config --------------------------------------------
 const BREAKPOINTS = { lg: 1024, md: 768, sm: 480, xs: 0 }
@@ -382,21 +383,21 @@ export default function Dashboard() {
   const dispatch = useDispatch()
 
   // ── Redux: structured data ───────────────────────────────────────────────
-  const summary              = useSelector(selectDashboardSummary)
-  const dashboardLoading     = useSelector(selectDashboardLoading)
-  const dashboardError       = useSelector(selectDashboardError)
-  const optimizationSummary  = useSelector(selectOptimizationSummary)
-  const rightsizingRecs      = useSelector(selectRightsizingRecommendations)
+  const summary = useSelector(selectDashboardSummary)
+  const dashboardLoading = useSelector(selectDashboardLoading)
+  const dashboardError = useSelector(selectDashboardError)
+  const optimizationSummary = useSelector(selectOptimizationSummary)
+  const rightsizingRecs = useSelector(selectRightsizingRecommendations)
   const totalPotentialSavings = useSelector(selectTotalPotentialSavings)
-  const activeAlerts         = useSelector(selectActiveAlerts)
-  const allServerMetrics     = useSelector(selectAllServerMetrics)
-  const localMetrics         = allServerMetrics?.local  // 'local' = serverId from AppLayout
+  const activeAlerts = useSelector(selectActiveAlerts)
+  const allServerMetrics = useSelector(selectAllServerMetrics)
+  const localMetrics = allServerMetrics?.local  // 'local' = serverId from AppLayout
 
-  const isSampleData         = useSelector(selectIsSampleData)
+  const isSampleData = useSelector(selectIsSampleData)
 
   // ── SWR: provider breakdown + unified cost data -----------------------
-  const { data: aws }   = useMigrationData('/cloud/aws')
-  const { data: gcp }   = useMigrationData('/cloud/gcp')
+  const { data: aws } = useMigrationData('/cloud/aws')
+  const { data: gcp } = useMigrationData('/cloud/gcp')
   const { data: azure } = useMigrationData('/cloud/azure')
   const { data: alertsData } = useMigrationData('/alerts')
   const { data: unified } = useMigrationData('/unified')
@@ -412,9 +413,9 @@ export default function Dashboard() {
 
   // Derive currentMonthStats shape from either dashboard summary or unified mock
   const currentMonthStats = (summary ? {
-    totalSpend:       summary.totalMonthSpend,
-    prevMonthSpend:   summary.lastMonthSpend,
-    changePercent:    summary.pctChangeVsLastMonth,
+    totalSpend: summary.totalMonthSpend,
+    prevMonthSpend: summary.lastMonthSpend,
+    changePercent: summary.pctChangeVsLastMonth,
     projectedMonthEnd: summary.totalMonthSpend ? summary.totalMonthSpend * 1.15 : 0,
     budgetUsedPercent: 0, // Sprint 2: real budget tracking
     savingsIdentified: totalPotentialSavings,
@@ -506,14 +507,14 @@ export default function Dashboard() {
       ...(gcpServiceBreakdown || []).slice(0, 3),
       ...(azureServiceBreakdown || []).slice(0, 3),
     ].map(s => {
-        // costService returns { service, total }; mock data returns { service, cost }
-        const cost = Number(s?.cost ?? s?.total ?? 0)
-        return {
-          service: s?.service || 'Unknown service',
-          cost,
-          percent: total > 0 ? +((cost / total) * 100).toFixed(1) : 0,
-        }
-      })
+      // costService returns { service, total }; mock data returns { service, cost }
+      const cost = Number(s?.cost ?? s?.total ?? 0)
+      return {
+        service: s?.service || 'Unknown service',
+        cost,
+        percent: total > 0 ? +((cost / total) * 100).toFixed(1) : 0,
+      }
+    })
       .sort((a, b) => b.cost - a.cost)
       .slice(0, 8)
   }, [awsServiceBreakdown, gcpServiceBreakdown, azureServiceBreakdown, currentMonthStats])
@@ -534,7 +535,17 @@ export default function Dashboard() {
   const [editMode, setEditMode] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [droppingItem, setDroppingItem] = useState(null)
-  const { width: containerWidth, containerRef } = useContainerWidth({ initialWidth: 1200 })
+  const { width: containerWidth, containerRef, measureWidth } = useContainerWidth({ initialWidth: 1200 })
+
+  // Re-measure the container after the skeleton loading phase ends.
+  // When isLoading=true, the containerRef div unmounts; Chrome's ResizeObserver
+  // fires a final 0-width event on the detached node, setting containerWidth=0.
+  // Without this, the grid renders at width=0 after data loads, hiding all widgets.
+  useEffect(() => {
+    if (!isLoading) {
+      requestAnimationFrame(() => measureWidth())
+    }
+  }, [isLoading, measureWidth])
 
   const activeWidgetIds = useMemo(() => getActiveIds(layouts), [layouts])
   const openAlerts = (anomalies || []).filter(a => a.status === 'open')
@@ -694,14 +705,7 @@ export default function Dashboard() {
     return lg.map(l => l.i)
   }, [layouts])
 
-  if (isLoading) return (
-    <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-      <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent" />
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading dashboard…</p>
-      </div>
-    </div>
-  )
+  if (isLoading) return <DashboardSkeleton />
 
   if (dashboardError && !summary) return (
     <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>

@@ -11,6 +11,7 @@ import UserAvatar from '../components/ui/UserAvatar'
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
 import api from '../services/api'
+import { TeamsSkeleton } from '../components/ui/PageSkeleton'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -268,11 +269,7 @@ export default function Teams() {
   const { addToast } = useToast()
   const { can, isRole, persona } = usePermissions()
 
-  if (isLoading) return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent" />
-    </div>
-  )
+  if (isLoading) return <TeamsSkeleton />
 
   if (!teams) return (
     <div className="h-screen flex items-center justify-center">

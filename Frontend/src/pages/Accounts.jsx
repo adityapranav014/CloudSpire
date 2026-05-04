@@ -20,6 +20,7 @@ import { selectUser } from '../store/slices/authSlice'
 
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
+import { AccountsSkeleton } from '../components/ui/PageSkeleton'
 
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -79,8 +80,8 @@ export default function Accounts() {
 
   // Mock accounts from provider API sample data — always shown alongside real accounts
   const mockAccounts = [
-    ...awsAccounts.map(a => ({ ...a, provider: 'aws',   isMock: true, isReal: false })),
-    ...gcpProjects.map(p => ({ ...p, provider: 'gcp',   isMock: true, isReal: false })),
+    ...awsAccounts.map(a => ({ ...a, provider: 'aws', isMock: true, isReal: false })),
+    ...gcpProjects.map(p => ({ ...p, provider: 'gcp', isMock: true, isReal: false })),
     ...azureSubscriptions.map(s => ({ ...s, provider: 'azure', isMock: true, isReal: false })),
   ];
 
@@ -147,7 +148,7 @@ export default function Accounts() {
     }
   }, [connectTab, awsForm, azureForm, gcpJsonText, addToast, reloadAccounts])
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (isLoading) return <AccountsSkeleton />;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>

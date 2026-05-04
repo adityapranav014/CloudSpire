@@ -17,6 +17,7 @@ import {
   selectActiveAlerts, setInitialAlerts, removeAlert,
 } from '../store/slices/alertsSlice'
 import { useMigrationData } from '../hooks/useMigrationData'
+import { AnomaliesSkeleton } from '../components/ui/PageSkeleton'
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const fmtDate = (iso) => {
@@ -30,7 +31,7 @@ const statusColor = { open: '#F43F5E', acknowledged: '#F59E0B', resolved: '#10B9
 
 /** Anomaly detection page — AI-powered spend deviation alerts */
 export default function Anomalies() {
-  const dispatch   = useDispatch()
+  const dispatch = useDispatch()
   const { addToast } = useToast()
   const { can } = usePermissions()
 
@@ -56,39 +57,12 @@ export default function Anomalies() {
   const isLoading = l0 || l1;
 
 
-  const [filter, setFilter]         = useState('all')
+  const [filter, setFilter] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
   const [configOpen, setConfigOpen] = useState(false)
-  const [threshold, setThreshold]   = useState(20)
+  const [threshold, setThreshold] = useState(20)
   const [alertFrequency, setAlertFrequency] = useState('Immediate')
   const [providerToggles, setProviderToggles] = useState({ aws: true, gcp: true, azure: true })
-
-
-  if (isLoading) return (
-    <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-      <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent" />
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading alerts…</p>
-      </div>
-    </div>
-  )
-
-  if (e0 && anomalies.length === 0) return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="text-center">
-        <p className="font-semibold mb-1" style={{ color: 'var(--accent-rose)' }}>Failed to load anomalies</p>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>{em0}</p>
-        <button
-          onClick={() => mutate()}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg"
-          style={{ background: 'var(--accent-blue)', color: '#fff' }}
-        >
-          <RefreshCw size={12} /> Retry
-        </button>
-      </div>
-    </div>
-  )
-
 
   const filtered = anomalies.filter(a =>
     filter === 'all' || a.status === filter
@@ -113,18 +87,35 @@ export default function Anomalies() {
     }
   }, [anomalies, dispatch, addToast, mutate])
 
-
   const acknowledge = (id) => updateStatus(id, 'acknowledged', 'Anomaly acknowledged')
-  const resolve     = (id) => updateStatus(id, 'resolved', 'Anomaly marked as resolved')
-  const dismiss     = (id) => updateStatus(id, 'dismissed', 'Anomaly dismissed')
+  const resolve = (id) => updateStatus(id, 'resolved', 'Anomaly marked as resolved')
+  const dismiss = (id) => updateStatus(id, 'dismissed', 'Anomaly dismissed')
 
   const createTicket = (anomaly) => addToast(`Ticket created for ${anomaly.title || anomaly.service}`, 'success')
 
   const counts = {
-    open:         anomalies.filter(a => a.status === 'open').length,
+    open: anomalies.filter(a => a.status === 'open').length,
     acknowledged: anomalies.filter(a => a.status === 'acknowledged').length,
-    resolved:     anomalies.filter(a => a.status === 'resolved').length,
+    resolved: anomalies.filter(a => a.status === 'resolved').length,
   }
+
+  if (isLoading) return <AnomaliesSkeleton />
+
+  if (e0 && anomalies.length === 0) return (
+    <div className="h-screen flex items-center justify-center">
+      <div className="text-center">
+        <p className="font-semibold mb-1" style={{ color: 'var(--accent-rose)' }}>Failed to load anomalies</p>
+        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>{em0}</p>
+        <button
+          onClick={() => mutate()}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg"
+          style={{ background: 'var(--accent-blue)', color: '#fff' }}
+        >
+          <RefreshCw size={12} /> Retry
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>

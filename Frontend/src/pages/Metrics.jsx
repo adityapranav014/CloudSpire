@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Cpu, HardDrive, Network, Clock, Server, Activity, ArrowUp, ArrowDown } from 'lucide-react'
 import MetricCard from '../components/ui/MetricCard'
 import api from '../services/api'
+import { MetricsSkeleton } from '../components/ui/PageSkeleton'
 
 function formatBytes(bytes, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -18,7 +19,7 @@ function formatUptime(seconds) {
   const d = Math.floor(seconds / (3600 * 24));
   const h = Math.floor(seconds % (3600 * 24) / 3600);
   const m = Math.floor(seconds % 3600 / 60);
-  
+
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
@@ -58,7 +59,7 @@ export default function Metrics() {
 
     // CPU
     const cpuUsage = data.cpu || 0;
-    
+
     // Memory
     const memUsed = data.memory?.used || 0;
     const memTotal = data.memory?.total || 0;
@@ -75,7 +76,7 @@ export default function Metrics() {
 
     // Load
     const avgLoad = data.load?.avgLoad || 0;
-    
+
     // Uptime
     const uptime = data.uptime || 0;
 
@@ -95,11 +96,7 @@ export default function Metrics() {
   }, [data]);
 
   if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin h-8 w-8 border-4 border-[var(--accent-primary)] rounded-full border-t-transparent"></div>
-      </div>
-    );
+    return <MetricsSkeleton />;
   }
 
   if (isError || !metricsData) {
@@ -108,8 +105,8 @@ export default function Metrics() {
         <div className="text-center layer-raised p-8 rounded-2xl border border-[var(--border-subtle)]">
           <p className="text-rose-400 font-semibold mb-1">Failed to load metrics</p>
           <p className="text-sm text-zinc-500 mb-4">{errorMessage || 'Ensure the backend server is running.'}</p>
-          <button 
-            onClick={() => mutate()} 
+          <button
+            onClick={() => mutate()}
             className="px-4 py-2 text-xs font-semibold rounded-lg shiny-primary transition-opacity hover:opacity-90 text-white"
           >
             Retry Connection
@@ -205,18 +202,18 @@ export default function Metrics() {
           upIsGood={true}
         />
       </div>
-      
+
       <div className="mt-8 rounded-2xl p-6 border layer-raised flex items-start gap-4" style={{ borderColor: 'var(--border-subtle)' }}>
-         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--accent-primary-subtle)' }}>
-            <Activity size={20} style={{ color: 'var(--accent-primary)' }} />
-         </div>
-         <div>
-            <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Metrics Polling Active</h3>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Hardware data is retrieved directly from the host system using <code>systeminformation</code>. 
-              The backend employs a fast, TTL-based caching layer to prevent excessive CPU polling. Values refresh automatically when interacting with the API.
-            </p>
-         </div>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--accent-primary-subtle)' }}>
+          <Activity size={20} style={{ color: 'var(--accent-primary)' }} />
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Metrics Polling Active</h3>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            Hardware data is retrieved directly from the host system using <code>systeminformation</code>.
+            The backend employs a fast, TTL-based caching layer to prevent excessive CPU polling. Values refresh automatically when interacting with the API.
+          </p>
+        </div>
       </div>
     </motion.div>
   )

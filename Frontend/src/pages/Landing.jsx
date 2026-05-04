@@ -251,8 +251,7 @@ export default function Landing() {
       <header className="sticky top-0 z-50 border-b" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(10px)', borderColor: '#e2e8f0' }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 flex items-center justify-between" style={{ height: 60 }}>
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2.5">
-            <img src="/favicon.svg" alt="CloudSpire" className="w-7 h-7" />
-            <span className="font-bold text-sm" style={{ color: '#0f172a' }}>CloudSpire</span>
+            <img src="/cloudSpire.svg" alt="CloudSpire" className="h-8 w-auto" />
           </button>
           <nav className="hidden md:flex items-center gap-7">
             {navLinks.map(link => (
@@ -713,8 +712,7 @@ export default function Landing() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <img src="/favicon.svg" alt="CloudSpire" className="w-6 h-6" />
-                <span className="font-bold text-sm" style={{ color: '#0f172a' }}>CloudSpire</span>
+                <img src="/cloudSpire.svg" alt="CloudSpire" className="h-7 w-auto" />
               </div>
               <p className="text-sm leading-relaxed max-w-xs" style={{ color: '#64748b' }}>
                 The FinOps platform for engineering teams who care about cloud costs.

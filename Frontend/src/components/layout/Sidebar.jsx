@@ -9,7 +9,7 @@ import {
 import { usePermissions } from '../../hooks/usePermissions'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { useMigrationData } from '../../hooks/useMigrationData'
-import logo from '../../assets/logo.png'
+import logo from '../../assets/cloudSpire.svg'
 
 /** Main sidebar navigation */
 export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () => { } }) {
@@ -61,11 +61,8 @@ export default function Sidebar({ mobileOpen = false, onMobileOpenChange = () =>
   const navMarkup = (
     <>
       {/* Logo */}
-      <div className="h-14 flex items-center gap-2.5 px-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-        <img src={logo} alt="CloudSpire" className="w-7 h-7" />
-        <span className="font-semibold text-[15px]" style={{ color: 'var(--text-primary)' }}>
-          CloudSpire
-        </span>
+      <div className="h-14 flex items-center px-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+        <img src={logo} alt="CloudSpire" className="h-9 w-auto" />
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">

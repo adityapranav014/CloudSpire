@@ -13,6 +13,7 @@ import ProviderBadge from '../components/ui/ProviderBadge'
 
 import { useToast } from '../context/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
+import { OptimizerSkeleton } from '../components/ui/PageSkeleton'
 
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -97,7 +98,7 @@ export default function Optimizer() {
     if (scheduledShutdowns) setSchedules(scheduledShutdowns)
   }, [scheduledShutdowns])
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (isLoading) return <OptimizerSkeleton />;
 
   const idleInstances = [
     ...awsEC2Instances.filter(i => i.isIdle).map(i => ({

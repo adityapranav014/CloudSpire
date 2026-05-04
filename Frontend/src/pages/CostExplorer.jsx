@@ -18,9 +18,7 @@ import PageHeader from '../components/layout/PageHeader'
 import { BrandLogo, getBrandAsset } from '../constants/brandAssets'
 import ProviderBadge from '../components/ui/ProviderBadge'
 import TrendBadge from '../components/ui/TrendBadge'
-
-
-
+import { CostExplorerSkeleton } from '../components/ui/PageSkeleton'
 
 import { useToast } from '../context/ToastContext'
 
@@ -269,7 +267,7 @@ export default function CostExplorer() {
   const [tagKey, setTagKey] = useState('Environment')
   const { addToast } = useToast()
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (isLoading) return <CostExplorerSkeleton />;
 
   const filtered = tableRows
     .filter(r => selectedProviders.includes(r.provider))

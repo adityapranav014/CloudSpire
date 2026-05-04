@@ -1,7 +1,6 @@
 import { Worker } from "bullmq";
 import { createRedisConnection, isRedisAvailable, QUEUE_NAME } from "../config/queue.js";
 import { generatePDFReport } from "./reportWorker.js";
-import { saveReport, generateFilename } from "../services/storageService.js";
 
 import CostRecord from "../models/CostRecord.model.js";
 import Team from "../models/Team.model.js";
@@ -129,19 +128,20 @@ export const startReportWorker = async () => {
 
             await job.updateProgress(70);
 
-            // ---- 4. Generate PDF and save via storage service ----------
-            const filename = generateFilename(`CloudSpire_Report_${rangeStart.toISOString().slice(0, 10)}`);
-
+            // ---- 4. Generate PDF (reports are streamed, not stored) -----
             const pdfBuffer = await generatePDFReport(
                 { reportTitle: "CloudSpire Report", dateRange: rangeLabel, costSummary, teamBreakdown, serviceBreakdown, alerts: alertRows, insights },
             );
 
-            const stored = await saveReport(pdfBuffer, filename);
-
             await job.updateProgress(100);
-            console.log(`[ReportWorker] Job ${job.id} complete → ${stored.downloadUrl}`);
+            console.log(`[ReportWorker] Job ${job.id} complete — PDF generated (${pdfBuffer.length} bytes, streamed on-demand)`);
 
-            return { filename: stored.filename, downloadUrl: stored.downloadUrl, generatedAt: stored.savedAt, requestedBy: userId || null };
+            return { 
+                status: 'completed',
+                message: 'Report generated successfully. Download via /api/v1/reports/generate-pdf/sync',
+                generatedAt: new Date().toISOString(),
+                requestedBy: userId || null 
+            };
         },
         {
             connection: conn,

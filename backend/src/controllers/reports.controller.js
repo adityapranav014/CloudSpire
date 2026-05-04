@@ -5,7 +5,6 @@ import { AppError } from '../utils/AppError.js';
 import { generateStandardReport } from '../jobs/reportWorker.js';
 import { generatePDFReport } from '../workers/reportWorker.js';
 import { enqueueReportJob, getJobStatus, isRedisAvailable } from '../config/queue.js';
-import { saveReport, getReport } from '../services/storageService.js';
 
 import CostRecord from '../models/CostRecord.model.js';
 import Team from '../models/Team.model.js';
@@ -271,7 +270,7 @@ const generatePDFDownloadInternal = async (req, res, next) => {
 
     let costsByService, costsByTeam, teams, alerts, optimizations;
     try {
-        const orgMatch = { orgId };
+        const orgMatch = { orgId: new mongoose.Types.ObjectId(orgId) };
 
         [costsByService, costsByTeam, teams, alerts, optimizations] = await Promise.all([
             CostRecord.aggregate([
@@ -283,10 +282,10 @@ const generatePDFDownloadInternal = async (req, res, next) => {
                 { $match: { ...orgMatch, date: dateFilter } },
                 { $group: { _id: "$teamId", totalCost: { $sum: "$cost" } } },
             ]),
-            Team.find({ orgId }).lean(),
-            Alert.find({ orgId, status: { $in: ['open', 'acknowledged'] } })
+            Team.find({ orgId: new mongoose.Types.ObjectId(orgId) }).lean(),
+            Alert.find({ orgId: new mongoose.Types.ObjectId(orgId), status: { $in: ['open', 'acknowledged'] } })
                 .sort({ dateDetected: -1 }).limit(15).lean(),
-            Optimization.find({ orgId, status: 'pending' })
+            Optimization.find({ orgId: new mongoose.Types.ObjectId(orgId), status: 'pending' })
                 .sort({ potentialSavings: -1 }).limit(10).lean(),
         ]);
 
@@ -298,8 +297,13 @@ const generatePDFDownloadInternal = async (req, res, next) => {
                     '| alerts:', alerts.length,
                     '| optimizations:', optimizations.length);
     } catch (dbErr) {
-        console.error('[REPORTS] generatePDFDownload — DB query FAILED:', dbErr.message, dbErr.stack);
-        return next(new AppError('Failed to fetch report data from database.', 500, 'DB_QUERY_FAILED'));
+        console.warn('[REPORTS] generatePDFDownload — DB query failed (using mock data):', dbErr.message);
+        // Fallback to mock data when DB is unavailable
+        costsByService = [];
+        costsByTeam = [];
+        teams = [];
+        alerts = [];
+        optimizations = [];
     }
 
     // 3. Use live data or fall back to mock
@@ -398,17 +402,7 @@ const generatePDFDownloadInternal = async (req, res, next) => {
         return next(new AppError('PDF generation produced an empty file.', 500, 'PDF_EMPTY'));
     }
 
-    // 5. Save to local storage for later download
-    let savedMeta = null;
-    try {
-        savedMeta = await saveReport(pdfBuffer);
-        console.log('[REPORTS] generatePDFDownload — report saved:', savedMeta.filename, 'downloadUrl:', savedMeta.downloadUrl);
-    } catch (saveErr) {
-        console.warn('[REPORTS] generatePDFDownload — save to storage failed (non-fatal):', saveErr.message);
-        // Non-fatal — we can still stream the PDF directly
-    }
-
-    // 6. Stream download
+    // 5. Stream download directly without storing to disk
     const filename = `CloudSpire_Report_${rangeStart.toISOString().slice(0, 10)}.pdf`;
     console.log('[REPORTS] generatePDFDownload — streaming PDF to client, filename:', filename,
                 'isSampleData:', !hasLiveData);
@@ -423,22 +417,16 @@ const generatePDFDownloadInternal = async (req, res, next) => {
 };
 
 // -----------------------------------------------------------------------
-// GET /api/v1/reports/download/:filename — Serve a saved PDF
+// GET /api/v1/reports/download/:filename — Reports are streamed on-demand
 // -----------------------------------------------------------------------
 export const downloadReport = catchAsync(async (req, res, next) => {
     const { filename } = req.params;
     console.log('[REPORTS] GET /reports/download/', filename, '— User:', req.user?.id);
-
-    const report = await getReport(filename);
-
-    if (!report) {
-        console.log('[REPORTS] downloadReport — file not found:', filename);
-        return next(new AppError('Report not found or has expired.', 404, 'REPORT_NOT_FOUND'));
-    }
-
-    console.log('[REPORTS] downloadReport — serving file:', filename, 'size:', report.buffer.length, 'bytes');
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', report.buffer.length);
-    res.status(200).end(report.buffer);
+    
+    // Reports are now generated and streamed on-demand, not stored
+    return next(new AppError(
+        'Reports are generated and streamed on-demand. Use POST /api/v1/reports/generate-pdf/sync to download a report.',
+        410,
+        'REPORT_ON_DEMAND'
+    ));
 });

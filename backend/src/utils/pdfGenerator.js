@@ -65,7 +65,7 @@ export const generatePDF = async (html, options = {}) => {
         const page = await browser.newPage();
 
         // ---- 3. Set HTML content --------------------------------------
-        await page.setContent(html, { waitUntil: "networkidle0" });
+        await page.setContent(html, { waitUntil: "domcontentloaded" });
 
         // ---- 4. Generate PDF ------------------------------------------
         /** @type {PDFOptions} */

@@ -4,7 +4,8 @@ import Team from '../models/Team.model.js';
 import Org from '../models/Org.js';
 import { catchAsync } from '../middleware/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
-import { createSendToken, clearAuthCookie } from '../services/authService.js';
+import { createSendToken, clearAuthCookie, signToken, COOKIE_NAME } from '../services/authService.js';
+import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
 async function ensureUserOrgScope(user) {
@@ -201,12 +202,16 @@ export const login = catchAsync(async (req, res, next) => {
 /**
  * GET /api/v1/auth/me
  * Returns the currently authenticated user's public profile.
+ *
+ * IMPORTANT: Do NOT populate orgId/teamId before creating JWT token.
+ * The JWT must contain plain IDs, not objects. We populate ONLY for the response.
  */
 export const getMe = catchAsync(async (req, res, next) => {
     console.log('[AUTH] GET /me — User:', req.user);
 
     // req.user is set by the protect middleware (only has _id at that point)
-    const user = await User.findById(req.user.id).populate('orgId', 'name plan').populate('teamId', 'name');
+    // First, get the user WITHOUT populating to ensure JWT contains IDs
+    let user = await User.findById(req.user.id);
 
     if (!user) {
         console.log('[AUTH] getMe error: User not found for id —', req.user.id);
@@ -216,7 +221,31 @@ export const getMe = catchAsync(async (req, res, next) => {
     const scopedUser = await ensureUserOrgScope(user);
 
     console.log('[AUTH] getMe success — userId:', scopedUser._id, 'orgId:', scopedUser.orgId);
-    createSendToken(scopedUser, 200, res);
+    
+    // Create token with plain IDs
+    const token = signToken(scopedUser);
+    const isProduction = env.nodeEnv === 'production';
+
+    res.cookie(COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days in milliseconds
+        path: '/',
+    });
+
+    // Now populate for the response to include names
+    const populatedUser = await User.findById(scopedUser._id)
+        .populate('orgId', 'name plan')
+        .populate('teamId', 'name');
+
+    const userPublic = populatedUser.toPublic ? populatedUser.toPublic() : { _id: populatedUser._id };
+
+    res.status(200).json({
+        success: true,
+        token,
+        data: { user: userPublic },
+    });
 });
 
 /**
